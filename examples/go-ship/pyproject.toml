@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autoship-go-ship"
+version = "0.1.0"
+description = "AutoShip-CLI language pack: Go build artifacts and verify hints"
+requires-python = ">=3.10"
+dependencies = [
+    "autoship>=1.0.0",
+    "autoship-sdk>=1.0.0",
+]
+
+[project.entry-points."autoship.plugins"]
+go = "autoship_go_ship.plugin:register"

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autoship-java-ship"
+version = "0.1.0"
+description = "AutoShip-CLI language pack: Java build artifacts and verify hints"
+requires-python = ">=3.10"
+dependencies = [
+    "autoship>=1.0.0",
+    "autoship-sdk>=1.0.0",
+]
+
+[project.entry-points."autoship.plugins"]
+java = "autoship_java_ship.plugin:register"

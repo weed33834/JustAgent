@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage / tests
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# AutoShip local
+.autoship/
+.autoship.toml
+
+# Logs
+*.log
+
+# Benchmarks
+# results.json is the committed golden baseline — do NOT ignore it.
+benchmarks/results-latest.json
+benchmarks/report.md
+benchmarks/soak-report.json
+# Generated fixture tree (regenerate via benchmarks/fixtures/generate.py)
+benchmarks/fixtures/synthetic-1000/
+
+# Dogfood reports
+dogfood/report.md
+dogfood/report.json
+dogfood/real_world/reports/
+dogfood/dev_team_crisis/reports/
+
+# Security reports
+bandit-report.json
+
+# Generated reports at repository root
+/*_report.md
+
+# MkDocs build output
+site/
+
+# Local build outputs
+website/dist/
+registry-web/dist/
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/autoship_sdk"]
+include = ["src/autoship_sdk/templates/**/*"]
+
+[project]
+name = "autoship-sdk"
+version = "1.2.0"
+description = "AutoShip plugin development SDK"
+readme = "README.md"
+license = { text = "CNCL-1.0" }
+requires-python = ">=3.10"
+authors = [
+    { name = "AutoShip Team", email = "team@autoship.dev" },
+]
+dependencies = [
+    "autoship>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://ms33834.github.io/autoship-cli/"
+Documentation = "https://ms33834.github.io/autoship-cli/docs"
+Repository = "https://github.com/MS33834/autoship-cli"
+Issues = "https://github.com/MS33834/autoship-cli/issues"
+Changelog = "https://github.com/MS33834/autoship-cli/blob/main/CHANGELOG.md"
+Security = "https://github.com/MS33834/autoship-cli/blob/main/SECURITY.md"
+Discussions = "https://github.com/MS33834/autoship-cli/discussions"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B008", "TCH"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+include = ["src"]
+exclude = ["**/__pycache__", "**/tests"]
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=autoship_sdk --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["src/autoship_sdk"]
+branch = true
+
+[dependency-groups]
+dev = [
+    "ruff>=0.4.0",
+    "pyright>=1.1.360",
+    "pytest>=8.2.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.14.0",
+]
+
+[tool.uv.sources]
+autoship = { workspace = true }
