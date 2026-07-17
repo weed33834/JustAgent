@@ -90,7 +90,7 @@ def export_logs(
         if fmt_norm == "siem-bundle":
             if output is None:
                 typer.echo(
-                    "audit.export_siem_bundle_requires_output",
+                    "siem-bundle 格式需要 --output 指定输出目录。",
                     err=True,
                 )
                 raise typer.Exit(code=1)
@@ -99,12 +99,12 @@ def export_logs(
             except RuntimeError as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
-            typer.echo("audit.export_siem_bundle_done")
+            typer.echo(f"SIEM 包已写入 {_bundle_dir}（audit.jsonl + MANIFEST.json + audit.jsonl.sha256）。")
             return
 
         if fmt_norm != "jsonl":
             typer.echo(
-                "audit.export_unknown_format",
+                f"未知导出格式：{fmt_norm}。可用：jsonl 或 siem-bundle。",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -120,7 +120,7 @@ def export_logs(
             _count = len([line for line in text.splitlines() if line.strip()])
         except OSError:
             pass
-        typer.echo("audit.export_done")
+        typer.echo(f"已导出 {_count_lines} 条记录到 {exported_path}")
     finally:
         # ``get_audit_logger_from_ctx`` may construct a fresh ``AuditLogger``
         # (with its own SIEM/sink HTTP clients) when ``ctx.obj`` has none.
@@ -147,10 +147,10 @@ def cleanup_logs(
         # viewer-tier operators can still pull evidence.
 
         if dry_run:
-            typer.echo("audit.cleanup_dry_run")
+            typer.echo("[dry-run] 将删除过期审计日志文件")
             return
         _removed = audit_logger.cleanup(retention_days=retention_days)
-        typer.echo("audit.cleanup_done")
+        typer.echo(f"已删除 {_removed} 个过期审计日志文件")
     finally:
         # See ``export_logs``: a freshly-built logger must be closed, and
         # ``close()`` is idempotent for a shared one.

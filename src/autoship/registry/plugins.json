@@ -1,4 +1,4 @@
-{
+﻿{
   "version": 2,
   "updated_at": "2026-06-22",
   "plugins": [
@@ -30,7 +30,7 @@
       "downloads": 0,
       "rating": {"score": 0.0, "count": 0},
       "homepage": "https://autoship.dev/plugins/security-scan",
-      "source_url": "https://github.com/MS33834/autoship-cli",
+      "source_url": "https://gitcode.com/badhope/autoship",
       "audit_status": "approved"
     },
     {
@@ -61,7 +61,7 @@
       "downloads": 0,
       "rating": {"score": 0.0, "count": 0},
       "homepage": "https://autoship.dev/plugins/docker-ship",
-      "source_url": "https://github.com/MS33834/autoship-cli",
+      "source_url": "https://gitcode.com/badhope/autoship",
       "audit_status": "approved"
     },
     {
@@ -92,7 +92,7 @@
       "downloads": 0,
       "rating": {"score": 0.0, "count": 0},
       "homepage": "https://autoship.dev/plugins/web-search",
-      "source_url": "https://github.com/MS33834/autoship-cli",
+      "source_url": "https://gitcode.com/badhope/autoship",
       "audit_status": "approved"
     },
     {
@@ -123,7 +123,7 @@
       "downloads": 0,
       "rating": {"score": 0.0, "count": 0},
       "homepage": "https://autoship.dev/plugins/typecheck",
-      "source_url": "https://github.com/MS33834/autoship-cli",
+      "source_url": "https://gitcode.com/badhope/autoship",
       "audit_status": "approved"
     },
     {

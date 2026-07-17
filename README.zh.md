@@ -71,13 +71,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-配置值中可以用 `${VAR}` 引用环境变量，运行时会自动展开。完整配置项参考 `autoship.toml.example`。
+配置值中可以用 `${VAR}` 引用环境变量，运行时会自动展开。完整配置项参考 `.autoship.toml.example`。
 
 ## AI 后端
 
 AutoShip 通过 [LiteLLM](https://github.com/BerriAI/litellm) 统一调用大模型，LiteLLM 支持的供应商全部开箱可用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等 100 多家。
 
-在 `autoship.toml` 里配置一个或多个后端：
+在 `.autoship.toml` 里配置一个或多个后端：
 
 ```toml
 [[model.backends]]
@@ -104,14 +104,15 @@ model = "anthropic/claude-sonnet-4"
 | `autoship upload` | 构建并发布制品 |
 | `autoship ship` | 按序执行全流程 |
 | `autoship fix` | AI 辅助的代码修复建议 |
-| `autoship lsp` | 启动语言服务器 |
+| `autoship config` | 查看和管理配置 |
+| `autoship doctor` | 诊断环境和依赖 |
 | `autoship plugin` | 插件管理 |
 
 ## 开发
 
 ```bash
-git clone https://github.com/MS33834/autoship-cli.git
-cd autoship-cli
+git clone https://gitcode.com/badhope/autoship.git
+cd autoship
 pip install -e ".[dev]"
 ```
 
@@ -142,7 +143,7 @@ mypy src/
 
 ## 镜像仓库
 
-- [GitCode](https://gitcode.com/badhope/autoship-cli) — 国内用户克隆更快
+- [GitCode](https://gitcode.com/badhope/autoship) — 国内用户克隆更快
 
 ## 许可证
 

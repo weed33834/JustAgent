@@ -1,31 +1,32 @@
-"""Metrics wrappers around prometheus_client."""
+"""轻量指标收集（不依赖 prometheus_client）。
+
+使用进程内 dict 存储计数器和直方图，满足 model_router 和 doctor 的基本需求。
+"""
 
 from __future__ import annotations
 
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-
-from prometheus_client import REGISTRY, CollectorRegistry, Counter, Gauge, Histogram
+from typing import Any
 
 
 class MetricsRegistry:
-    """Thin wrapper around prometheus_client's default registry."""
+    """进程内指标注册表，替代 prometheus_client。"""
 
     def __init__(self) -> None:
-        self._registry: CollectorRegistry = REGISTRY
+        self._metrics: dict[str, dict[str, Any]] = {}
 
     def inc(self, name: str, amount: int = 1, description: str = "") -> None:
-        c = Counter(name, description, registry=self._registry)
-        c.inc(amount)
+        entry = self._metrics.setdefault(name, {"type": "counter", "value": 0, "description": description})
+        entry["value"] = entry.get("value", 0) + amount
 
     def record(self, name: str, value: float, description: str = "") -> None:
-        h = Histogram(name, description, registry=self._registry)
-        h.observe(value)
+        entry = self._metrics.setdefault(name, {"type": "histogram", "values": [], "description": description})
+        entry.setdefault("values", []).append(value)
 
     def set(self, name: str, value: float, description: str = "") -> None:
-        g = Gauge(name, description, registry=self._registry)
-        g.set(value)
+        self._metrics[name] = {"type": "gauge", "value": value, "description": description}
 
     @contextmanager
     def time(self, name: str, description: str = "") -> Generator[None, None, None]:
@@ -34,15 +35,15 @@ class MetricsRegistry:
         elapsed = (time.perf_counter() - start) * 1000
         self.record(name, elapsed, description)
 
+    def snapshot(self) -> dict[str, dict[str, Any]]:
+        return dict(self._metrics)
+
+    def reset(self) -> None:
+        self._metrics.clear()
+
 
 _registry: MetricsRegistry = MetricsRegistry()
 
 
 def get_registry() -> MetricsRegistry:
-    return _registry
-
-
-def set_registry(registry: MetricsRegistry) -> MetricsRegistry:
-    global _registry
-    _registry = registry
     return _registry

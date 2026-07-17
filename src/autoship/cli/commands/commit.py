@@ -46,11 +46,11 @@ def commit(
     git = GitAdapter(config.project_root, tool_verifier=ToolVerifier(config.tools))
 
     if not git.is_git_repo():
-        typer.echo("commit.not_git_repo")
+        typer.echo("不是 git 仓库。请先运行 'git init'。")
         raise typer.Exit(code=1)
 
     if not git.has_changes():
-        typer.echo("commit.nothing")
+        typer.echo("没有可提交的内容。")
         return
 
     context = CommandContext(
@@ -74,11 +74,11 @@ def commit(
                 final_message = router.generate_commit_message(diff=diff, stats=stats)
             except ModelGatewayError:
                 if verbose:
-                    typer.echo("commit.model_failed", err=True)
+                    typer.echo("模型生成提交信息失败，使用回退信息。", err=True)
                 final_message = "Update files"
 
     if edit and not yes:
-        final_message = _open_editor(None, final_message, config.commit.allowed_editors)
+        final_message = _open_editor(final_message, config.commit.allowed_editors)
 
     # Make the final message available to pre-commit hooks (e.g. commit-policy
     # plugins) and allow them to abort the commit.
@@ -88,12 +88,12 @@ def commit(
     except Exception as exc:
         audit.record("commit.aborted", {"message": final_message, "reason": str(exc)})
         raise GitError(
-            "commit.pre_commit_failed",
+            f"pre-commit hook 拒绝了此次提交：{exc}",
             details={"message": final_message},
         ) from exc
 
     if dry_run:
-        typer.echo("commit.dry_run")
+        typer.echo(f"[dry-run] 将使用以下信息提交：\n{final_message}")
         audit.record("commit.dry_run", {"message": final_message})
         return
 
@@ -101,58 +101,56 @@ def commit(
 
     audit.record("commit.done", {"message": final_message})
     plugin_manager.call("post_commit", context=context, fail_fast=False)
-    typer.echo("commit.done")
+    typer.echo(f"已提交：{final_message}")
 
 
-def _validate_editor(editor: str, allowed_editors: list[str], i18n) -> str:
-    """Validate ``editor`` against the configured allowlist.
+def _validate_editor(editor: str, allowed_editors: list[str]) -> str:
+    """校验 ``editor`` 是否在白名单内。
 
-    Returns the executable path/token on success, or raises ``GitError`` if the
-    value contains shell metacharacters, path traversal, or an unknown editor.
-    Only the first token of ``editor`` is returned; extra arguments are ignored
-    to prevent command injection.
+    成功返回可执行路径；若含 shell 元字符、路径穿越或未知编辑器则抛 ``GitError``。
+    仅取 ``editor`` 的第一个 token，忽略其余参数以防止命令注入。
     """
     try:
         cmd_parts = shlex.split(editor)
     except ValueError as exc:
         raise GitError(
-            "commit.editor_disallowed",
+            f"编辑器值不被允许：{editor}（{exc}）",
             details={"editor": editor, "reason": str(exc)},
         ) from exc
 
     if not cmd_parts:
         raise GitError(
-            "commit.editor_disallowed",
+            f"编辑器值不被允许：{editor}（空命令）",
             details={"editor": editor, "reason": "empty_command"},
         )
 
     if contains_shell_metacharacters(editor):
         raise GitError(
-            "commit.editor_disallowed",
+            f"编辑器值不被允许：{editor}（含 shell 元字符）",
             details={"editor": editor, "reason": "shell_metacharacters"},
         )
 
     executable = cmd_parts[0]
     if ".." in Path(executable).parts:
         raise GitError(
-            "commit.editor_disallowed",
+            f"编辑器值不被允许：{editor}（路径穿越）",
             details={"editor": editor, "reason": "path_traversal"},
         )
 
     executable_name = Path(executable).name
     if executable_name not in allowed_editors:
         raise GitError(
-            "commit.editor_unknown",
+            f"编辑器 '{executable_name}' 不在白名单中。允许的编辑器：{', '.join(allowed_editors)}",
             details={"editor": editor, "executable": executable_name, "allowed": allowed_editors},
         )
 
     return executable
 
 
-def _open_editor(i18n, initial: str, allowed_editors: list[str]) -> str:
-    """Open the user's preferred editor to review/modify a commit message."""
+def _open_editor(initial: str, allowed_editors: list[str]) -> str:
+    """打开用户偏好编辑器以审阅/修改提交信息。"""
     editor = os.environ.get("EDITOR", "vim")
-    executable = _validate_editor(editor, allowed_editors, i18n)
+    executable = _validate_editor(editor, allowed_editors)
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as f:
         f.write(initial)
         f.flush()
@@ -161,6 +159,6 @@ def _open_editor(i18n, initial: str, allowed_editors: list[str]) -> str:
         subprocess.run([executable, str(path)], check=True)
         return path.read_text(encoding="utf-8").strip()
     except subprocess.CalledProcessError as exc:
-        raise GitError("commit.editor_error") from exc
+        raise GitError(f"编辑器以代码 {exc.returncode} 退出；提交信息未保存。") from exc
     finally:
         path.unlink(missing_ok=True)

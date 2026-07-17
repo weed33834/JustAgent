@@ -10,6 +10,7 @@ import tempfile
 import textwrap
 from collections.abc import Sequence
 from contextlib import suppress
+from importlib import import_module
 from importlib.metadata import entry_points
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -126,16 +127,23 @@ class HookDispatcher:
             self._discover_entry_points()
 
     def _load_builtin(self) -> None:
-        """Load built-in plugins."""
-        from autoship.plugins import defaults, docker_ship, security_scan, typecheck, web_search
-
-        for plugin in (
-            defaults.plugin,
-            security_scan.plugin,
-            web_search.plugin,
-            docker_ship.plugin,
-            typecheck.plugin,
-        ):
+        """加载内置插件，单个失败时跳过并警告。"""
+        # 内置插件列表；web_search 已移除（依赖 duckduckgo-search/diskcache）。
+        builtin_modules = [
+            "defaults",
+            "security_scan",
+            "docker_ship",
+            "typecheck",
+        ]
+        for mod_name in builtin_modules:
+            try:
+                mod = import_module(f"autoship.plugins.{mod_name}")
+            except Exception as exc:  # noqa: BLE001 - 不让单个可选插件拖垮整体
+                logger.warning("跳过内置插件 %s（导入失败：%s）", mod_name, exc)
+                continue
+            plugin = getattr(mod, "plugin", None)
+            if plugin is None:
+                continue
             self.pm.register(plugin)
             name = self.pm.get_name(plugin)
             if name:

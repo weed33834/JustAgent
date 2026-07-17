@@ -1,4 +1,4 @@
-"""The ``autoship doctor`` command."""
+"""``autoship doctor`` 命令：诊断环境和依赖。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ import typer
 
 from autoship.core.cache import DiskCache
 from autoship.core.config_center import load_config
-from autoship.core.metrics import get_registry
 from autoship.core.model_router import ModelRouter
 from autoship.exceptions import ConfigError
 from autoship.models.config import AppConfig
@@ -61,95 +60,74 @@ def _run_cmd(cmd: list[str]) -> tuple[bool, str]:
         return False, str(exc)
 
 
-def check_python(i18n) -> CheckResult:
+def check_python() -> CheckResult:
     version = sys.version_info
     version_str = f"Python {version.major}.{version.minor}.{version.micro}"
-    if version < (3, 10):
-        return CheckResult(
-            "python",
-            Status.ERROR,
-            version_str,
-            "doctor.python_old",
-        )
+    if version < (3, 11):
+        return CheckResult("python", Status.ERROR, version_str, "请升级到 Python 3.11+。")
     return CheckResult("python", Status.OK, version_str)
 
 
-def check_git(i18n) -> CheckResult:
+def check_git() -> CheckResult:
     ok, output = _run_cmd(["git", "--version"])
     if not ok:
-        return CheckResult("git", Status.ERROR, "doctor.git_missing", "doctor.git_suggestion")
+        return CheckResult("git", Status.ERROR, "未找到 git", "请安装 git 并加入 PATH。")
     return CheckResult("git", Status.OK, output)
 
 
-def check_clean_toolchain(config: AppConfig, i18n) -> CheckResult:
-    # The default clean toolchain is Python-centric; skip for non-Python
-    # projects to avoid spurious warnings. "unknown" falls back to Python.
+def check_clean_toolchain(config: AppConfig) -> CheckResult:
     project_type = config.project_type
     if project_type not in ("python", "unknown", ""):
-        return CheckResult(
-            "clean-toolchain",
-            Status.OK,
-            "doctor.clean_skipped_non_python",
-        )
+        return CheckResult("clean-toolchain", Status.OK, "非 Python 项目，已跳过。")
     tools = config.clean.tools
     missing = [tool for tool in tools if shutil.which(tool) is None]
     if missing:
         return CheckResult(
-            "clean-toolchain",
-            Status.WARNING,
-            "doctor.clean_missing",
-            "doctor.clean_suggestion",
+            "clean-toolchain", Status.WARNING,
+            f"缺少工具：{', '.join(missing)}",
+            "安装所需工具或将其加入 PATH。",
         )
-    return CheckResult("clean-toolchain", Status.OK, "doctor.clean_ok")
+    return CheckResult("clean-toolchain", Status.OK, "所有清理工具可用。")
 
 
-def check_model_backend(config: AppConfig, i18n) -> CheckResult:
+def check_model_backend(config: AppConfig) -> CheckResult:
     if not config.model.backends:
         return CheckResult(
-            "model-backend",
-            Status.WARNING,
-            "doctor.model_none",
-            "doctor.model_suggestion",
+            "model-backend", Status.WARNING,
+            "未配置模型后端。",
+            "编辑 .autoship.toml 配置模型后端。",
         )
     with ModelRouter(config) as router:
         healthy = router.select_backend(tier=config.model.default_tier)
         if healthy is None:
             return CheckResult(
-                "model-backend",
-                Status.WARNING,
-                "doctor.model_unreachable",
-                "doctor.model_start",
+                "model-backend", Status.WARNING,
+                "所有模型后端不可达。",
+                "检查 API key 或本地模型服务是否运行。",
             )
-        return CheckResult(
-            "model-backend",
-            Status.OK,
-            "doctor.model_ok",
-        )
+        return CheckResult("model-backend", Status.OK, "模型后端可用。")
 
 
-def check_plugin_dependencies(i18n) -> CheckResult:
+def check_plugin_dependencies() -> CheckResult:
     optional = {
-        "semgrep": "security-scan plugin",
-        "docker": "docker-ship plugin",
-        "gitleaks": "security-scan plugin",
+        "semgrep": "security-scan 插件",
+        "docker": "docker-ship 插件",
     }
     missing = {tool: reason for tool, reason in optional.items() if shutil.which(tool) is None}
     if missing:
-        _details = "; ".join(f"{tool} ({reason})" for tool, reason in missing.items())
+        details = "; ".join(f"{tool} ({reason})" for tool, reason in missing.items())
         return CheckResult(
-            "plugin-dependencies",
-            Status.WARNING,
-            "doctor.plugin_missing",
-            "doctor.plugin_suggestion",
+            "plugin-dependencies", Status.WARNING,
+            f"缺少可选依赖：{details}",
+            "安装所需工具以启用对应插件。",
         )
-    return CheckResult("plugin-dependencies", Status.OK, "doctor.plugin_ok")
+    return CheckResult("plugin-dependencies", Status.OK, "可选依赖齐全。")
 
 
 def _resolve_directory_paths(config: AppConfig) -> list[Path]:
-    from autoship.core.registry_client import DEFAULT_CACHE_DIR
-
     audit_dir = config.audit_log_dir or config.audit.log_dir or (Path.home() / ".autoship" / "logs")
-    return [config.project_root, audit_dir, DEFAULT_CACHE_DIR]
+    cache_dir = Path.home() / ".autoship" / "cache"
+    return [config.project_root, audit_dir, cache_dir]
 
 
 def _is_writable(path: Path) -> bool:
@@ -158,105 +136,47 @@ def _is_writable(path: Path) -> bool:
     return path.parent.exists() and os.access(path.parent, os.W_OK)
 
 
-def check_directories(config: AppConfig, i18n) -> CheckResult:
+def check_directories(config: AppConfig) -> CheckResult:
     paths = _resolve_directory_paths(config)
     bad = [str(p) for p in paths if not (p.exists() or p.parent.exists())]
     if bad:
-        return CheckResult(
-            "directories",
-            Status.WARNING,
-            "doctor.dirs_bad",
-            "doctor.dirs_suggestion",
-        )
+        return CheckResult("directories", Status.WARNING, f"路径不存在：{bad}", "创建所需目录。")
 
     not_writable = [str(p) for p in paths if not _is_writable(p)]
     if not_writable:
-        return CheckResult(
-            "directories",
-            Status.WARNING,
-            "doctor.dirs_not_writable",
-            "doctor.dirs_writable_suggestion",
-        )
-    return CheckResult("directories", Status.OK, "doctor.dirs_ok")
+        return CheckResult("directories", Status.WARNING, f"路径不可写：{not_writable}", "检查目录权限。")
+    return CheckResult("directories", Status.OK, "所有目录可写。")
 
 
-def check_cache(config: AppConfig, i18n) -> CheckResult:
+def check_cache(config: AppConfig) -> CheckResult:
     try:
         cache = DiskCache(cache_dir=config.cache.dir)
         cache.set("__doctor_probe__", "ok", ttl=10)
         value = cache.get("__doctor_probe__")
         cache.invalidate("__doctor_probe__")
         if value == "ok":
-            return CheckResult("cache", Status.OK, "doctor.cache_ok")
+            return CheckResult("cache", Status.OK, "缓存正常。")
     except OSError:
-        return CheckResult(
-            "cache",
-            Status.ERROR,
-            "doctor.cache_error",
-            "doctor.cache_suggestion",
-        )
-    return CheckResult(
-        "cache",
-        Status.WARNING,
-        "doctor.cache_warning",
-        "doctor.cache_suggestion",
-    )
+        return CheckResult("cache", Status.ERROR, "缓存读写失败。", "检查缓存目录权限。")
+    return CheckResult("cache", Status.WARNING, "缓存返回异常值。", "检查缓存目录权限。")
 
 
-def check_observability(i18n) -> CheckResult:
-    registry = get_registry()
-    snapshot = registry.snapshot()
-    if not snapshot:
-        return CheckResult(
-            "observability",
-            Status.OK,
-            "doctor.observability_ok_empty",
-        )
-    _counter_count = sum(1 for d in snapshot.values() if d.get("type") == "counter")
-    _hist_count = sum(1 for d in snapshot.values() if d.get("type") == "histogram")
-    return CheckResult(
-        "observability",
-        Status.OK,
-        "doctor.observability_ok",
-    )
-
-
-def check_registry_signature(config: AppConfig, i18n) -> CheckResult:
-    """Warn when the registry public_key is not configured."""
-    public_key = config.registry.public_key if config.registry else None
-    if not public_key:
-        return CheckResult(
-            "registry-signature",
-            Status.WARNING,
-            "doctor.registry_sig_unconfigured",
-            "doctor.registry_sig_suggestion",
-        )
-    return CheckResult("registry-signature", Status.OK, "doctor.registry_sig_ok")
-
-
-def build_report(i18n=None) -> DoctorReport:
+def build_report() -> DoctorReport:
     report = DoctorReport()
-    report.add(**check_python(i18n).__dict__)
-    report.add(**check_git(i18n).__dict__)
-    report.add(**check_plugin_dependencies(i18n).__dict__)
+    report.add(**check_python().__dict__)
+    report.add(**check_git().__dict__)
+    report.add(**check_plugin_dependencies().__dict__)
 
     try:
         config = load_config()
     except ConfigError:
-        report.add(
-            "config",
-            Status.ERROR,
-            "doctor.config_error",
-            "error.suggestion.init",
-        )
+        report.add("config", Status.ERROR, "配置加载失败。", "运行 `autoship init` 创建配置。")
         return report
 
-    report.add(**check_clean_toolchain(config, i18n).__dict__)
-    report.add(**check_model_backend(config, i18n).__dict__)
-    report.add(**check_directories(config, i18n).__dict__)
-    report.add(**check_cache(config, i18n).__dict__)
-    report.add(**check_registry_signature(config, i18n).__dict__)
-    report.add(**check_observability(i18n).__dict__)
+    report.add(**check_clean_toolchain(config).__dict__)
+    report.add(**check_model_backend(config).__dict__)
+    report.add(**check_directories(config).__dict__)
+    report.add(**check_cache(config).__dict__)
     return report
 
 
@@ -266,85 +186,29 @@ def register(parent: typer.Typer) -> None:
 
 def doctor(
     ctx: typer.Context,
-    json_output: bool = typer.Option(False, "--json", help="Output report as JSON"),
-    fail_on_error: bool = typer.Option(
-        False, "--fail-on-error", help="Exit with non-zero code when errors are present"
-    ),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 格式输出"),
+    fail_on_error: bool = typer.Option(False, "--fail-on-error", help="有错误时返回非零退出码"),
 ) -> None:
-    """Diagnose the AutoShip environment and dependencies."""
-
-    report = build_report(None)
+    """诊断 AutoShip 环境和依赖。"""
+    report = build_report()
     ok, warnings, errors = report.summary()
 
     if json_output:
         import json as _json
 
-        checks_index: dict[str, CheckResult] = {c.name: c for c in report.checks}
-
-        def _group(keys: list[str]) -> dict[str, str]:
-            entry: dict[str, str] = {}
-            for k in keys:
-                chk = checks_index.get(k)
-                if chk is not None:
-                    entry["status"] = chk.status.value.lower()
-                    entry["message"] = chk.message
-                    if chk.suggestion:
-                        entry["suggestion"] = chk.suggestion
-            if not entry:
-                entry["status"] = "unknown"
-                entry["message"] = ""
-            return entry
-
-        def _worst(states: list[str]) -> str:
-            for s in ("error", "warning", "ok"):
-                if s in states:
-                    return s
-            return "ok"
-
-        # Gather sub-group statuses
-        py_status = checks_index.get("python", CheckResult("python", Status.OK, ""))
-        git_status = checks_index.get("git", CheckResult("git", Status.OK, ""))
-        tools_status = _worst(
-            [
-                checks_index.get("clean-toolchain", CheckResult("", Status.OK, "")).status.value,
-                checks_index.get(
-                    "plugin-dependencies", CheckResult("", Status.OK, "")
-                ).status.value,
-            ]
-        )
-
         data: dict[str, object] = {
             "summary": {"ok": ok, "warning": warnings, "error": errors},
-            "python": {
-                "status": py_status.status.value.lower(),
-                "version": py_status.message,
-            },
-            "git": {
-                "status": git_status.status.value.lower(),
-                "version": git_status.message,
-            },
-            "tools": {
-                "status": tools_status,
-                "clean": checks_index.get(
-                    "clean-toolchain",
-                    CheckResult("clean-toolchain", Status.OK, ""),
-                ).message,
-                "plugin_deps": checks_index.get(
-                    "plugin-dependencies",
-                    CheckResult("plugin-dependencies", Status.OK, ""),
-                ).message,
-            },
-            "model": _group(["model-backend"]),
-            "dirs": _group(["directories"]),
-            "cache": _group(["cache"]),
-            "observability": _group(["observability"]),
+            "checks": [
+                {"name": c.name, "status": c.status.value.lower(), "message": c.message, "suggestion": c.suggestion}
+                for c in report.checks
+            ],
         }
         typer.echo(_json.dumps(data, indent=2, ensure_ascii=False))
         if fail_on_error and errors:
             raise typer.Exit(code=1)
         return
 
-    typer.echo("doctor.title")
+    typer.echo("AutoShip 环境诊断")
     typer.echo("-" * 60)
     for check in report.checks:
         status_color = {
@@ -354,8 +218,8 @@ def doctor(
         }[check.status]
         typer.secho(f"[{check.status.value}] {check.name:<20} {check.message}", fg=status_color)
         if check.suggestion:
-            typer.echo("doctor.suggestion")
+            typer.echo(f"  → {check.suggestion}")
     typer.echo("-" * 60)
-    typer.echo("doctor.summary")
+    typer.echo(f"总计：{ok} OK，{warnings} 警告，{errors} 错误")
     if fail_on_error and errors:
         raise typer.Exit(code=1)

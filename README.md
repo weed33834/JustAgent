@@ -48,7 +48,7 @@ autoship upload
 
 ## Configuration
 
-AutoShip reads `autoship.toml` from your project root:
+AutoShip reads `.autoship.toml` from your project root:
 
 ```toml
 [clean]
@@ -71,13 +71,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-Environment variables in config values (`${VAR}`) are expanded at runtime. See `autoship.toml.example` for the full set of options.
+Environment variables in config values (`${VAR}`) are expanded at runtime. See `.autoship.toml.example` for the full set of options.
 
 ## AI backends
 
 AutoShip routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), which means any provider LiteLLM handles is supported out of the box — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and 100+ others.
 
-Configure one or more backends in `autoship.toml`:
+Configure one or more backends in `.autoship.toml`:
 
 ```toml
 [[model.backends]]
@@ -104,14 +104,15 @@ The gateway handles retry, rate limiting, and automatic failover across provider
 | `autoship upload` | Build and publish artifacts |
 | `autoship ship` | Run clean, verify, commit, upload in sequence |
 | `autoship fix` | AI-powered code fix suggestions |
-| `autoship lsp` | Start the language server |
+| `autoship config` | View and manage configuration |
+| `autoship doctor` | Diagnose environment and dependencies |
 | `autoship plugin` | Manage plugins |
 
 ## Development
 
 ```bash
-git clone https://github.com/MS33834/autoship-cli.git
-cd autoship-cli
+git clone https://gitcode.com/badhope/autoship.git
+cd autoship
 pip install -e ".[dev]"
 ```
 
@@ -142,7 +143,7 @@ mypy src/
 
 ## Mirrors
 
-- [GitCode](https://gitcode.com/badhope/autoship-cli) — faster clone for users in mainland China
+- [GitCode](https://gitcode.com/badhope/autoship) — faster clone for users in mainland China
 
 ## License
 

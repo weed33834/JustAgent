@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pluggy
 
 from autoship.core.context import CommandContext
-from autoship.plugins.defaults import FixSuggestion
+
+if TYPE_CHECKING:
+    # 仅用于类型注解；运行时避免导入，防止与 plugins.defaults 形成循环导入。
+    from autoship.plugins.defaults import FixSuggestion
 
 hookspec = pluggy.HookspecMarker("autoship")
 hookimpl = pluggy.HookimplMarker("autoship")

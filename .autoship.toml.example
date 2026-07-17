@@ -1,5 +1,5 @@
-# AutoShip example configuration
-# Copy this to autoship.toml in your project root and adjust as needed
+# AutoShip 示例配置
+# 将此文件复制到项目根目录并命名为 .autoship.toml，然后按需调整。
 
 [clean]
 enabled = true
@@ -33,7 +33,7 @@ command = "clean"
 include = ["src/**/*.py"]
 debounce_ms = 300
 
-# Model configuration — configure one or more backends
+# 模型配置 —— 配置一个或多个后端
 [model]
 default_tier = 1
 

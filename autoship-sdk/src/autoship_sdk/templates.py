@@ -66,7 +66,7 @@ def create_plugin(
         "plugin_name": plugin_name,
         "distribution_name": distribution_name,
         "description": description or f"AutoShip plugin: {plugin_name}",
-        "repository_url": repository_url or "https://github.com/MS33834/autoship-cli",
+        "repository_url": repository_url or "https://gitcode.com/badhope/autoship",
     }
 
     template_dir = Path(__file__).parent / "templates" / "plugin"

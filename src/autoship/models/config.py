@@ -42,7 +42,7 @@ class CleanConfig(BaseModel):
     """Configuration for the `clean` command."""
 
     enabled: bool = True
-    tools: list[str] = ["autoflake", "black"]
+    tools: list[str] = ["ruff"]
     dry_run: bool = False
     exclude: list[str] = Field(default_factory=list)
 
@@ -96,15 +96,6 @@ class SecurityConfig(BaseModel):
     fail_fast: bool = True
 
 
-class WebSearchProvider(str, Enum):
-    """Supported web search backends."""
-
-    DUCKDUCKGO = "duckduckgo"
-    BRAVE = "brave"
-    GOOGLE = "google"
-    SEARXNG = "searxng"
-
-
 class AuditConfig(BaseModel):
     """Configuration for audit logging."""
 
@@ -117,18 +108,6 @@ class SandboxConfig(BaseModel):
     """Configuration for sandbox isolation requirements."""
 
     required: bool = True
-
-
-class WebSearchConfig(BaseModel):
-    """Configuration for the web-search plugin."""
-
-    enabled: bool = False
-    provider: WebSearchProvider = WebSearchProvider.DUCKDUCKGO
-    api_key: str | None = Field(default=None, repr=False)
-    cx: str | None = Field(default=None, repr=False)
-    instance_url: str | None = None
-    max_results: int = 3
-    timeout: float = 10.0
 
 
 class DockerShipConfig(BaseModel):
@@ -147,34 +126,6 @@ class ModelConfig(BaseModel):
     default_tier: Literal[1, 2, 3] = 2
     fallback: bool = True
     backends: list[ModelBackendConfig] = Field(default_factory=lambda: list[ModelBackendConfig]())
-
-
-class RegistryConfig(BaseModel):
-    """Configuration for the plugin registry client."""
-
-    url: HttpUrl = Field(
-        default="https://raw.githubusercontent.com/MS33834/autoship-cli/main/registry/plugins.json",
-        validate_default=True,
-    )
-    cache_enabled: bool = True
-    cache_ttl_seconds: int = 3600
-    public_key: str | None = Field(
-        default=None,
-        description="Base64-encoded Ed25519 public key for registry index verification.",
-    )
-
-
-class TeamConfig(BaseModel):
-    """Configuration for shared team profiles."""
-
-    public_key: str | None = Field(
-        default=None,
-        description="Base64 URL-safe Ed25519 public key (32 raw bytes).",
-    )
-    require_signature: bool = Field(
-        default=False,
-        description="When True, an unsigned team config is a hard error.",
-    )
 
 
 class CacheConfig(BaseModel):
@@ -290,11 +241,8 @@ class AppConfig(BaseModel):
     audit: AuditConfig = Field(default_factory=AuditConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     verify: VerifyConfig = Field(default_factory=VerifyConfig)
-    web_search: WebSearchConfig = Field(default_factory=WebSearchConfig)
     docker_ship: DockerShipConfig = Field(default_factory=DockerShipConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
-    registry: RegistryConfig = Field(default_factory=lambda: RegistryConfig())
-    team: TeamConfig = Field(default_factory=TeamConfig)
     llm: LlmConfig = Field(default_factory=LlmConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)

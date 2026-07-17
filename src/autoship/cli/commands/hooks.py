@@ -59,22 +59,17 @@ def _audit_from_ctx(ctx: typer.Context) -> Any:
     return ctx.obj.get("audit_logger") if ctx.obj else None
 
 
-def _i18n(ctx: typer.Context):
-    return None
-
-
 @app.command("list")
 def list_hooks(ctx: typer.Context) -> None:
-    """List the configured on-save hooks."""
+    """列出已配置的保存时钩子。"""
     config = _config_from_ctx(ctx)
-    _i18n_local = _i18n(ctx)
     if not config.hooks.enabled:
-        typer.echo("hooks.disabled")
+        typer.echo("保存时钩子未启用（[hooks] enabled = false）。")
         raise typer.Exit(code=0)
     if not config.hooks.on_save:
-        typer.echo("hooks.empty")
+        typer.echo("未配置任何保存时钩子。")
         raise typer.Exit(code=0)
-    typer.echo("hooks.list_header")
+    typer.echo("已配置的保存时钩子：")
     for idx, hook in enumerate(config.hooks.on_save):
         include = ", ".join(hook.include) if hook.include else "**/*"
         exclude = ", ".join(hook.exclude) if hook.exclude else "-"
@@ -98,15 +93,14 @@ def run_hooks(
     same runner is reused across many saves.
     """
     config = _config_from_ctx(ctx)
-    _i18n_local = _i18n(ctx)
     audit = _audit_from_ctx(ctx)
     if not config.hooks.enabled:
-        typer.echo("hooks.disabled")
+        typer.echo("保存时钩子未启用（[hooks] enabled = false）。")
         raise typer.Exit(code=0)
     runner = OnSaveHookRunner(config, audit_logger=audit)
     matches = runner.matching_hooks(file)
     if not matches:
-        typer.echo("hooks.no_match")
+        typer.echo("没有保存时钩子匹配该文件。")
         raise typer.Exit(code=0)
     results = runner.run_for_path(file)
     failed = 0
@@ -135,21 +129,20 @@ def watch(
 ) -> None:
     """Watch directories and run on-save hooks on file changes."""
     config = _config_from_ctx(ctx)
-    _i18n_local = _i18n(ctx)
     audit = _audit_from_ctx(ctx)
     if not config.hooks.enabled:
-        typer.echo("hooks.disabled")
+        typer.echo("保存时钩子未启用（[hooks] enabled = false）。")
         raise typer.Exit(code=0)
 
     try:
         from watchdog.events import FileSystemEvent, FileSystemEventHandler
         from watchdog.observers import Observer
     except ImportError:  # pragma: no cover - environment-dependent
-        typer.echo("hooks.watchdog_missing", err=True)
+        typer.echo("未安装 watchdog。请运行：pip install watchdog", err=True)
         raise typer.Exit(code=2) from None
 
     runner = OnSaveHookRunner(config, audit_logger=audit, timeout=timeout)
-    typer.echo("hooks.watching")
+    typer.echo("正在监听文件保存（按 Ctrl+C 停止）…")
     for p in paths:
         typer.echo(f"  → {p}")
 
@@ -185,7 +178,7 @@ def watch(
     for p in paths:
         target = p if p.is_dir() else p.parent
         if not target.exists():
-            typer.echo("hooks.watch_missing", err=True)
+            typer.echo(f"监听路径不存在：{target}", err=True)
             continue
         observer.schedule(handler, str(target), recursive=True)
         watched.append(target)
@@ -196,7 +189,7 @@ def watch(
         while True:
             observer.join(0.5)
     except KeyboardInterrupt:
-        typer.echo("hooks.watch_stop")
+        typer.echo("已停止。")
     finally:
         observer.stop()
         observer.join()

@@ -1,33 +1,29 @@
-"""``autoship config`` command."""
+"""``autoship config`` 命令：查看与管理配置。
+
+注意：``config telemetry`` 子命令已移除（依赖不存在的 ``config.telemetry``
+字段，遥测能力属企业级，已从本地交付 CLI 定位中剔除）。
+"""
 
 from __future__ import annotations
 
 import json
-import tomllib
-from pathlib import Path
 from typing import Any, cast
 
-import structlog
 import tomli_w
 import typer
 
-from autoship.core.config_center import DEFAULT_CONFIG_NAME
 from autoship.exceptions import ConfigError
-from autoship.utils.json_io import atomic_write_text
 from autoship.utils.redaction import is_sensitive_key
 
-logger = structlog.get_logger("autoship")
-
-_i18n = None  # i18n removed
 app = typer.Typer(
     name="config",
-    help="config.help",
+    help="查看和管理 AutoShip 配置。",
     rich_markup_mode="rich",
 )
 
 
 def _redact(value: Any) -> Any:
-    """Recursively redact sensitive dictionary values."""
+    """递归脱敏敏感字典值。"""
     if isinstance(value, dict):
         mapping = cast(dict[str, Any], value)
         return {k: "***" if is_sensitive_key(k) else _redact(v) for k, v in mapping.items()}
@@ -38,7 +34,7 @@ def _redact(value: Any) -> Any:
 
 
 def _drop_none(value: Any) -> Any:
-    """Recursively drop ``None`` values so output is TOML serializable."""
+    """递归剔除 ``None`` 值，保证输出可被 TOML 序列化。"""
     if isinstance(value, dict):
         mapping = cast(dict[str, Any], value)
         return {k: _drop_none(v) for k, v in mapping.items() if v is not None}
@@ -48,42 +44,26 @@ def _drop_none(value: Any) -> Any:
     return value
 
 
-def _dotted_get(cfg: dict[str, Any], dotted_key: str, i18n) -> Any:
-    """Retrieve a nested configuration value by dotted key."""
+def _dotted_get(cfg: dict[str, Any], dotted_key: str) -> Any:
+    """按点号分隔键取嵌套配置值。"""
     parts = dotted_key.split(".")
     target: Any = cfg
     for part in parts:
         if not isinstance(target, dict):
-            raise ConfigError("config.key_not_found")
+            raise ConfigError(f"配置中不存在键 '{dotted_key}'")
         mapping = cast(dict[str, Any], target)
         if part not in mapping:
-            raise ConfigError("config.key_not_found")
+            raise ConfigError(f"配置中不存在键 '{dotted_key}'")
         target = mapping[part]
     return target
 
 
-def _target_path(ctx: typer.Context) -> Path:
-    """Return the configuration file path to modify."""
-    config_path: Path | None = ctx.obj.get("config_path") if ctx.obj else None
-    if config_path is not None:
-        return config_path
-    project_root: Path = ctx.obj["config"].project_root
-    return project_root / DEFAULT_CONFIG_NAME
-
-
-def _load_toml_file(path: Path) -> dict[str, Any]:
-    """Load a TOML file or return an empty dict if it does not exist."""
-    if not path.exists():
-        return {}
-    return tomllib.loads(path.read_bytes())
-
-
-@app.command("list", help="config.list_help")
+@app.command("list", help="显示生效配置（敏感值会被脱敏）。")
 def list_config(
     ctx: typer.Context,
-    json_output: bool = typer.Option(False, "--json", help="config.option.json"),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 格式输出"),
 ) -> None:
-    """Show effective configuration (sensitive values are redacted)."""
+    """显示生效配置（敏感值会被脱敏）。"""
     cfg = ctx.obj["config"].model_dump(mode="json")
     cfg = _redact(cfg)
     if json_output:
@@ -92,18 +72,17 @@ def list_config(
         typer.echo(tomli_w.dumps(_drop_none(cfg)).strip())
 
 
-@app.command("get", help="config.get_help")
+@app.command("get", help="获取单个配置项的值。")
 def get_config(
     ctx: typer.Context,
-    key: str = typer.Argument(..., help="config.option.key"),
+    key: str = typer.Argument(..., help="点号分隔的配置键，例如 model.default_tier"),
 ) -> None:
-    """Get a single configuration value."""
-
+    """获取单个配置项的值。"""
     cfg = ctx.obj["config"].model_dump(mode="json")
     try:
-        value = _dotted_get(cfg, key, None)
+        value = _dotted_get(cfg, key)
     except ConfigError as exc:
-        typer.secho("error.prefix", fg=typer.colors.RED, err=True)
+        typer.secho(f"错误：{exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=2) from exc
     if isinstance(value, dict | list):
         typer.echo(json.dumps(value, indent=2))
@@ -111,32 +90,6 @@ def get_config(
         typer.echo(str(value))
 
 
-@app.command("telemetry", help="config.telemetry_help")
-def telemetry_config(
-    ctx: typer.Context,
-    enable: bool = typer.Option(False, "--enable", help="config.option.enable"),
-    disable: bool = typer.Option(False, "--disable", help="config.option.disable"),
-    status: bool = typer.Option(False, "--status", help="config.option.status"),
-) -> None:
-    """Enable, disable, or view telemetry setting."""
-
-    cfg = ctx.obj["config"]
-    if status or (not enable and not disable):
-        _state = "enabled" if cfg.telemetry.enabled else "disabled"
-        typer.echo("config.telemetry_status")
-        return
-
-    # RBAC gate on writes (status reads are left open).
-
-    target = _target_path(ctx)
-    data = _load_toml_file(target)
-    data["telemetry_enabled"] = enable if enable else not disable
-    target.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(target, tomli_w.dumps(data))
-    _state = "enabled" if data["telemetry_enabled"] else "disabled"
-    typer.echo("config.telemetry_set")
-
-
 def register(parent: typer.Typer) -> None:
-    """Register the config command group."""
+    """注册 config 命令组。"""
     parent.add_typer(app)

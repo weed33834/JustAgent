@@ -143,7 +143,6 @@ def _run_builtin_format_fallback(
     dry_run: bool,
     verbose: bool,
     audit: AuditLogger,
-    i18n,
     context: CommandContext,
 ) -> None:
     """Fall back to built-in formatting when external tools produce no diff.
@@ -162,7 +161,7 @@ def _run_builtin_format_fallback(
 
     if fallback_due_to_missing:
         typer.echo(
-            "clean.builtin_fallback",
+            f"使用内置格式化器（未找到外部工具：{', '.join(missing)}）",
             err=True,
         )
         files_to_format: list[Path] = source_files
@@ -183,11 +182,11 @@ def _run_builtin_format_fallback(
                     typer.echo(f"Formatted: {f}")
         if changed:
             audit.record("clean.builtin", {"changed": changed})
-            typer.echo("clean.builtin_done")
+            typer.echo(f"内置格式化完成（{changed} 个文件已修改）。")
             plugin_manager.call("post_clean", context=context, fail_fast=False)
             return
 
-    typer.echo("clean.noop")
+    typer.echo("已经是干净的。")
     audit.record("clean.noop")
 
 
@@ -231,7 +230,7 @@ def clean(
     try:
         diff = toolchain.preview(paths)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        raise ToolChainError("clean.preview_failed") from exc
+        raise ToolChainError(f"预览清理更改失败：{exc}") from exc
 
     if not diff.strip():
         _run_builtin_format_fallback(
@@ -241,7 +240,6 @@ def clean(
             dry_run,
             verbose,
             audit,
-            None,  # i18n removed
             context,
         )
         return
@@ -250,18 +248,18 @@ def clean(
         typer.echo(diff)
 
     if check:
-        raise ToolChainError("clean.not_clean")
+        raise ToolChainError("代码不干净；请运行 `autoship clean`。")
 
-    if not dry_run and not yes and not typer.confirm("clean.confirm"):
-        typer.echo("clean.aborted")
+    if not dry_run and not yes and not typer.confirm("应用格式化更改？"):
+        typer.echo("已中止。")
         audit.record("clean.aborted", {"reason": "user_declined"})
         raise typer.Exit(code=0)
 
     try:
         toolchain.apply(paths)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        raise ToolChainError("clean.apply_failed") from exc
+        raise ToolChainError(f"应用清理更改失败：{exc}") from exc
 
     audit.record("clean.done", {"paths": [str(p) for p in paths]})
     plugin_manager.call("post_clean", context=context, fail_fast=False)
-    typer.echo("clean.complete")
+    typer.echo("清理完成。")

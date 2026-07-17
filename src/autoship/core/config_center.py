@@ -16,7 +16,6 @@ from autoship.models.config import AppConfig
 logger = structlog.get_logger("autoship")
 
 DEFAULT_CONFIG_NAME = ".autoship.toml"
-TEAM_CONFIG_NAME = ".autoship.team.toml"
 ENV_PREFIX = "AUTOSHIP_"
 
 
@@ -39,12 +38,10 @@ class _EnvSettings(BaseSettings):
     security: dict[str, Any] | None = None
     audit: dict[str, Any] | None = None
     sandbox: dict[str, Any] | None = None
-    web_search: dict[str, Any] | None = None
     docker_ship: dict[str, Any] | None = None
     model: dict[str, Any] | None = None
     verify: dict[str, Any] | None = None
     cache: dict[str, Any] | None = None
-    registry: dict[str, Any] | None = None
     llm: dict[str, Any] | None = None
     tools: dict[str, Any] | None = None
     hooks: dict[str, Any] | None = None
@@ -107,7 +104,7 @@ def _default_config() -> dict[str, Any]:
         "log_level": "INFO",
         "clean": {
             "enabled": True,
-            "tools": ["autoflake", "black"],
+            "tools": ["ruff"],
             "dry_run": False,
             "exclude": [],
         },
@@ -148,26 +145,6 @@ def load_config(
     )
     project_cfg = _load_toml(project_config_path)
     merged = _deep_merge(merged, project_cfg)
-
-    # Team config overlay with optional signature verification
-    team_path = project_root / TEAM_CONFIG_NAME
-    team_section = cast(dict[str, Any], merged.get("team") or {})
-    team_public_key: str | None = None
-    if isinstance(team_section.get("public_key"), str):
-        team_public_key = team_section["public_key"]
-    require_signature = bool(team_section.get("require_signature"))
-
-    from autoship.core.team_config import TeamConfigError, load_team_config
-
-    try:
-        team_cfg = load_team_config(
-            team_path, public_key_b64=team_public_key, require_signature=require_signature
-        )
-    except TeamConfigError as exc:
-        if require_signature:
-            raise ConfigError(str(exc)) from exc
-        team_cfg = {}
-    merged = _deep_merge(merged, team_cfg)
 
     # Environment variables (pydantic-settings handles AUTOSHIP_* natively)
     env_cfg = _env_settings_dict()

@@ -44,36 +44,32 @@ def _write_error_log(stdout: str, stderr: str) -> None:
         pass
 
 
-def validate_verify_command(command: str, verify_config: VerifyConfig, i18n) -> list[str]:
-    """Validate ``command`` against the configured allowlist.
+def validate_verify_command(command: str, verify_config: VerifyConfig) -> list[str]:
+    """校验 ``command`` 是否在配置的白名单内。
 
-    Returns the split command list on success, or raises ``VerifyError`` if the
-    command contains shell metacharacters or the executable is not in the
-    configured allowlist.
+    成功返回拆分后的命令列表；若含 shell 元字符或可执行文件不在白名单
+    则抛 ``VerifyError``。
 
-    Public surface: ``autoship lsp`` imports this to validate its resolved
-    verify command before spawning it, so the LSP cannot be used to bypass
-    the allowlist policy. The previous private name ``_validate_verify_command``
-    is kept as an alias for backward compatibility with tests and downstream
-    forks that have not migrated yet.
+    公共接口：``autoship lsp`` 导入此函数在拉起 verify 前校验，
+    确保 LSP 无法绕过白名单策略。
     """
     try:
         cmd_parts = shlex.split(command)
     except ValueError as exc:
         raise VerifyError(
-            "verify.command_disallowed",
+            f"不允许的验证命令：{command}（{exc}）",
             details={"command": command, "reason": str(exc)},
         ) from exc
 
     if not cmd_parts:
         raise VerifyError(
-            "verify.command_disallowed",
+            f"不允许的验证命令：{command}（空命令）",
             details={"command": command, "reason": "empty_command"},
         )
 
     if contains_shell_metacharacters(command):
         raise VerifyError(
-            "verify.command_disallowed",
+            f"不允许的验证命令：{command}（含 shell 元字符）",
             details={"command": command, "reason": "shell_metacharacters"},
         )
 
@@ -81,7 +77,7 @@ def validate_verify_command(command: str, verify_config: VerifyConfig, i18n) -> 
     allowed = verify_config.allowed_commands
     if executable_name not in allowed:
         raise VerifyError(
-            "verify.command_disallowed",
+            f"不允许的验证命令：{command}（可执行文件 {executable_name} 不在白名单）",
             details={"command": command, "executable": executable_name, "allowed": allowed},
         )
 
@@ -142,16 +138,16 @@ def verify(
     plugin_manager.call("pre_verify", context=context, fail_fast=False)
 
     if dry_run:
-        typer.echo("verify.dry_run")
+        typer.echo(f"[dry-run] 将运行：{command}")
         audit.record("verify.dry_run", {"command": command})
         plugin_manager.call("post_verify", context=context, fail_fast=False)
         raise typer.Exit(code=0)
 
-    cmd_parts = validate_verify_command(command, config.verify, None)
+    cmd_parts = validate_verify_command(command, config.verify)
     executable = shutil.which(cmd_parts[0])
     if executable is None:
         error = VerifyError(
-            "verify.command_not_found",
+            f"PATH 上找不到验证命令：{cmd_parts[0]}",
             details={"command": command},
         )
         audit.record("verify.error", {"command": command, "error": str(error)})
@@ -176,15 +172,15 @@ def verify(
             },
         )
         error = VerifyError(
-            "verify.timed_out",
+            f"验证命令 '{command}' 在 {timeout_seconds} 秒后超时。",
             details={"command": command, "timeout": timeout_seconds},
         )
-        _handle_error(context, error, audit, None)
+        _handle_error(context, error, audit)
         raise error from exc
     except (FileNotFoundError, OSError) as exc:
         audit.record("verify.error", {"command": command, "error": str(exc)})
-        _handle_error(context, exc, audit, None)
-        raise VerifyError("verify.run_failed") from exc
+        _handle_error(context, exc, audit)
+        raise VerifyError(f"运行验证命令失败：{exc}") from exc
 
     stdout_redacted = redact_text(result.stdout)
     stderr_redacted = redact_text(result.stderr)
@@ -206,25 +202,25 @@ def verify(
             },
         )
         error = VerifyError(
-            "verify.failed",
+            f"验证失败，退出代码 {result.returncode}，命令：{command}",
             details={
                 "command": command,
                 "stdout": stdout_redacted,
                 "stderr": stderr_redacted,
             },
         )
-        _handle_error(context, error, audit, None)
+        _handle_error(context, error, audit)
         raise error
 
     audit.record("verify.done", {"command": command})
     plugin_manager.call("post_verify", context=context, fail_fast=False)
-    typer.echo("verify.verified")
+    typer.echo(f"已验证：{command}")
 
 
 def _handle_error(
-    context: CommandContext, error: Exception, audit: AuditLogger, i18n: None
+    context: CommandContext, error: Exception, audit: AuditLogger
 ) -> None:
-    """Invoke ``on_error`` hooks and optionally apply fix patches."""
+    """调用 ``on_error`` hooks 并可选地应用修复补丁。"""
     hook_results = plugin_manager.call("on_error", context=context, error=error, fail_fast=False)
 
     if not context.extras.get("fix"):
@@ -235,7 +231,7 @@ def _handle_error(
     ]
 
     for index, suggestion in enumerate(suggestions, start=1):
-        _present_suggestion(context, suggestion, index, audit, i18n)
+        _present_suggestion(context, suggestion, index, audit)
 
 
 def _present_suggestion(
@@ -243,17 +239,16 @@ def _present_suggestion(
     suggestion: FixSuggestion,
     index: int,
     audit: AuditLogger,
-    i18n,
 ) -> None:
-    """Display a fix suggestion and apply its patch if the user confirms."""
-    typer.secho(f"\n{'verify.suggested_fix'}", fg=typer.colors.CYAN)
+    """展示修复建议，并在用户确认后应用其补丁。"""
+    typer.secho(f"\n建议修复 {index}：", fg=typer.colors.CYAN)
     typer.echo(suggestion.description)
 
     if not suggestion.patch:
         audit.record("verify.fix.suggestion", {"description": suggestion.description})
         return
 
-    typer.secho(f"\n{'verify.proposed_patch'}", fg=typer.colors.CYAN)
+    typer.secho("\n建议补丁：", fg=typer.colors.CYAN)
     typer.echo(suggestion.patch)
 
     if context.dry_run:
@@ -261,15 +256,15 @@ def _present_suggestion(
             "verify.fix.dry_run",
             {"description": suggestion.description, "patch": suggestion.patch},
         )
-        typer.echo("verify.patch_dry_run")
+        typer.echo("[dry-run] 补丁未应用。")
         return
 
-    if not context.yes and not typer.confirm("verify.apply_patch"):
+    if not context.yes and not typer.confirm("应用此补丁？"):
         audit.record(
             "verify.fix.declined",
             {"description": suggestion.description},
         )
-        typer.echo("verify.patch_not_applied")
+        typer.echo("补丁未应用。")
         return
 
     applied, reason = _apply_patch(context.project_root, suggestion.patch, context.config.tools)
@@ -278,13 +273,13 @@ def _present_suggestion(
             "verify.fix.applied",
             {"description": suggestion.description, "patch": suggestion.patch},
         )
-        typer.echo("verify.patch_applied")
+        typer.echo("补丁已应用。")
     else:
         audit.record(
             "verify.fix.failed",
             {"description": suggestion.description, "patch": suggestion.patch, "reason": reason},
         )
-        typer.secho("verify.patch_failed", fg=typer.colors.YELLOW, err=True)
+        typer.secho(f"应用补丁失败：{reason}", fg=typer.colors.YELLOW, err=True)
 
 
 def _apply_patch(

@@ -10,8 +10,8 @@ Thanks for considering a contribution. Here is how things work.
 ## Setup
 
 ```bash
-git clone https://github.com/MS33834/autoship-cli.git
-cd autoship-cli
+git clone https://gitcode.com/badhope/autoship.git
+cd autoship
 uv sync --group dev
 ```
 
