@@ -18,7 +18,10 @@ Covers:
 
 from __future__ import annotations
 
+import subprocess
+from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -714,6 +717,13 @@ class TestEdgeCases:
             "tools",
             "exit",
             "cost",
+            "lint",
+            "test",
+            "add",
+            "drop",
+            "tokens",
+            "diff",
+            "history",
         }
 
     def test_multiple_spaces_in_command_args(self) -> None:
@@ -731,3 +741,365 @@ class TestEdgeCases:
         assert result is not None
         assert result.action is CommandAction.RESTORE_CHECKPOINT
         assert result.data == {"checkpoint_id": "abc"}
+
+
+# ---------------------------------------------------------------------------
+# /lint
+# ---------------------------------------------------------------------------
+
+
+class TestLintCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_lint_specific_files(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["ruff", "check", "a.py", "b.py"],
+            returncode=0,
+            stdout="All checks passed!",
+            stderr="",
+        )
+        result = self.registry.execute("/lint a.py b.py", context={"cwd": "/proj"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "All checks passed!" in result.message
+        mock_run.assert_called_once_with(
+            ["ruff", "check", "a.py", "b.py"],
+            cwd="/proj",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_lint_all_files_no_args(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["ruff", "check"],
+            returncode=0,
+            stdout="clean",
+            stderr="",
+        )
+        result = self.registry.execute("/lint", context={"cwd": "/proj"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        mock_run.assert_called_once_with(
+            ["ruff", "check"],
+            cwd="/proj",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_lint_ruff_not_found(self, mock_run: Any) -> None:
+        mock_run.side_effect = FileNotFoundError("ruff")
+        result = self.registry.execute("/lint file.py", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "ruff" in result.message.lower()
+        assert "not installed" in result.message.lower()
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_lint_output_displayed(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["ruff", "check", "x.py"],
+            returncode=1,
+            stdout="x.py:1:1 E501 line too long",
+            stderr="warning text",
+        )
+        result = self.registry.execute("/lint x.py", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "E501" in result.message
+        assert "warning text" in result.message
+
+
+# ---------------------------------------------------------------------------
+# /test
+# ---------------------------------------------------------------------------
+
+
+class TestTestCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_run_tests_with_args(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["pytest", "-k", "test_foo"],
+            returncode=0,
+            stdout="1 passed",
+            stderr="",
+        )
+        result = self.registry.execute(
+            '/test -k "test_foo"', context={"cwd": "/proj"}
+        )
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "1 passed" in result.message
+        mock_run.assert_called_once_with(
+            ["pytest", "-k", '"test_foo"'],
+            cwd="/proj",
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_run_all_tests(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["pytest"],
+            returncode=0,
+            stdout="5 passed",
+            stderr="",
+        )
+        result = self.registry.execute("/test", context={"cwd": "/proj"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "5 passed" in result.message
+        mock_run.assert_called_once_with(
+            ["pytest"],
+            cwd="/proj",
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_failure_output(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["pytest"],
+            returncode=1,
+            stdout="1 failed",
+            stderr="error details",
+        )
+        result = self.registry.execute("/test", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "1 failed" in result.message
+        assert "error details" in result.message
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_timeout_handling(self, mock_run: Any) -> None:
+        mock_run.side_effect = subprocess.TimeoutExpired(
+            cmd=["pytest"], timeout=300
+        )
+        result = self.registry.execute("/test", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "timed out" in result.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# /add
+# ---------------------------------------------------------------------------
+
+
+class TestAddCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    def test_add_existing_file(self, tmp_path: Path) -> None:
+        f = tmp_path / "foo.py"
+        f.write_text("x = 1\n", encoding="utf-8")
+        result = self.registry.execute(f"/add {f}", context={"cwd": str(tmp_path)})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Added" in result.message
+        assert "foo.py" in result.message
+
+    def test_add_nonexistent_file(self) -> None:
+        result = self.registry.execute("/add nonexistent.py", context={"cwd": "/tmp"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "not found" in result.message.lower()
+
+    def test_file_stored_in_context(self, tmp_path: Path) -> None:
+        f = tmp_path / "bar.py"
+        f.write_text("y = 2\n", encoding="utf-8")
+        context: dict[str, Any] = {"cwd": str(tmp_path)}
+        result = self.registry.execute(f"/add {f}", context=context)
+        assert result is not None
+        assert "explicit_files" in context
+        assert str(f) in context["explicit_files"]
+
+    def test_add_no_args_shows_usage(self) -> None:
+        result = self.registry.execute("/add", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Usage" in result.message
+
+
+# ---------------------------------------------------------------------------
+# /drop
+# ---------------------------------------------------------------------------
+
+
+class TestDropCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    def test_drop_file_from_context(self) -> None:
+        context: dict[str, Any] = {"explicit_files": ["a.py", "b.py"]}
+        result = self.registry.execute("/drop a.py", context=context)
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Removed" in result.message
+        assert "a.py" in result.message
+        assert "a.py" not in context["explicit_files"]
+        assert "b.py" in context["explicit_files"]
+
+    def test_drop_file_not_in_context(self) -> None:
+        context: dict[str, Any] = {"explicit_files": ["a.py"]}
+        result = self.registry.execute("/drop zzz.py", context=context)
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "not in" in result.message.lower()
+
+    def test_drop_no_args_shows_usage(self) -> None:
+        result = self.registry.execute("/drop", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Usage" in result.message
+
+
+# ---------------------------------------------------------------------------
+# /tokens
+# ---------------------------------------------------------------------------
+
+
+class TestTokensCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    def test_show_token_breakdown_all_fields(self) -> None:
+        usage = {
+            "system_tokens": 100,
+            "history_tokens": 200,
+            "file_tokens": 300,
+            "tool_tokens": 50,
+            "total_tokens": 650,
+            "max_tokens": 8000,
+        }
+        result = self.registry.execute("/tokens", context={"token_usage": usage})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Token usage" in result.message
+        assert "100" in result.message
+        assert "200" in result.message
+        assert "300" in result.message
+        assert "650" in result.message
+        assert "8000" in result.message
+
+    def test_missing_fields_handled(self) -> None:
+        usage = {"system_tokens": 100, "total_tokens": 100}
+        result = self.registry.execute("/tokens", context={"token_usage": usage})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "100" in result.message
+        assert "System" in result.message
+        assert "Total" in result.message
+        # Fields not present in usage are omitted, not shown as zero.
+        assert "History" not in result.message
+
+    def test_empty_usage(self) -> None:
+        result = self.registry.execute("/tokens", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "No token usage" in result.message
+
+    def test_empty_usage_dict(self) -> None:
+        result = self.registry.execute("/tokens", context={"token_usage": {}})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "No token usage" in result.message
+
+
+# ---------------------------------------------------------------------------
+# /diff
+# ---------------------------------------------------------------------------
+
+
+class TestDiffCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_diff_with_changes(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["git", "diff"],
+            returncode=0,
+            stdout="diff --git a/x b/x\n+added line",
+            stderr="",
+        )
+        result = self.registry.execute("/diff", context={"cwd": "/proj"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "diff --git" in result.message
+        mock_run.assert_called_once_with(
+            ["git", "diff"],
+            cwd="/proj",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_diff_no_changes(self, mock_run: Any) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=["git", "diff"],
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+        result = self.registry.execute("/diff", context={"cwd": "/proj"})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "No uncommitted changes" in result.message
+
+    @patch("autoship.agent.slash_commands.subprocess.run")
+    def test_diff_git_not_available(self, mock_run: Any) -> None:
+        mock_run.side_effect = FileNotFoundError("git")
+        result = self.registry.execute("/diff", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "git" in result.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# /history
+# ---------------------------------------------------------------------------
+
+
+class TestHistoryCommand:
+    def setup_method(self) -> None:
+        self.registry = create_default_registry()
+
+    def test_show_history_with_messages(self) -> None:
+        messages = [
+            {"role": "user", "content_preview": "Hello there"},
+            {"role": "assistant", "content_preview": "Hi, how can I help?"},
+        ]
+        result = self.registry.execute("/history", context={"messages": messages})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "Conversation history" in result.message
+        assert "user" in result.message
+        assert "Hello there" in result.message
+        assert "assistant" in result.message
+        assert "Hi, how can I help?" in result.message
+
+    def test_empty_history(self) -> None:
+        result = self.registry.execute("/history", context={})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "No conversation history" in result.message
+
+    def test_empty_messages_list(self) -> None:
+        result = self.registry.execute("/history", context={"messages": []})
+        assert result is not None
+        assert result.action is CommandAction.DISPLAY
+        assert "No conversation history" in result.message

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from autoship.agent.patch import DiffError, apply_patch_text
+from autoship.agent.patch import DiffError, apply_patch_text, compute_patch_changes
 from autoship.agent.tools.base import Tool, ToolContext, ToolResult
 
 
@@ -46,6 +47,45 @@ apply, no files are written.
 async def _patch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     assert isinstance(args, ApplyPatchInput)
 
+    # Request permission before applying any file changes.
+    approved = await ctx.request_permission(
+        {
+            "tool": "apply_patch",
+            "description": f"Apply patch ({len(args.patch)} chars)",
+            "patch_preview": args.patch[:500],
+        }
+    )
+    if not approved:
+        return ToolResult.failure("Permission denied by user")
+
+    # Pre-compute the per-file changes (without writing) so we can
+    # capture old/new content for the change tracker.
+    changes_meta: list[dict[str, Any]] = []
+    try:
+        computed, _fuzz = compute_patch_changes(
+            args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True
+        )
+        for fpath, change in computed.items():
+            changes_meta.append(
+                {
+                    "path": fpath,
+                    "action": (
+                        "created"
+                        if change.old_content is None
+                        and change.new_content is not None
+                        else "deleted"
+                        if change.new_content is None
+                        else "modified"
+                    ),
+                    "old_content": change.old_content,
+                    "new_content": change.new_content,
+                }
+            )
+    except Exception:  # noqa: BLE001
+        # If pre-computation fails, proceed without change metadata —
+        # apply_patch_text will raise the real error below.
+        pass
+
     try:
         touched, _count = apply_patch_text(
             args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True
@@ -65,6 +105,7 @@ async def _patch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         f"Successfully applied patch to {len(touched)} file(s): "
         f"{', '.join(touched)}",
         touched=touched,
+        changes=changes_meta,
     )
 
 

@@ -51,6 +51,17 @@ MAX_OUTPUT_BYTES = 50_000
 async def _run_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     assert isinstance(args, RunCommandInput)
 
+    # Request permission before spawning a subprocess.
+    approved = await ctx.request_permission(
+        {
+            "tool": "run_command",
+            "command": args.command,
+            "description": f"Run: {args.command[:200]}",
+        }
+    )
+    if not approved:
+        return ToolResult.failure("Permission denied by user")
+
     # Resolve working directory.
     if args.cwd:
         try:

@@ -28,7 +28,6 @@ from autoship.cli.commands.ui import (
 )
 from autoship.cli.main import app
 from autoship.core.audit_logger import AuditLogger
-from autoship.core.i18n import get_i18n
 from autoship.models.config import AppConfig
 
 runner = CliRunner()
@@ -51,7 +50,7 @@ def _make_logger(tmp_path: Path) -> AuditLogger:
 def _make_dashboard(tmp_path: Path) -> object:
     config = AppConfig(project_root=tmp_path, audit_log_dir=tmp_path / "logs")
     logger = AuditLogger(config)
-    return _build_app(config, logger, get_i18n("en"))
+    return _build_app(config, logger)
 
 
 # ---------------------------------------------------------------------------

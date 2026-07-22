@@ -30,6 +30,7 @@ Design:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import time
 import uuid
@@ -37,6 +38,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from autoship.agent.change_tracker import ChangeTracker
 from autoship.agent.loop_detection import (
     LoopDetectionCall,
     LoopDetectionConfig,
@@ -55,6 +57,15 @@ from autoship.agent.plan_act import (
     build_system_prompt,
     filter_tools_for_mode,
     format_user_message,
+)
+from autoship.agent.session import (
+    Session,
+    SessionError,
+    SessionMetadata,
+    SessionStatus,
+    SessionStore,
+    deserialize_message,
+    serialize_message,
 )
 from autoship.agent.tools.base import (
     InvalidArgumentsError,
@@ -220,6 +231,12 @@ class LLMClient:
         self._api_version = api_version
         self._timeout = timeout
         self._provider = provider
+
+    @property
+    def model(self) -> str:
+        """The model identifier this client is configured to use."""
+
+        return self._model
 
     async def complete(
         self,
@@ -456,6 +473,11 @@ class AgentRuntimeConfig:
     #: Initial agent mode (act/plan/yolo). The user can switch modes
     #: at runtime via :meth:`AgentRuntime.switch_mode`.
     initial_mode: AgentMode = AgentMode.ACT
+    #: Optional change tracker. If ``None``, a new :class:`ChangeTracker`
+    #: is created automatically. Set to ``None`` explicitly to disable
+    #: tracking (the runtime still creates one — pass a pre-populated
+    #: instance only if you need to share state across runs).
+    change_tracker: ChangeTracker | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -503,6 +525,8 @@ class AgentRuntime:
         cwd: str = ".",
         emit: EventEmitter | None = None,
         ask: Callable[[dict[str, Any]], Awaitable[bool]] | None = None,
+        session: Session | None = None,
+        session_store: SessionStore | None = None,
     ) -> None:
         self._client = client
         if isinstance(tools, ToolRegistry):
@@ -533,6 +557,29 @@ class AgentRuntime:
             )
         )
         self._mistake_tracker: MistakeTracker | None = None
+        self._change_tracker: ChangeTracker = (
+            self._config.change_tracker
+            if self._config.change_tracker is not None
+            else ChangeTracker()
+        )
+        self._session: Session | None = session
+        self._session_store: SessionStore | None = session_store
+        if session is not None:
+            # Restore conversation history from the persisted session so
+            # ``continue_run`` picks up where the previous process left off.
+            self._messages = [deserialize_message(m) for m in session.messages]
+            # Defensive: a freshly-created session has ``usage={}``; fill in
+            # the canonical keys so ``_accumulate_usage`` never hits a
+            # ``KeyError`` on the first turn of an interactive REPL.
+            self._total_usage = {
+                "prompt_tokens": int(session.usage.get("prompt_tokens", 0)),
+                "completion_tokens": int(
+                    session.usage.get("completion_tokens", 0)
+                ),
+                "total_tokens": int(session.usage.get("total_tokens", 0)),
+            }
+            if not self._run_id:
+                self._run_id = uuid.uuid4().hex[:16]
 
     # -- public API -------------------------------------------------------
 
@@ -563,14 +610,93 @@ class AgentRuntime:
         return list(self._messages)
 
     @property
+    def total_usage(self) -> dict[str, Any]:
+        """Return a snapshot of the accumulated token usage."""
+
+        return dict(self._total_usage)
+
+    @property
     def iteration(self) -> int:
         return self._iteration
+
+    @property
+    def change_tracker(self) -> ChangeTracker:
+        """The change tracker recording file modifications during runs."""
+
+        return self._change_tracker
+
+    @property
+    def tools(self) -> list[Tool]:
+        """Return all registered tools."""
+
+        return list(self._registry.all())
+
+    @property
+    def session(self) -> Session | None:
+        """The active session, if any (set when persistence is enabled)."""
+
+        return self._session
+
+    def get_session_metadata(self) -> SessionMetadata:
+        """Build a :class:`SessionMetadata` snapshot from the current state.
+
+        Requires an active session (``session=`` passed to the runtime).
+        Raises :class:`SessionError` if no session is attached.
+        """
+
+        if self._session is None:
+            raise SessionError("No active session")
+        base = self._session.metadata
+        return SessionMetadata(
+            id=base.id,
+            created_at=base.created_at,
+            updated_at=time.time(),
+            status=base.status,
+            mode=self._mode_config.mode.value,
+            model=base.model,
+            cwd=self._cwd,
+            prompt_preview=base.prompt_preview,
+            iterations=self._iteration,
+            total_tokens=int(self._total_usage.get("total_tokens", 0)),
+            message_count=len(self._messages),
+            files_changed=self._change_tracker.get_changed_files(),
+        )
+
+    def save_session(self) -> None:
+        """Persist the current conversation state to the session store.
+
+        No-op when no session or store is attached. Updates ``self._session``
+        in place with the latest messages / usage / metadata so subsequent
+        saves are idempotent.
+        """
+
+        if self._session is None or self._session_store is None:
+            return
+        metadata = self.get_session_metadata()
+        self._session = Session(
+            metadata=metadata,
+            messages=[serialize_message(m) for m in self._messages],
+            usage=dict(self._total_usage),
+        )
+        self._session_store.save(self._session)
+
+    def _safe_save_session(self) -> None:
+        """Best-effort session persistence — never aborts the run."""
+
+        if self._session is None or self._session_store is None:
+            return
+        with contextlib.suppress(Exception):
+            self.save_session()
 
     async def run(self, user_input: str) -> RunResult:
         """Run the agent loop with ``user_input`` as the initial prompt.
 
         Returns when the assistant responds without tool calls, the
         iteration cap is hit, or the run is aborted/fails.
+
+        This is a **fresh** run: it resets the conversation history,
+        usage counters, run id, and iteration counter. For multi-turn
+        conversations that preserve history, use :meth:`continue_run`.
         """
 
         self._abort.clear()
@@ -582,21 +708,7 @@ class AgentRuntime:
             "completion_tokens": 0,
             "total_tokens": 0,
         }
-
-        # Initialize mistake tracker. We use named no-op callbacks for
-        # emit/log/recovery-notice because mypy cannot infer lambda types
-        # in this position. The id getters are bound at run time.
-        self._mistake_tracker = MistakeTracker(
-            MistakeTrackerOptions(
-                max_consecutive_mistakes=self._config.max_consecutive_mistakes,
-                emit=_noop_emit,
-                log=_noop_log,
-                agent_id="autoship-agent",
-                get_conversation_id=lambda: self._run_id,
-                get_active_run_id=lambda: self._run_id,
-                append_recovery_notice=_noop_recovery_notice,
-            )
-        )
+        self._mistake_tracker = self._make_mistake_tracker()
 
         # Seed the conversation. Build the system prompt with mode-specific
         # instructions appended, and wrap the user message with the mode tag.
@@ -607,21 +719,86 @@ class AgentRuntime:
         if system_prompt:
             self._messages.append(Message(role="system", content=system_prompt))
 
-        # Consume any pending mode-switch notice and prepend it to the
-        # user message so the LLM sees when the user toggled modes.
-        switch_notice = self._mode_config.consume_switch_notice()
-        user_body = (
-            switch_notice + "\n" + format_user_message(
-                user_input, self._mode_config.mode
-            )
-            if switch_notice
-            else format_user_message(user_input, self._mode_config.mode)
-        )
-        self._messages.append(Message(role="user", content=user_body))
+        self._append_user_message(user_input)
 
         await self._emit_event(
             RunStartedEvent(type="run-started", run_id=self._run_id, iteration=0)
         )
+
+        result = await self._run_loop()
+        await self._emit_terminal_event(result)
+        self._safe_save_session()
+        return result
+
+    async def continue_run(self, user_input: str) -> RunResult:
+        """Continue the conversation without resetting history.
+
+        Unlike :meth:`run`, this keeps the existing ``_messages``,
+        ``_total_usage``, and ``_run_id`` so the LLM sees the full
+        conversation context. Use this for multi-turn REPL sessions.
+
+        The iteration counter is reset to 0 for this turn (each turn
+        gets its own iteration budget), but the conversation history
+        and accumulated token usage are preserved.
+        """
+
+        self._abort.clear()
+        self._iteration = 0
+        # Keep _run_id, _messages, _total_usage — the key difference
+        # from run(). Give the new turn a fresh mistake budget.
+        self._mistake_tracker = self._make_mistake_tracker()
+
+        # If the conversation has no system prompt yet (e.g. the user
+        # started the REPL without an initial prompt and ``run`` was
+        # never called), seed one now so the LLM has the mode context.
+        if not self._messages or self._messages[0].role != "system":
+            system_prompt = build_system_prompt(
+                self._config.system_prompt,
+                self._mode_config.mode,
+            )
+            if system_prompt:
+                self._messages.insert(
+                    0, Message(role="system", content=system_prompt)
+                )
+            if not self._run_id:
+                self._run_id = uuid.uuid4().hex[:16]
+
+        self._append_user_message(user_input)
+
+        await self._emit_event(
+            RunStartedEvent(type="run-started", run_id=self._run_id, iteration=0)
+        )
+
+        result = await self._run_loop()
+        await self._emit_terminal_event(result)
+        self._safe_save_session()
+        return result
+
+    def reset(self) -> None:
+        """Clear conversation history and usage stats for a fresh start.
+
+        Does not change the run id or current mode — those persist for
+        the lifetime of the runtime instance. Useful in interactive
+        mode when the user issues ``/clear``.
+        """
+
+        self._messages = []
+        self._iteration = 0
+        self._total_usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+        self._abort.clear()
+        self._mistake_tracker = None
+
+    async def _run_loop(self) -> RunResult:
+        """The main LLM ↔ tool loop.
+
+        Assumes ``self._messages`` is already seeded (system + user)
+        and that ``self._run_id`` / ``self._mistake_tracker`` are set.
+        Shared by :meth:`run` and :meth:`continue_run`.
+        """
 
         try:
             while self._iteration < self._config.max_iterations:
@@ -877,6 +1054,10 @@ class AgentRuntime:
         )
         is_error = result.is_error
 
+        # Record file changes for write/edit/patch tools (best-effort).
+        if not is_error:
+            self._record_tool_changes(call.name, result)
+
         await self._emit_event(
             ToolFinishedEvent(
                 type="tool-finished",
@@ -941,6 +1122,78 @@ class AgentRuntime:
 
     # -- internal: helpers -----------------------------------------------
 
+    def _record_tool_changes(self, tool_name: str, result: ToolResult) -> None:
+        """Feed change metadata from a tool result into the change tracker.
+
+        Tools that modify files (``write_to_file``, ``replace_in_file``,
+        ``apply_patch``) include a ``changes`` list in their result
+        metadata. Each entry is a dict with ``path``, ``old_content``,
+        ``new_content``, and optionally ``action``.
+        """
+
+        changes_meta = result.metadata.get("changes")
+        if not changes_meta:
+            # write_to_file uses flat ``path`` / ``old_content`` /
+            # ``new_content`` metadata (single file).
+            path = result.metadata.get("path")
+            if path and tool_name == "write_to_file":
+                old = result.metadata.get("old_content")
+                new = result.metadata.get("new_content", "")
+                self._change_tracker.record_write(
+                    str(path), old, str(new), tool_name
+                )
+            return
+
+        for ch in changes_meta:
+            path = ch.get("path", "")
+            if not path:
+                continue
+            action = ch.get("action", "")
+            old_content = ch.get("old_content")
+            new_content = ch.get("new_content", "")
+            if action == "deleted":
+                self._change_tracker.record_delete(str(path), tool_name)
+            elif action == "created" or old_content is None:
+                self._change_tracker.record_write(
+                    str(path), None, str(new_content), tool_name
+                )
+            else:
+                self._change_tracker.record_edit(
+                    str(path), str(old_content), str(new_content), tool_name
+                )
+
+    def _make_mistake_tracker(self) -> MistakeTracker:
+        """Build a fresh :class:`MistakeTracker` bound to the current run id."""
+
+        return MistakeTracker(
+            MistakeTrackerOptions(
+                max_consecutive_mistakes=self._config.max_consecutive_mistakes,
+                emit=_noop_emit,
+                log=_noop_log,
+                agent_id="autoship-agent",
+                get_conversation_id=lambda: self._run_id,
+                get_active_run_id=lambda: self._run_id,
+                append_recovery_notice=_noop_recovery_notice,
+            )
+        )
+
+    def _append_user_message(self, user_input: str) -> None:
+        """Wrap ``user_input`` with the mode tag and append to history.
+
+        Consumes any pending mode-switch notice and prepends it so the
+        LLM sees when the user toggled modes.
+        """
+
+        switch_notice = self._mode_config.consume_switch_notice()
+        user_body = (
+            switch_notice + "\n" + format_user_message(
+                user_input, self._mode_config.mode
+            )
+            if switch_notice
+            else format_user_message(user_input, self._mode_config.mode)
+        )
+        self._messages.append(Message(role="user", content=user_body))
+
     def _check_aborted(self) -> None:
         if self._abort.is_set():
             raise ToolAbortedError("Run aborted by user")
@@ -958,7 +1211,9 @@ class AgentRuntime:
 
     def _accumulate_usage(self, usage: dict[str, Any]) -> None:
         for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
-            self._total_usage[key] += int(usage.get(key, 0))
+            self._total_usage[key] = self._total_usage.get(key, 0) + int(
+                usage.get(key, 0)
+            )
 
     def _completed_result(self, content: str) -> RunResult:
         return RunResult(
@@ -983,12 +1238,49 @@ class AgentRuntime:
         if self._emit is not None:
             await self._emit(event)
 
+    async def _emit_terminal_event(self, result: RunResult) -> None:
+        """Emit the appropriate terminal event (completed/aborted/failed).
+
+        Called by :meth:`run` and :meth:`continue_run` after
+        :meth:`_run_loop` returns, so the UI can print the run summary,
+        change diff, and final stats.
+        """
+
+        if result.status == "completed":
+            await self._emit_event(
+                RunCompletedEvent(
+                    type="run-completed",
+                    run_id=self._run_id,
+                    final_content=result.final_content,
+                    iterations=result.iterations,
+                    total_usage=dict(self._total_usage),
+                )
+            )
+        elif result.status == "aborted":
+            await self._emit_event(
+                RunAbortedEvent(
+                    type="run-aborted",
+                    run_id=self._run_id,
+                    reason=result.error or result.stop_reason,
+                )
+            )
+        elif result.status == "failed":
+            await self._emit_event(
+                RunFailedEvent(
+                    type="run-failed",
+                    run_id=self._run_id,
+                    error=result.error,
+                    iterations=result.iterations,
+                )
+            )
+
 
 __all__ = [
     "AgentMode",
     "AgentRuntime",
     "AgentRuntimeConfig",
     "AssistantMessageEvent",
+    "ChangeTracker",
     "EventEmitter",
     "LLMClient",
     "LLMRequest",
@@ -1002,6 +1294,10 @@ __all__ = [
     "RunResult",
     "RunStartedEvent",
     "RuntimeEvent",
+    "Session",
+    "SessionMetadata",
+    "SessionStatus",
+    "SessionStore",
     "ToolCall",
     "ToolFinishedEvent",
     "ToolResultPart",

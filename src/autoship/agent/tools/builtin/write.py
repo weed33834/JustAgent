@@ -40,6 +40,27 @@ async def _write_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     except Exception as exc:  # noqa: BLE001
         return ToolResult.failure(str(exc))
 
+    # Request permission before any filesystem side effect.
+    approved = await ctx.request_permission(
+        {
+            "tool": "write_to_file",
+            "path": str(resolved),
+            "description": f"Write {len(args.content)} chars to {args.path}",
+            "is_new_file": not resolved.exists(),
+        }
+    )
+    if not approved:
+        return ToolResult.failure("Permission denied by user")
+
+    # Read old content *before* writing so the runtime can compute a
+    # diff for the change tracker. ``None`` means the file didn't exist.
+    old_content: str | None = None
+    if resolved.exists():
+        try:
+            old_content = resolved.read_text(encoding="utf-8")
+        except OSError:
+            old_content = None
+
     if args.create_dirs:
         try:
             resolved.parent.mkdir(parents=True, exist_ok=True)
@@ -66,6 +87,9 @@ async def _write_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         f"Successfully wrote {line_count} lines to {args.path}",
         line_count=line_count,
         bytes=len(args.content.encode("utf-8")),
+        path=str(resolved),
+        old_content=old_content,
+        new_content=args.content,
     )
 
 

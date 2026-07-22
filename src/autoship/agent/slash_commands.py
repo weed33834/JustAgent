@@ -15,15 +15,24 @@ Built-in commands:
     /tools             List available tools
     /exit              Exit the agent loop
     /cost              Show token/cost usage so far
+    /lint [file...]    Run the linter (ruff) on files or all dirty files
+    /test [args...]    Run the test suite (pytest) with optional args
+    /add <file>        Add a file to the agent's explicit context
+    /drop <file>       Remove a file from the agent's explicit context
+    /tokens            Show token usage breakdown
+    /diff              Show uncommitted git changes
+    /history           Show conversation history summary
 
 Reference: Cline's ``registerCommands()`` and OpenCode's ``/`` command palette.
 """
 
 from __future__ import annotations
 
+import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 from autoship.exceptions import AutoShipError
@@ -207,6 +216,13 @@ _BUILTIN_COMMANDS: tuple[tuple[str, str], ...] = (
     ("tools", "List available tools"),
     ("exit", "Exit the agent loop"),
     ("cost", "Show token/cost usage so far"),
+    ("lint", "Run the linter (ruff): /lint [file...]"),
+    ("test", "Run the test suite (pytest): /test [args...]"),
+    ("add", "Add a file to explicit context: /add <file>"),
+    ("drop", "Remove a file from explicit context: /drop <file>"),
+    ("tokens", "Show token usage breakdown"),
+    ("diff", "Show uncommitted git changes"),
+    ("history", "Show conversation history summary"),
 )
 
 
@@ -437,6 +453,207 @@ def _handle_cost(args: list[str], context: dict[str, Any]) -> CommandResult:
     )
 
 
+#: Token usage fields shown by ``/tokens``, in display order.
+_TOKEN_FIELDS: tuple[tuple[str, str], ...] = (
+    ("prompt_tokens", "Prompt"),
+    ("completion_tokens", "Completion"),
+    ("total_tokens", "Total"),
+    ("system_tokens", "System"),
+    ("history_tokens", "History"),
+    ("file_tokens", "Files"),
+    ("tool_tokens", "Tools"),
+    ("max_tokens", "Max"),
+)
+
+
+def _handle_lint(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Run the linter (ruff by default) on the given files or all dirty files.
+
+    When no files are given, ruff checks the current working directory.
+    """
+
+    cwd = context.get("cwd", ".")
+    try:
+        result = subprocess.run(
+            ["ruff", "check", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message=(
+                "ruff is not installed or not on PATH. "
+                "Install it with `pip install ruff`."
+            ),
+        )
+    output = (result.stdout or "") + (result.stderr or "")
+    return CommandResult(
+        action=CommandAction.DISPLAY,
+        message=output.strip() or "No lint issues found.",
+    )
+
+
+def _handle_test(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Run the test suite (pytest) with optional args."""
+
+    cwd = context.get("cwd", ".")
+    try:
+        result = subprocess.run(
+            ["pytest", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+    except FileNotFoundError:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message=(
+                "pytest is not installed or not on PATH. "
+                "Install it with `pip install pytest`."
+            ),
+        )
+    except subprocess.TimeoutExpired:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="Test run timed out after 300 seconds.",
+        )
+    output = (result.stdout or "") + (result.stderr or "")
+    return CommandResult(
+        action=CommandAction.DISPLAY,
+        message=output.strip() or "Tests passed (no output).",
+    )
+
+
+def _handle_add(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Add a file to the agent's explicit context.
+
+    The file path is stored in ``context["explicit_files"]`` so the agent
+    loop always includes its full content in the LLM context.
+    """
+
+    if not args:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="Usage: /add <file>",
+        )
+    file_path = args[0]
+    cwd = context.get("cwd", ".")
+    candidate = Path(file_path)
+    if not candidate.is_absolute():
+        candidate = Path(cwd) / file_path
+    if not candidate.exists():
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message=f"File not found: {file_path}",
+        )
+    explicit_files = context.setdefault("explicit_files", [])
+    if file_path not in explicit_files:
+        explicit_files.append(file_path)
+    return CommandResult(
+        action=CommandAction.DISPLAY,
+        message=f"Added {file_path} to context",
+    )
+
+
+def _handle_drop(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Remove a file from the agent's explicit context."""
+
+    if not args:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="Usage: /drop <file>",
+        )
+    file_path = args[0]
+    explicit_files = context.get("explicit_files", [])
+    if file_path in explicit_files:
+        explicit_files.remove(file_path)
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message=f"Removed {file_path} from context",
+        )
+    return CommandResult(
+        action=CommandAction.DISPLAY,
+        message=f"{file_path} is not in the explicit context.",
+    )
+
+
+def _handle_tokens(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Show a token usage breakdown from the context."""
+
+    usage = context.get("token_usage", {})
+    if not usage:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="No token usage information available.",
+        )
+    lines = ["Token usage:"]
+    for key, label in _TOKEN_FIELDS:
+        if key in usage:
+            lines.append(f"  {label:<10}: {usage[key]}")
+    return CommandResult(action=CommandAction.DISPLAY, message="\n".join(lines))
+
+
+def _handle_diff(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Show uncommitted git changes in the project."""
+
+    cwd = context.get("cwd", ".")
+    try:
+        result = subprocess.run(
+            ["git", "diff"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="git is not installed or not on PATH.",
+        )
+    output = (result.stdout or "") + (result.stderr or "")
+    if not output.strip():
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="No uncommitted changes.",
+        )
+    return CommandResult(
+        action=CommandAction.DISPLAY,
+        message=output.strip(),
+    )
+
+
+def _handle_history(args: list[str], context: dict[str, Any]) -> CommandResult:
+    """Show a conversation history summary from the context."""
+
+    messages = context.get("messages", [])
+    if not messages:
+        return CommandResult(
+            action=CommandAction.DISPLAY,
+            message="No conversation history.",
+        )
+    lines = ["Conversation history:"]
+    for index, msg in enumerate(messages, 1):
+        role = str(_get_attr(msg, "role", "?"))
+        # Support both dict-style (``content_preview``) and Message
+        # dataclass (``content``) inputs — the REPL passes live Message
+        # objects, while tests may pass dicts with a preview field.
+        preview = str(
+            _get_attr(msg, "content_preview", "")
+            or _get_attr(msg, "content", "")
+        )
+        if len(preview) > 80:
+            preview = preview[:77] + "..."
+        # Collapse newlines for single-line display.
+        preview = " ".join(preview.splitlines()).strip()
+        lines.append(f"  {index}. [{role}] {preview}".rstrip())
+    return CommandResult(action=CommandAction.DISPLAY, message="\n".join(lines))
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
@@ -514,6 +731,55 @@ def create_default_registry() -> SlashCommandRegistry:
             name="cost",
             description="Show token/cost usage so far",
             handler=_handle_cost,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="lint",
+            description="Run the linter (ruff): /lint [file...]",
+            handler=_handle_lint,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="test",
+            description="Run the test suite (pytest): /test [args...]",
+            handler=_handle_test,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="add",
+            description="Add a file to explicit context: /add <file>",
+            handler=_handle_add,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="drop",
+            description="Remove a file from explicit context: /drop <file>",
+            handler=_handle_drop,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="tokens",
+            description="Show token usage breakdown",
+            handler=_handle_tokens,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="diff",
+            description="Show uncommitted git changes",
+            handler=_handle_diff,
+        )
+    )
+    registry.register(
+        SlashCommand(
+            name="history",
+            description="Show conversation history summary",
+            handler=_handle_history,
         )
     )
     return registry

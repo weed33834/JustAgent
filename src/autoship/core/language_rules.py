@@ -79,8 +79,8 @@ RULES: dict[str, LanguageRule] = {
     ),
     "go": LanguageRule(
         language="go",
-        manifests=("go.mod"),
-        artifact_dirs=("bin"),
+        manifests=("go.mod",),
+        artifact_dirs=("bin",),
         artifact_globs=("*.test", "*.out"),
         test_command="go test ./...",
         lint_command="golangci-lint run",
@@ -89,7 +89,7 @@ RULES: dict[str, LanguageRule] = {
     ),
     "rust": LanguageRule(
         language="rust",
-        manifests=("Cargo.toml"),
+        manifests=("Cargo.toml",),
         # target/ is intentionally NOT listed wholesale — cargo uses it as a
         # dependency cache. The rust-ship example plugin demonstrates the
         # narrower target/{debug,release} split for teams that want it.
@@ -102,9 +102,9 @@ RULES: dict[str, LanguageRule] = {
     ),
     "node": LanguageRule(
         language="node",
-        manifests=("package.json"),
+        manifests=("package.json",),
         artifact_dirs=("dist", "build", ".cache", "coverage"),
-        artifact_globs=("*.tsbuildinfo"),
+        artifact_globs=("*.tsbuildinfo",),
         test_command="npm test",
         lint_command="npm run lint",
         notes="node_modules/ is an install artifact, not a build output, and "
@@ -114,7 +114,7 @@ RULES: dict[str, LanguageRule] = {
         language="java",
         manifests=("pom.xml", "build.gradle", "build.gradle.kts"),
         artifact_dirs=("target/classes", "target/test-classes", "bin"),
-        artifact_globs=("*.class"),
+        artifact_globs=("*.class",),
         test_command="mvn test",
         lint_command="mvn checkstyle:check",
         notes="Removes Maven's target/classes and target/test-classes. "

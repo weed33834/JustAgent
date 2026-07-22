@@ -762,3 +762,184 @@ class TestAgentRuntimeParallelTools:
         assert execution_order.index("start:a") < execution_order.index("end:a")
         assert execution_order.index("start:b") < execution_order.index("end:a") or \
                execution_order.index("start:b") < execution_order.index("end:b")
+
+
+# ---------------------------------------------------------------------------
+# AgentRuntime — continue_run (multi-turn)
+# ---------------------------------------------------------------------------
+
+
+class TestAgentRuntimeContinueRun:
+    """Tests for :meth:`AgentRuntime.continue_run` — multi-turn conversations.
+
+    ``continue_run`` must preserve conversation history and accumulate
+    token usage across turns, unlike ``run`` which resets everything.
+    """
+
+    @pytest.mark.asyncio
+    async def test_continue_run_preserves_history(self) -> None:
+        """``continue_run`` must NOT reset ``_messages``."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="Hello!", finish_reason="stop"),
+                _assistant_response(content="Hi again!", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(
+            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
+        )
+        # First turn — seeds system prompt + user + assistant (3 messages).
+        result1 = await runtime.run("first message")
+        assert result1.status == "completed"
+        assert len(result1.messages) == 3
+
+        # Second turn — should keep the 3 prior messages and add user + assistant.
+        result2 = await runtime.continue_run("second message")
+        assert result2.status == "completed"
+        # 3 (prior) + 1 (new user) + 1 (new assistant) = 5
+        assert len(result2.messages) == 5
+        # The new user message should reference "second message".
+        assert "second message" in result2.messages[3].content
+
+    @pytest.mark.asyncio
+    async def test_continue_run_accumulates_usage(self) -> None:
+        """``continue_run`` must NOT reset ``_total_usage``."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="one", finish_reason="stop"),
+                _assistant_response(content="two", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(
+            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
+        )
+        result1 = await runtime.run("first")
+        # Each scripted response contributes 15 tokens.
+        assert result1.total_usage["total_tokens"] == 15
+
+        result2 = await runtime.continue_run("second")
+        # 15 (turn 1) + 15 (turn 2) = 30
+        assert result2.total_usage["total_tokens"] == 30
+
+    @pytest.mark.asyncio
+    async def test_continue_run_keeps_run_id(self) -> None:
+        """``continue_run`` must NOT reset ``_run_id``."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="one", finish_reason="stop"),
+                _assistant_response(content="two", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(
+            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
+        )
+        await runtime.run("first")
+        run_id_after_run = runtime._run_id
+        await runtime.continue_run("second")
+        assert runtime._run_id == run_id_after_run
+
+    @pytest.mark.asyncio
+    async def test_continue_run_resets_iteration_per_turn(self) -> None:
+        """Each ``continue_run`` turn gets its own iteration budget."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="one", finish_reason="stop"),
+                _assistant_response(content="two", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(
+            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
+        )
+        await runtime.run("first")
+        assert runtime.iteration == 1
+        await runtime.continue_run("second")
+        # After the second turn, iteration should be 1 (reset per turn).
+        assert runtime.iteration == 1
+
+    @pytest.mark.asyncio
+    async def test_continue_run_no_system_prompt_duplication(self) -> None:
+        """``continue_run`` must NOT re-append the system prompt."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="one", finish_reason="stop"),
+                _assistant_response(content="two", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(
+            client=client,
+            tools=[],
+            config=AgentRuntimeConfig(system_prompt="You are a bot"),
+        )
+        await runtime.run("first")
+        await runtime.continue_run("second")
+        system_msgs = [m for m in runtime.messages if m.role == "system"]
+        assert len(system_msgs) == 1
+
+
+# ---------------------------------------------------------------------------
+# AgentRuntime — reset
+# ---------------------------------------------------------------------------
+
+
+class TestAgentRuntimeReset:
+    """Tests for :meth:`AgentRuntime.reset`."""
+
+    @pytest.mark.asyncio
+    async def test_reset_clears_messages(self) -> None:
+        client = _FakeLLMClient(
+            [_assistant_response(content="ok", finish_reason="stop")]
+        )
+        runtime = AgentRuntime(client=client, tools=[])
+        await runtime.run("hello")
+        assert len(runtime.messages) > 0
+        runtime.reset()
+        assert runtime.messages == []
+
+    @pytest.mark.asyncio
+    async def test_reset_clears_usage(self) -> None:
+        client = _FakeLLMClient(
+            [_assistant_response(content="ok", finish_reason="stop")]
+        )
+        runtime = AgentRuntime(client=client, tools=[])
+        await runtime.run("hello")
+        assert runtime._total_usage["total_tokens"] > 0
+        runtime.reset()
+        assert runtime._total_usage["total_tokens"] == 0
+
+    @pytest.mark.asyncio
+    async def test_reset_clears_iteration(self) -> None:
+        client = _FakeLLMClient(
+            [_assistant_response(content="ok", finish_reason="stop")]
+        )
+        runtime = AgentRuntime(client=client, tools=[])
+        await runtime.run("hello")
+        assert runtime.iteration == 1
+        runtime.reset()
+        assert runtime.iteration == 0
+
+    @pytest.mark.asyncio
+    async def test_reset_then_continue_works(self) -> None:
+        """After reset, ``continue_run`` should work — it re-seeds the
+        system prompt (since reset cleared it) and appends the user
+        message to the fresh history."""
+
+        client = _FakeLLMClient(
+            [
+                _assistant_response(content="first", finish_reason="stop"),
+                _assistant_response(content="second", finish_reason="stop"),
+            ]
+        )
+        runtime = AgentRuntime(client=client, tools=[])
+        await runtime.run("hello")
+        runtime.reset()
+        result = await runtime.continue_run("after reset")
+        assert result.status == "completed"
+        # continue_run re-seeds the system prompt after reset, so the
+        # message list is: system + user + assistant.
+        assert len(result.messages) == 3
+        assert result.messages[0].role == "system"

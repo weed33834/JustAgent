@@ -5,6 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from autoship.context.repo_map import (
+    FileSymbols,
+    RepoMapConfig,
+    RepoMapGenerator,
+    Symbol,
+    SymbolKind,
+)
+
 
 @dataclass(frozen=True)
 class InstructionFile:
@@ -27,22 +35,20 @@ class InstructionConfig:
     max_total_chars: int = 20000
 
 
-@dataclass
-class RepoMapConfig:
-    """Configuration for the repo map generator. Tree-sitter integration is a future task."""
-
-    max_files: int = 200
-    max_chars: int = 10000
-
-
 class RepoMap:
-    """Placeholder repo map generator. Tree-sitter integration is a future task."""
+    """Repo map generator wrapper.
+
+    Delegates to :class:`RepoMapGenerator` for the actual scanning and
+    symbol extraction. Kept as a thin wrapper for backwards
+    compatibility with code that imports ``RepoMap`` from
+    ``autoship.context``.
+    """
 
     def __init__(self, config: RepoMapConfig | None = None) -> None:
-        self.config = config or RepoMapConfig()
+        self._generator = RepoMapGenerator(config)
 
-    def generate(self, root: Path) -> str:
-        return ""
+    def generate(self, root: str | Path) -> str:
+        return self._generator.generate(root)
 
 
 class InstructionDiscovery:
@@ -105,16 +111,20 @@ from autoship.context.skill import (  # noqa: E402
 )
 
 __all__ = [
+    "FileSymbols",
     "InstructionConfig",
     "InstructionDiscovery",
     "InstructionFile",
     "RepoMap",
     "RepoMapConfig",
+    "RepoMapGenerator",
     "Skill",
     "SkillConfig",
     "SkillError",
     "SkillLoader",
     "SkillSummary",
     "SkillTrigger",
+    "Symbol",
+    "SymbolKind",
     "parse_skill_file",
 ]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,7 @@ from autoship.agent.search_replace import (
     apply_search_replace,
 )
 from autoship.agent.tools.base import Tool, ToolContext, ToolResult
+from autoship.agent.tools.builtin._paths import resolve_under_cwd
 
 
 class ReplaceInFileInput(BaseModel):
@@ -53,6 +55,44 @@ blocks (other blocks in the same diff that succeeded are still applied).
 async def _replace_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     assert isinstance(args, ReplaceInFileInput)
 
+    # Resolve the target path so we can describe the permission request.
+    try:
+        resolved = resolve_under_cwd(ctx.cwd, args.path)
+    except Exception as exc:  # noqa: BLE001
+        return ToolResult.failure(str(exc))
+
+    # Request permission before applying any edits.
+    approved = await ctx.request_permission(
+        {
+            "tool": "replace_in_file",
+            "path": str(resolved),
+            "description": f"Edit {args.path} ({len(args.diff)} chars of changes)",
+            "diff_preview": args.diff[:500],
+        }
+    )
+    if not approved:
+        return ToolResult.failure("Permission denied by user")
+
+    # Snapshot old contents of every file referenced in the diff so the
+    # runtime can compute line deltas for the change tracker.
+    old_contents: dict[str, str | None] = {}
+    try:
+        from autoship.agent.search_replace import parse_search_replace
+
+        edits = parse_search_replace(args.diff)
+        for edit in edits:
+            if edit.filename not in old_contents:
+                try:
+                    fp = resolve_under_cwd(ctx.cwd, edit.filename)
+                    old_contents[edit.filename] = (
+                        fp.read_text(encoding="utf-8") if fp.exists() else None
+                    )
+                except Exception:  # noqa: BLE001
+                    old_contents[edit.filename] = None
+    except Exception:  # noqa: BLE001
+        # If pre-parsing fails, we still let apply_search_replace try.
+        pass
+
     try:
         result = apply_search_replace(
             args.diff,
@@ -74,10 +114,27 @@ async def _replace_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
             touched=result.touched,
         )
 
+    # Build per-file change metadata for the change tracker.
+    changes: list[dict[str, Any]] = []
+    for fname in result.touched:
+        try:
+            fp = resolve_under_cwd(ctx.cwd, fname)
+            new_text = fp.read_text(encoding="utf-8") if fp.exists() else ""
+        except Exception:  # noqa: BLE001
+            new_text = ""
+        changes.append(
+            {
+                "path": fname,
+                "old_content": old_contents.get(fname),
+                "new_content": new_text,
+            }
+        )
+
     return ToolResult.success(
         f"Successfully applied {len(result.touched)} edit(s) to: "
         f"{', '.join(result.touched)}",
         touched=result.touched,
+        changes=changes,
     )
 
 
