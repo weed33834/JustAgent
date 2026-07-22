@@ -49,6 +49,11 @@ coverage.xml
 .autoship/
 .autoship.toml
 
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
 # Logs
 *.log
 
@@ -87,3 +92,8 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE local config
+.trae/
+.idea/
+.vscode/

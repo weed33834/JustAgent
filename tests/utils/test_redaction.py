@@ -10,7 +10,7 @@ from autoship.utils.redaction import redact_paths
 
 def test_redact_paths_replaces_project_root_prefix_with_dot(tmp_path: Path) -> None:
     """Absolute paths inside the project root become relative (``./...``)."""
-    project = tmp_path / "autoship-cli"
+    project = tmp_path / "autoship"
     project.mkdir()
     text = f"{project}/tests/test_x.py:123 failed"
 

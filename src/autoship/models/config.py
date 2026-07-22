@@ -104,6 +104,31 @@ class AuditConfig(BaseModel):
     redact_unknown_fields: bool = False
 
 
+class WebSearchProvider(str, Enum):
+    """Supported web search backends."""
+
+    DUCKDUCKGO = "duckduckgo"
+    BRAVE = "brave"
+    GOOGLE = "google"
+    SEARXNG = "searxng"
+
+
+class WebSearchConfig(BaseModel):
+    """Configuration for the web-search plugin.
+
+    Web search is disabled by default and must be explicitly enabled, because it
+    sends error snippets to a public search service.
+    """
+
+    enabled: bool = False
+    provider: WebSearchProvider = WebSearchProvider.DUCKDUCKGO
+    api_key: str | None = Field(default=None, repr=False)
+    cx: str | None = Field(default=None, repr=False)
+    instance_url: str | None = None
+    max_results: int = 3
+    timeout: float = 10.0
+
+
 class SandboxConfig(BaseModel):
     """Configuration for sandbox isolation requirements."""
 
@@ -126,6 +151,21 @@ class ModelConfig(BaseModel):
     default_tier: Literal[1, 2, 3] = 2
     fallback: bool = True
     backends: list[ModelBackendConfig] = Field(default_factory=lambda: list[ModelBackendConfig]())
+
+
+class RegistryConfig(BaseModel):
+    """Configuration for the plugin registry client."""
+
+    url: HttpUrl = Field(
+        default="https://raw.githubusercontent.com/MS33834/autoship/main/registry/plugins.json",
+        validate_default=True,
+    )
+    cache_enabled: bool = True
+    cache_ttl_seconds: int = 3600
+    public_key: str | None = Field(
+        default=None,
+        description="Base64-encoded Ed25519 public key used to verify the registry index.",
+    )
 
 
 class CacheConfig(BaseModel):
@@ -247,3 +287,5 @@ class AppConfig(BaseModel):
     cache: CacheConfig = Field(default_factory=CacheConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     hooks: HooksConfig = Field(default_factory=HooksConfig)
+    web_search: WebSearchConfig = Field(default_factory=WebSearchConfig)
+    registry: RegistryConfig = Field(default_factory=RegistryConfig)
