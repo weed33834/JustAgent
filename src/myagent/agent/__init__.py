@@ -2,7 +2,7 @@
 
 This package hosts the agent runtime ported/inspired from Cline, OpenCode,
 Aider, and Continue.dev. It is intentionally self-contained so it can be
-imported without the rest of the MyAgent pipeline machinery.
+imported without the rest of the MyAgent CLI.
 
 Sub-modules:
 

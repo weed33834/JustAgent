@@ -1,6 +1,6 @@
 """``myagent plugin`` 命令：本地插件的安装、卸载、列表。
 
-远程 registry 搜索已移除（企业级功能，偏离本地交付 CLI 定位）。
+远程 registry 搜索已移除（企业级功能，偏离本地 AI 编码智能体定位）。
 """
 
 from __future__ import annotations

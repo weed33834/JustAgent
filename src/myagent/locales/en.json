@@ -1,5 +1,5 @@
 {
-  "cli.help": "MyAgent: AI-assisted code shipping toolkit",
+  "cli.help": "MyAgent: a local-first AI coding agent",
   "error.prefix": "Error: {exc}",
   "unexpected_error.prefix": "Unexpected error: {exc}",
   "option.verbose": "Verbose output",

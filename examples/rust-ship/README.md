@@ -63,5 +63,5 @@ pytest
 - Only `target/debug` and `target/release` are recognised; other profile
   outputs (e.g. `target/x86_64-unknown-linux-gnu/...`) can be added to
   `ARTIFACTS` in `src/myagent_rust_ship/plugin.py` if needed.
-- This pack is part of the 1.1.0 forward-expansion examples and is not
+- This pack is part of the 2.0.0 forward-expansion examples and is not
   distributed via the official plugin registry.

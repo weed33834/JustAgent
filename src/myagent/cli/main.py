@@ -22,7 +22,7 @@ _audit_logger: AuditLogger | None = None
 
 app = typer.Typer(
     name="myagent",
-    help="MyAgent：本地优先的 AI 代码交付 CLI（clean / verify / commit / upload / ship）",
+    help="MyAgent：本地优先的 AI 编码智能体（agent / session / plan / act / yolo）",
     no_args_is_help=True,
     rich_markup_mode="rich",
     pretty_exceptions_enable=False,

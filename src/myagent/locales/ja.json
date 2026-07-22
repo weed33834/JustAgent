@@ -1,5 +1,5 @@
 {
-  "cli.help": "MyAgent：AI 支援のコードデリバリーツールキット",
+  "cli.help": "MyAgent：ローカルファーストの AI コーディングエージェント",
   "error.prefix": "エラー：{exc}",
   "unexpected_error.prefix": "予期せぬエラー：{exc}",
   "option.verbose": "詳細出力",

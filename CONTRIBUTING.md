@@ -12,7 +12,7 @@ Thanks for considering a contribution. Here is how things work.
 ```bash
 git clone https://gitcode.com/badhope/myagent.git
 cd myagent
-uv sync --group dev
+uv sync --extra dev
 ```
 
 This installs MyAgent in editable mode with all dev dependencies — Ruff, mypy, Pyright, pytest, and tooling.

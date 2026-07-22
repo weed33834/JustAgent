@@ -1,6 +1,7 @@
 """``myagent ship`` 命令：按序执行 clean → verify → commit → upload 全流程。
 
-通过 subprocess 调用各个子命令，保持隔离与复用，任一步失败即中止。
+可选的批量发布快捷方式——并非核心功能。通过 subprocess 调用各个子命令，
+保持隔离与复用，任一步失败即中止。
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ def register(parent: typer.Typer) -> None:
     parent.command(name="ship")(ship)
 
 
-# 交付流水线的阶段顺序；每个阶段对应一个 myagent 子命令。
+# 可选批量发布流程的阶段顺序；每个阶段对应一个 myagent 子命令。
 _STAGES: tuple[str, ...] = ("clean", "verify", "commit", "upload")
 
 
@@ -99,7 +100,7 @@ def ship(
         True, "--stop-on-failure/--no-stop-on-failure", help="某阶段失败即中止（默认开启）"
     ),
 ) -> None:
-    """按序执行 clean → verify → commit → upload 交付流水线。"""
+    """按序执行 clean → verify → commit → upload 发布流程（可选快捷方式）。"""
     config: AppConfig = ctx.obj["config"]
     audit: AuditLogger = ctx.obj["audit_logger"]
     dry_run: bool = ctx.obj.get("dry_run", False)

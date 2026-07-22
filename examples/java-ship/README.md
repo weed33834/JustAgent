@@ -73,5 +73,5 @@ pytest
 
 - Loose `*.class` matching is root-level by default. For projects that emit
   class files into `src/`, adjust the glob in `plugin.py`.
-- This pack is part of the 1.1.0 forward-expansion examples and is not
+- This pack is part of the 2.0.0 forward-expansion examples and is not
   distributed via the official plugin registry.

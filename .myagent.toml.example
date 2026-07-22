@@ -8,17 +8,12 @@ exclude = ["migrations", ".venv", "__pycache__"]
 
 [verify]
 enabled = true
-command = "pytest tests/ -v"
+allowed_commands = ["pytest", "ruff", "mypy", "python", "make"]
 
 [commit]
 enabled = true
 conventional_commits = true
-auto_stage = true
-max_diff_lines = 3000
-
-[upload]
-enabled = false
-# target = "pypi"  # pypi | docker | custom
+auto_push = false
 
 [security]
 enabled = true

@@ -1,6 +1,6 @@
 """Batch operations across managed projects.
 
-Run a command or pipeline stage across multiple managed projects in
+Run a command or workflow stage across multiple managed projects in
 sequence (or parallel for read-only checks). Used by the
 ``myagent project batch-*`` commands.
 """
@@ -73,7 +73,7 @@ class BatchRunner:
     """Run operations across the projects tracked by a :class:`ProjectStore`.
 
     Read-only operations (such as ``git status``) may be parallelised across
-    projects; operations with side effects (arbitrary commands, pipeline
+    projects; operations with side effects (arbitrary commands, workflow
     stages) always run sequentially to avoid interleaving mutations.
     """
 
@@ -148,16 +148,16 @@ class BatchRunner:
         project_names: list[str] | None,
         stages: list[BatchOperation],
     ) -> BatchSummary:
-        """Run pipeline ``stages`` across projects by shelling out to ``myagent``.
+        """Run workflow ``stages`` across projects by shelling out to ``myagent``.
 
         Each stage runs ``myagent <stage>`` in the project directory. Within
         a single project, if a stage fails the remaining stages for that
-        project are skipped (pipeline semantics), but other projects
+        project are skipped (workflow semantics), but other projects
         continue. Each ``(project, stage)`` pair produces its own
         :class:`BatchResult`.
 
         The summary's ``operation`` is set to the final stage (the
-        pipeline's culminating step).
+        workflow's culminating step).
         """
         projects, missing = self._select_projects(project_names)
         final_operation = stages[-1] if stages else BatchOperation.RUN

@@ -213,10 +213,10 @@ def batch_ship(
     stages: str = typer.Option(
         "clean,verify,commit,ship",
         "--stages",
-        help="Comma-separated pipeline stages (clean, verify, commit, ship).",
+        help="Comma-separated workflow stages (clean, verify, commit, ship).",
     ),
 ) -> None:
-    """Run pipeline stages across managed projects."""
+    """Run workflow stages across managed projects."""
     try:
         stage_list = [
             BatchOperation(token.strip())

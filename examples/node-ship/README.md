@@ -66,5 +66,5 @@ pytest
 
 - Artifacts are matched at the project root. For monorepos, extend
   `ARTIFACTS` in `src/myagent_node_ship/plugin.py` to walk workspaces.
-- This pack is part of the 1.1.0 forward-expansion examples and is not
+- This pack is part of the 2.0.0 forward-expansion examples and is not
   distributed via the official plugin registry.

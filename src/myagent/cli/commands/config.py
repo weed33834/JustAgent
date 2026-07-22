@@ -1,7 +1,7 @@
 """``myagent config`` 命令：查看与管理配置。
 
 注意：``config telemetry`` 子命令已移除（依赖不存在的 ``config.telemetry``
-字段，遥测能力属企业级，已从本地交付 CLI 定位中剔除）。
+字段，遥测能力属企业级，已从本地 AI 编码智能体定位中剔除）。
 """
 
 from __future__ import annotations

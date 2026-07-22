@@ -1,5 +1,5 @@
 {
-  "cli.help": "MyAgent：AI 辅助代码交付工具包",
+  "cli.help": "MyAgent：本地优先的 AI 编码智能体",
   "error.prefix": "错误：{exc}",
   "unexpected_error.prefix": "意外错误：{exc}",
   "option.verbose": "详细输出",
