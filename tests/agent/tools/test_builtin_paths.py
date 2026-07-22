@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.tools.builtin._paths`` (path safety helper)."""
+"""Tests for ``myagent.agent.tools.builtin._paths`` (path safety helper)."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import ToolError
-from autoship.agent.tools.builtin._paths import (
+from myagent.agent.tools.base import ToolError
+from myagent.agent.tools.builtin._paths import (
     PathSafetyError,
     resolve_under_cwd,
 )

@@ -6,9 +6,9 @@ import httpx
 import pytest
 import respx
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers.ollama import OllamaGateway
-from autoship.models.config import ModelBackendConfig, Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers.ollama import OllamaGateway
+from myagent.models.config import ModelBackendConfig, Provider
 
 
 def _gateway() -> OllamaGateway:
@@ -94,7 +94,7 @@ def test_chat_request_payload() -> None:
 
 
 def test_chat_raises_on_empty_choices() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").respond(
@@ -106,7 +106,7 @@ def test_chat_raises_on_empty_choices() -> None:
 
 
 def test_chat_raises_on_missing_choices() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").respond(
@@ -118,7 +118,7 @@ def test_chat_raises_on_missing_choices() -> None:
 
 
 def test_chat_raises_on_malformed_message() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").respond(
@@ -130,7 +130,7 @@ def test_chat_raises_on_malformed_message() -> None:
 
 
 def test_chat_raises_on_invalid_json() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").respond(200, text="not json")
@@ -140,7 +140,7 @@ def test_chat_raises_on_invalid_json() -> None:
 
 
 def test_chat_raises_on_server_error() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").respond(500)
@@ -150,7 +150,7 @@ def test_chat_raises_on_server_error() -> None:
 
 
 def test_chat_raises_on_timeout() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.post("http://localhost:11434/v1/chat/completions").mock(
@@ -162,7 +162,7 @@ def test_chat_raises_on_timeout() -> None:
 
 
 def test_list_models_raises_on_invalid_structure() -> None:
-    from autoship.exceptions import ModelGatewayError
+    from myagent.exceptions import ModelGatewayError
 
     with respx.mock:
         respx.get("http://localhost:11434/v1/models").respond(200, json={"models": []})

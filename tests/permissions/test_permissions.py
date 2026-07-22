@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from autoship.permissions import (
+from myagent.permissions import (
     PermissionAction,
     PermissionDecision,
     PermissionEngine,

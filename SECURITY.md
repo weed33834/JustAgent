@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security issue in AutoShip CLI, report it privately to `team@autoship.dev`. Do not open a public issue.
+If you discover a security issue in MyAgent CLI, report it privately to `team@myagent.dev`. Do not open a public issue.
 
 You can expect:
 
@@ -36,6 +36,6 @@ Out of scope:
 
 ## Dependencies
 
-AutoShip uses Semgrep for code security scanning, pip-audit for dependency auditing, and cryptographic primitives from the `cryptography` library. Dependencies are pinned with hashes in `uv.lock`.
+MyAgent uses Semgrep for code security scanning, pip-audit for dependency auditing, and cryptographic primitives from the `cryptography` library. Dependencies are pinned with hashes in `uv.lock`.
 
 If you notice a vulnerable dependency in `uv.lock`, include the CVE ID and affected version range in your report.

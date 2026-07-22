@@ -1,4 +1,4 @@
-"""Self-hosted, localhost-only model relay for AutoShip-CLI.
+"""Self-hosted, localhost-only model relay for MyAgent-CLI.
 
 Exposes an OpenAI-compatible ``/v1/chat/completions`` endpoint and forwards
 requests to a local model backend (Ollama by default). Binds to ``127.0.0.1``
@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 
-logger = logging.getLogger("autoship.model-relay")
+logger = logging.getLogger("myagent.model-relay")
 
 # Hosts the relay is willing to proxy to. Any other upstream host is rejected
 # with HTTP 403 to enforce the local-first promise.
@@ -98,7 +98,7 @@ def _scrub_exception(exc: BaseException) -> str:
 class RelayHandler(BaseHTTPRequestHandler):
     """HTTP handler that proxies chat completions to a local upstream."""
 
-    server_version = "AutoShipModelRelay/0.1"
+    server_version = "MyAgentModelRelay/0.1"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, format: str, *args: Any) -> None:
@@ -112,7 +112,7 @@ class RelayHandler(BaseHTTPRequestHandler):
             self._send_json(
                 200,
                 {
-                    "service": "autoship-model-relay",
+                    "service": "myagent-model-relay",
                     "endpoints": ["/v1/chat/completions", "/healthz"],
                 },
             )
@@ -209,7 +209,7 @@ class RelayServer(ThreadingHTTPServer):
 def main(argv: list[str] | None = None) -> int:
     """Entry point for ``python relay.py``. Returns the process exit code."""
     parser = argparse.ArgumentParser(
-        description="Local-first model relay for AutoShip-CLI (OpenAI-compatible).",
+        description="Local-first model relay for MyAgent-CLI (OpenAI-compatible).",
     )
     parser.add_argument(
         "--port", type=int, default=_DEFAULT_PORT, help="Port to listen on (127.0.0.1 only)."

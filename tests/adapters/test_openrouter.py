@@ -6,10 +6,10 @@ import httpx
 import pytest
 import respx
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers.openrouter import OpenRouterGateway
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import ModelBackendConfig, Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers.openrouter import OpenRouterGateway
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import ModelBackendConfig, Provider
 
 BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -118,5 +118,5 @@ def test_api_key_header() -> None:
 
 def test_openrouter_headers() -> None:
     gateway = _gateway(api_key="secret")
-    assert gateway.client.headers["HTTP-Referer"] == "https://autoship.dev"
-    assert gateway.client.headers["X-Title"] == "AutoShip CLI"
+    assert gateway.client.headers["HTTP-Referer"] == "https://myagent.dev"
+    assert gateway.client.headers["X-Title"] == "MyAgent CLI"

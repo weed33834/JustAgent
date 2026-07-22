@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.subagent`` (parallel read-only research subagents)."""
+"""Tests for ``myagent.agent.subagent`` (parallel read-only research subagents)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from autoship.agent.subagent import (
+from myagent.agent.subagent import (
     SubagentConfig,
     SubagentError,
     SubagentManager,
@@ -18,7 +18,7 @@ from autoship.agent.subagent import (
     filter_readonly_tools,
     run_research_sync,
 )
-from autoship.exceptions import AutoShipError
+from myagent.exceptions import MyAgentError
 
 # ---------------------------------------------------------------------------
 # Mock doubles
@@ -799,10 +799,10 @@ class TestEdgeCases:
             await mgr.run(task)
 
     @pytest.mark.asyncio
-    async def test_subagent_error_is_autoship_error(self) -> None:
+    async def test_subagent_error_is_myagent_error(self) -> None:
         mgr = SubagentManager()
         task = mgr.create_task(prompt="p")
-        with pytest.raises(AutoShipError):
+        with pytest.raises(MyAgentError):
             await mgr.run(task)
 
     @pytest.mark.asyncio

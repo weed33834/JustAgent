@@ -1,6 +1,6 @@
-# autoship-node-ship
+# myagent-node-ship
 
-A language-aware AutoShip-CLI plugin pack for Node projects. It hooks into
+A language-aware MyAgent-CLI plugin pack for Node projects. It hooks into
 the `clean` and `verify` lifecycle to report Node-specific build artifacts
 and suggest the conventional test command for the package manager in use.
 
@@ -30,7 +30,7 @@ observes and reports artifacts, it does not delete them.
 ## Install
 
 ```bash
-pipx install autoship-node-ship
+pipx install myagent-node-ship
 ```
 
 Or, for local development:
@@ -40,7 +40,7 @@ cd examples/node-ship
 pip install -e .
 ```
 
-The `[project.entry-points."autoship.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
@@ -50,7 +50,7 @@ extra configuration is required. If you lock the allowlist down, make sure to
 keep your package manager on it:
 
 ```toml
-# .autoship.toml
+# .myagent.toml
 [verify]
 allowed_commands = ["pytest", "npm", "pnpm", "yarn"]
 ```
@@ -65,6 +65,6 @@ pytest
 ## Notes
 
 - Artifacts are matched at the project root. For monorepos, extend
-  `ARTIFACTS` in `src/autoship_node_ship/plugin.py` to walk workspaces.
+  `ARTIFACTS` in `src/myagent_node_ship/plugin.py` to walk workspaces.
 - This pack is part of the 1.1.0 forward-expansion examples and is not
   distributed via the official plugin registry.

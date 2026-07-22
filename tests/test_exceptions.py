@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from autoship.exceptions import AutoShipError, ConfigError, ExitCode
+from myagent.exceptions import MyAgentError, ConfigError, ExitCode
 
 
 def test_exit_codes() -> None:
@@ -12,7 +12,7 @@ def test_exit_codes() -> None:
 
 
 def test_base_error_default_code() -> None:
-    err = AutoShipError("boom")
+    err = MyAgentError("boom")
     assert err.code == ExitCode.USAGE_ERROR
     assert err.details == {}
 

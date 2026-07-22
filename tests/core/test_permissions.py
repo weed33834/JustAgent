@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from autoship.utils.permissions import (
+from myagent.utils.permissions import (
     ensure_dir_permissions,
     ensure_file_permissions,
     warn_if_too_broad,

@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autoship.core.context import CommandContext
-from autoship.exceptions import VerifyError
-from autoship.models.config import AppConfig
-from autoship.plugins.typecheck import TypecheckPlugin
+from myagent.core.context import CommandContext
+from myagent.exceptions import VerifyError
+from myagent.models.config import AppConfig
+from myagent.plugins.typecheck import TypecheckPlugin
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_pre_commit_skips_when_pyright_missing(
         project_root=tmp_path,
         config=app_config,
     )
-    with patch("autoship.plugins.typecheck._tool_executable", return_value=None):
+    with patch("myagent.plugins.typecheck._tool_executable", return_value=None):
         plugin.pre_commit(context)
     assert "pyright not found on PATH; skipping type check" in caplog.text
 
@@ -47,7 +47,7 @@ def test_pre_commit_passes_when_pyright_succeeds(
     mock_result.stdout = ""
     mock_result.stderr = ""
     with (
-        patch("autoship.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
+        patch("myagent.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
         patch("subprocess.run", return_value=mock_result) as mock_run,
     ):
         plugin.pre_commit(context)
@@ -73,7 +73,7 @@ def test_pre_commit_fails_when_pyright_reports_errors(
     mock_result.stdout = "1 error, 0 warnings"
     mock_result.stderr = ""
     with (
-        patch("autoship.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
+        patch("myagent.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
         patch("subprocess.run", return_value=mock_result),
         pytest.raises(VerifyError, match="Type check failed"),
     ):
@@ -91,7 +91,7 @@ def test_pre_commit_dry_run_does_not_execute(
         dry_run=True,
     )
     with (
-        patch("autoship.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
+        patch("myagent.plugins.typecheck._tool_executable", return_value="/usr/bin/pyright"),
         patch("subprocess.run") as mock_run,
     ):
         plugin.pre_commit(context)

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from autoship.agent.tools.base import Tool
-from autoship.agent.tools.builtin import (
+from myagent.agent.tools.base import Tool
+from myagent.agent.tools.builtin import (
     ApplyPatchInput,
     AskQuestionInput,
     ReadFileInput,

@@ -6,13 +6,13 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from autoship.cli.main import app
+from myagent.cli.main import app
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path) -> Path:
-    config_path = tmp_path / ".autoship.toml"
+    config_path = tmp_path / ".myagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n',
         encoding="utf-8",

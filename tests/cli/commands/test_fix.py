@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from autoship.cli.commands import fix as fix_module
-from autoship.cli.main import app
-from autoship.exceptions import ConfigError
-from autoship.models.config import ToolConfig, ToolsConfig
+from myagent.cli.commands import fix as fix_module
+from myagent.cli.main import app
+from myagent.exceptions import ConfigError
+from myagent.models.config import ToolConfig, ToolsConfig
 
 runner = CliRunner()
 
@@ -45,7 +45,7 @@ def test_fix_empty_error_log(tmp_path: Path) -> None:
 
 def _write_config_with_api_key(root: Path) -> None:
     """Create a project config that supplies an LLM API key for tests."""
-    config_file = root / ".autoship.toml"
+    config_file = root / ".myagent.toml"
     config_file.write_text('[llm]\napi_key = "fake-key"\n', encoding="utf-8")
 
 
@@ -57,7 +57,7 @@ def test_fix_calls_llm_and_shows_suggestion(tmp_path: Path, monkeypatch) -> None
 
     mock_router = MagicMock()
     mock_router.chat.return_value = "Add `x = 0` before usage."
-    with patch("autoship.cli.commands.fix._model_router", return_value=mock_router):
+    with patch("myagent.cli.commands.fix._model_router", return_value=mock_router):
         result = runner.invoke(app, ["fix", str(error_log)])
 
     # The LLM suggestion is still echoed to the user...
@@ -78,8 +78,8 @@ def test_fix_yes_flag_applies_patch(tmp_path: Path, monkeypatch) -> None:
     mock_router = MagicMock()
     mock_router.chat.return_value = f"```diff\n{patch_text}\n```"
     with (
-        patch("autoship.cli.commands.fix._model_router", return_value=mock_router),
-        patch("autoship.cli.commands.fix._apply_patch") as mock_apply,
+        patch("myagent.cli.commands.fix._model_router", return_value=mock_router),
+        patch("myagent.cli.commands.fix._apply_patch") as mock_apply,
     ):
         result = runner.invoke(app, ["fix", str(error_log), "--yes"])
 
@@ -392,7 +392,7 @@ def test_apply_patch_wrong_sha256_resolve_raises_config_error(tmp_path: Path) ->
     ``sha256`` produces a ``ConfigError`` (which ``_apply_patch`` then swallows
     so the patch fallback can run).
     """
-    from autoship.core.tool_verifier import ToolVerifier
+    from myagent.core.tool_verifier import ToolVerifier
 
     fake_git = _make_fake_binary(tmp_path / "fake-git")
     tools = ToolsConfig(git=ToolConfig(path=str(fake_git), sha256="0" * 64))
@@ -412,7 +412,7 @@ def test_fix_redacts_absolute_project_root_from_prompt(tmp_path: Path, monkeypat
 
     mock_router = MagicMock()
     mock_router.chat.return_value = "No patch needed."
-    with patch("autoship.cli.commands.fix._model_router", return_value=mock_router):
+    with patch("myagent.cli.commands.fix._model_router", return_value=mock_router):
         result = runner.invoke(app, ["fix", str(error_log), "--yes"])
 
     # Exit code is 1 because no patch was produced (dogfood fix).

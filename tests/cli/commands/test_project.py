@@ -1,4 +1,4 @@
-"""Tests for the ``autoship project`` command and :class:`ProjectStore`."""
+"""Tests for the ``myagent project`` command and :class:`ProjectStore`."""
 
 from __future__ import annotations
 
@@ -7,20 +7,20 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from autoship.cli.main import app
-from autoship.core.project_store import ProjectStore
-from autoship.models.project import ManagedProject
+from myagent.cli.main import app
+from myagent.core.project_store import ProjectStore
+from myagent.models.project import ManagedProject
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path) -> Path:
-    """Write a minimal ``.autoship.toml`` rooted in ``tmp_path``.
+    """Write a minimal ``.myagent.toml`` rooted in ``tmp_path``.
 
     Pinning ``project_root`` and ``audit.log_dir`` to a temp directory keeps
-    the test from touching the user's real ``~/.autoship`` tree.
+    the test from touching the user's real ``~/.myagent`` tree.
     """
-    config_path = tmp_path / ".autoship.toml"
+    config_path = tmp_path / ".myagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n'
         f'[audit]\nlog_dir = "{tmp_path / "audit"}"\n',
@@ -124,7 +124,7 @@ def test_store_skips_invalid_entries(tmp_path: Path) -> None:
 def test_project_list_empty(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(app, ["--config", str(config_path), "project", "list"])
     assert result.exit_code == 0, result.output
     assert "no managed projects" in result.output.lower()
@@ -136,7 +136,7 @@ def test_project_add_then_list(tmp_path: Path) -> None:
     project_dir = tmp_path / "myproj"
     project_dir.mkdir()
 
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         add_result = runner.invoke(
             app,
             [
@@ -147,7 +147,7 @@ def test_project_add_then_list(tmp_path: Path) -> None:
     assert add_result.exit_code == 0, add_result.output
     assert "myproj" in add_result.output
 
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         list_result = runner.invoke(
             app, ["--config", str(config_path), "project", "list"]
         )
@@ -161,7 +161,7 @@ def test_project_remove(tmp_path: Path) -> None:
     store.add(ManagedProject(name="alpha", path="/tmp/alpha", added_at=1.0))
     config_path = _write_config(tmp_path)
 
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         remove_result = runner.invoke(
             app, ["--config", str(config_path), "project", "remove", "alpha"]
         )
@@ -174,7 +174,7 @@ def test_project_remove_missing_exits_one(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
 
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         remove_result = runner.invoke(
             app, ["--config", str(config_path), "project", "remove", "ghost"]
         )
@@ -193,9 +193,9 @@ def test_project_run_invokes_subprocess_in_project_cwd(tmp_path: Path) -> None:
 
     fake_result = MagicMock(returncode=0)
     with (
-        patch("autoship.cli.commands.project.ProjectStore", return_value=store),
+        patch("myagent.cli.commands.project.ProjectStore", return_value=store),
         patch(
-            "autoship.cli.commands.project.subprocess.run", return_value=fake_result
+            "myagent.cli.commands.project.subprocess.run", return_value=fake_result
         ) as run_mock,
     ):
         run_cli_result = runner.invoke(
@@ -213,7 +213,7 @@ def test_project_run_missing_project_exits_one(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
 
-    with patch("autoship.cli.commands.project.ProjectStore", return_value=store):
+    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
         run_cli_result = runner.invoke(
             app,
             ["--config", str(config_path), "project", "run", "ghost", "echo", "hi"],

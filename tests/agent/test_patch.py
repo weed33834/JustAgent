@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.patch`` (ported from Cline's apply-patch.test.ts)."""
+"""Tests for ``myagent.agent.patch`` (ported from Cline's apply-patch.test.ts)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.patch import (
+from myagent.agent.patch import (
     DiffError,
     apply_patch_text,
     compute_patch_changes,
@@ -374,7 +374,7 @@ def test_restrict_to_cwd_disabled_allows_traversal(tmp_path: Path) -> None:
     """When ``restrict_to_cwd=False``, path traversal is permitted (host's
     responsibility to scope)."""
 
-    outside = tmp_path.parent / "autoship_outside_target.txt"
+    outside = tmp_path.parent / "myagent_outside_target.txt"
     try:
         apply_patch_text(
             f"*** Add File: {outside}\n+ok",

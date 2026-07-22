@@ -1,1 +1,1 @@
-"""Integration tests for AutoShip."""
+"""Integration tests for MyAgent."""

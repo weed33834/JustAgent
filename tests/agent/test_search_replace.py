@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.search_replace`` (Aider SEARCH/REPLACE format)."""
+"""Tests for ``myagent.agent.search_replace`` (Aider SEARCH/REPLACE format)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.search_replace import (
+from myagent.agent.search_replace import (
     SearchReplaceError,
     apply_search_replace,
     parse_search_replace,

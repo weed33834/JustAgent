@@ -1,6 +1,6 @@
-# autoship-rust-ship
+# myagent-rust-ship
 
-A language-aware AutoShip-CLI plugin pack for Rust projects. It hooks into
+A language-aware MyAgent-CLI plugin pack for Rust projects. It hooks into
 the `clean` and `verify` lifecycle to report Rust-specific build artifacts
 and suggest the conventional `cargo test` command.
 
@@ -27,7 +27,7 @@ matches the per-profile output directories (`target/debug`,
 ## Install
 
 ```bash
-pipx install autoship-rust-ship
+pipx install myagent-rust-ship
 ```
 
 Or, for local development:
@@ -37,16 +37,16 @@ cd examples/rust-ship
 pip install -e .
 ```
 
-The `[project.entry-points."autoship.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
 
-Add `cargo` to the verify allowlist so `autoship verify "cargo test"` is
+Add `cargo` to the verify allowlist so `myagent verify "cargo test"` is
 permitted (the default allowlist is Python-centric):
 
 ```toml
-# .autoship.toml
+# .myagent.toml
 [verify]
 allowed_commands = ["pytest", "cargo"]
 ```
@@ -62,6 +62,6 @@ pytest
 
 - Only `target/debug` and `target/release` are recognised; other profile
   outputs (e.g. `target/x86_64-unknown-linux-gnu/...`) can be added to
-  `ARTIFACTS` in `src/autoship_rust_ship/plugin.py` if needed.
+  `ARTIFACTS` in `src/myagent_rust_ship/plugin.py` if needed.
 - This pack is part of the 1.1.0 forward-expansion examples and is not
   distributed via the official plugin registry.

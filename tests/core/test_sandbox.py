@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.core import sandbox as sandbox_module
-from autoship.core.sandbox import SandboxError, SandboxRunner, _decode_stream
+from myagent.core import sandbox as sandbox_module
+from myagent.core.sandbox import SandboxError, SandboxRunner, _decode_stream
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +27,7 @@ def test_sandbox_runs_command() -> None:
 def test_sandbox_env_isolation() -> None:
     runner = SandboxRunner(network=True, env_whitelist=["PATH"])
     result = runner.run(
-        ["python", "-c", "import os; print(os.environ.get('AUTOSHIP_TEST', 'missing'))"]
+        ["python", "-c", "import os; print(os.environ.get('MYAGENT_TEST', 'missing'))"]
     )
     assert result.returncode == 0
     assert "missing" in result.stdout

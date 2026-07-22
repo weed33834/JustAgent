@@ -1,15 +1,15 @@
-"""Tests for ``autoship.agent.compaction`` (context compaction)."""
+"""Tests for ``myagent.agent.compaction`` (context compaction)."""
 
 from __future__ import annotations
 
 import asyncio
 
-from autoship.agent.compaction import (
+from myagent.agent.compaction import (
     CompactionConfig,
     CompactionResult,
     Compactor,
 )
-from autoship.agent.runtime import LLMClient, LLMRequest, LLMResponse, Message, ToolCall
+from myagent.agent.runtime import LLMClient, LLMRequest, LLMResponse, Message, ToolCall
 
 # ---------------------------------------------------------------------------
 # Test doubles
@@ -343,7 +343,7 @@ class TestEstimateTokens:
         assert compactor.estimate_tokens(messages) == 2
 
     def test_tool_result_output_counted(self) -> None:
-        from autoship.agent.runtime import ToolResultPart
+        from myagent.agent.runtime import ToolResultPart
 
         compactor = Compactor(CompactionConfig())
         msg = Message(

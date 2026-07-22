@@ -9,15 +9,15 @@ from unittest.mock import patch
 from packaging.version import parse as parse_version
 from typer.testing import CliRunner
 
-from autoship.cli.main import app
-from autoship.core.package_verifier import PackageVerificationError
-from autoship.core.plugin_registry import PluginSpec, TrustLevel
+from myagent.cli.main import app
+from myagent.core.package_verifier import PackageVerificationError
+from myagent.core.plugin_registry import PluginSpec, TrustLevel
 
 runner = CliRunner()
 
 
 def test_plugin_list_empty() -> None:
-    with patch("autoship.cli.commands.plugin.PluginRegistry") as mock_cls:
+    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_cls:
         mock_cls.return_value.list.return_value = []
         result = runner.invoke(app, ["plugin", "list"])
     assert result.exit_code == 0
@@ -29,7 +29,7 @@ def test_plugin_list_shows_plugins() -> None:
         PluginSpec(name="a", version="1.0.0", source="pypi", trust_level=TrustLevel.VERIFIED),
         PluginSpec(name="b", version="2.0.0", source="git", trust_level=TrustLevel.COMMUNITY),
     ]
-    with patch("autoship.cli.commands.plugin.PluginRegistry") as mock_cls:
+    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_cls:
         mock_cls.return_value.list.return_value = plugins
         result = runner.invoke(app, ["plugin", "list"])
     assert result.exit_code == 0
@@ -38,7 +38,7 @@ def test_plugin_list_shows_plugins() -> None:
 
 
 def test_plugin_trust() -> None:
-    with patch("autoship.cli.commands.plugin.PluginRegistry") as mock_cls:
+    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_cls:
         mock_cls.return_value.trust.return_value = True
         result = runner.invoke(app, ["plugin", "trust", "a", "verified"])
     assert result.exit_code == 0
@@ -68,11 +68,11 @@ def test_plugin_install_from_registry_dry_run() -> None:
     result = runner.invoke(app, ["plugin", "install", "security-scan", "--dry-run"])
     assert result.exit_code == 0
     assert "[dry-run] Would install security-scan" in result.output
-    assert "autoship" in result.output
+    assert "myagent" in result.output
 
 
 def test_plugin_uninstall_dry_run() -> None:
-    with patch("autoship.cli.commands.plugin.PluginRegistry") as mock_cls:
+    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_cls:
         mock_cls.return_value.get.return_value = PluginSpec(name="x", source="pypi")
         result = runner.invoke(app, ["plugin", "uninstall", "x", "--dry-run"])
     assert result.exit_code == 0
@@ -102,7 +102,7 @@ def test_plugin_install_untrusted_requires_confirmation() -> None:
 
 
 def test_plugin_install_skip_trust_check() -> None:
-    with patch("autoship.cli.commands.plugin._run_pip_install") as mock_install:
+    with patch("myagent.cli.commands.plugin._run_pip_install") as mock_install:
         mock_install.return_value = subprocess.CompletedProcess(
             args=["pip", "install", "jira-link"], returncode=0, stdout="", stderr=""
         )
@@ -115,7 +115,7 @@ def test_plugin_install_skip_trust_check() -> None:
 
 
 def test_plugin_install_verified_without_signature_warns() -> None:
-    with patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index:
+    with patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index:
         mock_index.return_value.get.return_value = {
             "name": "verified-no-sig",
             "package": "verified-no-sig",
@@ -141,10 +141,10 @@ def test_plugin_update_no_updates() -> None:
         PluginSpec(name="a", version="1.0.0", source="pkg-a", trust_level=TrustLevel.VERIFIED),
     ]
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
+            "myagent.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
         ),
     ):
         mock_reg.return_value.list.return_value = plugins
@@ -160,10 +160,10 @@ def test_plugin_update_dry_run() -> None:
         PluginSpec(name="a", version="1.0.0", source="pkg-a", trust_level=TrustLevel.VERIFIED),
     ]
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
+            "myagent.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
         ),
     ):
         mock_reg.return_value.list.return_value = plugins
@@ -177,14 +177,14 @@ def test_plugin_update_dry_run() -> None:
 def test_plugin_update_skips_builtin() -> None:
     plugins = [
         PluginSpec(
-            name="security-scan", version="1.0.0", source="autoship", trust_level=TrustLevel.BUILTIN
+            name="security-scan", version="1.0.0", source="myagent", trust_level=TrustLevel.BUILTIN
         ),
     ]
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
+            "myagent.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
         ),
     ):
         mock_reg.return_value.list.return_value = plugins
@@ -199,10 +199,10 @@ def test_plugin_update_upgrades_plugin() -> None:
         PluginSpec(name="a", version="1.0.0", source="pkg-a", trust_level=TrustLevel.VERIFIED),
     ]
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
+            "myagent.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
         ),
         patch("subprocess.run") as mock_run,
     ):
@@ -220,8 +220,8 @@ def test_plugin_update_upgrades_plugin() -> None:
 
 def test_plugin_rate_records_rating() -> None:
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.PluginStats") as mock_stats,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.PluginStats") as mock_stats,
     ):
         mock_reg.return_value.get.return_value = PluginSpec(name="a", source="pypi")
         result = runner.invoke(app, ["plugin", "rate", "a", "4.5"])
@@ -231,14 +231,14 @@ def test_plugin_rate_records_rating() -> None:
 
 
 def test_plugin_rate_rejects_out_of_range() -> None:
-    with patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg:
+    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg:
         mock_reg.return_value.get.return_value = PluginSpec(name="a", source="pypi")
         result = runner.invoke(app, ["plugin", "rate", "a", "6"])
     assert result.exit_code != 0
 
 
 def test_plugin_stats_shows_summary() -> None:
-    with patch("autoship.cli.commands.plugin.PluginStats") as mock_stats:
+    with patch("myagent.cli.commands.plugin.PluginStats") as mock_stats:
         mock_stats.return_value.summary.return_value = {
             "a": {
                 "installs": 2,
@@ -253,7 +253,7 @@ def test_plugin_stats_shows_summary() -> None:
 
 
 def test_plugin_info_shows_details() -> None:
-    with patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index:
+    with patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index:
         mock_index.return_value.get.return_value = {
             "name": "commit-sign",
             "version": "0.1.0",
@@ -276,7 +276,7 @@ def test_plugin_info_shows_details() -> None:
 
 
 def test_plugin_info_shows_permissions() -> None:
-    with patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index:
+    with patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index:
         mock_index.return_value.get.return_value = {
             "name": "jira-link",
             "version": "0.2.1",
@@ -306,9 +306,9 @@ def test_plugin_install_community_shows_permissions() -> None:
 
 def test_plugin_install_stores_capabilities() -> None:
     with (
-        patch("autoship.cli.commands.plugin._run_pip_install") as mock_install,
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.PluginStats"),
+        patch("myagent.cli.commands.plugin._run_pip_install") as mock_install,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.PluginStats"),
     ):
         mock_install.return_value = subprocess.CompletedProcess(
             args=["pip", "install", "jira-link"], returncode=0, stdout="", stderr=""
@@ -324,13 +324,13 @@ def test_plugin_install_stores_capabilities() -> None:
 
 
 def test_plugin_install_with_sha256_downloads_and_verifies() -> None:
-    downloaded = Path("/tmp/autoship-pkg/verified-plugin.whl")
+    downloaded = Path("/tmp/myagent-pkg/verified-plugin.whl")
     with (
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
-        patch("autoship.cli.commands.plugin._run_pip_install") as mock_install,
-        patch("autoship.cli.commands.plugin.PluginRegistry"),
-        patch("autoship.cli.commands.plugin.PluginStats"),
-        patch("autoship.cli.commands.plugin.download_and_verify", return_value=downloaded),
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin._run_pip_install") as mock_install,
+        patch("myagent.cli.commands.plugin.PluginRegistry"),
+        patch("myagent.cli.commands.plugin.PluginStats"),
+        patch("myagent.cli.commands.plugin.download_and_verify", return_value=downloaded),
     ):
         mock_index.return_value.get.return_value = {
             "name": "verified-plugin",
@@ -355,9 +355,9 @@ def test_plugin_install_with_sha256_downloads_and_verifies() -> None:
 
 def test_plugin_install_with_sha256_verification_failure() -> None:
     with (
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin.download_and_verify",
+            "myagent.cli.commands.plugin.download_and_verify",
             side_effect=PackageVerificationError("sha256 mismatch"),
         ),
     ):
@@ -378,18 +378,18 @@ def test_plugin_install_with_sha256_verification_failure() -> None:
 
 
 def test_plugin_update_with_sha256_downloads_and_verifies() -> None:
-    downloaded = Path("/tmp/autoship-pkg/pkg-a.whl")
+    downloaded = Path("/tmp/myagent-pkg/pkg-a.whl")
     plugins = [
         PluginSpec(name="a", version="1.0.0", source="pkg-a", trust_level=TrustLevel.VERIFIED),
     ]
     with (
-        patch("autoship.cli.commands.plugin.PluginRegistry") as mock_reg,
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin.PluginRegistry") as mock_reg,
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
         patch(
-            "autoship.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
+            "myagent.cli.commands.plugin._installed_version", return_value=parse_version("1.0.0")
         ),
-        patch("autoship.cli.commands.plugin._run_pip_install") as mock_install,
-        patch("autoship.cli.commands.plugin.download_and_verify", return_value=downloaded),
+        patch("myagent.cli.commands.plugin._run_pip_install") as mock_install,
+        patch("myagent.cli.commands.plugin.download_and_verify", return_value=downloaded),
     ):
         mock_reg.return_value.list.return_value = plugins
         mock_reg.return_value.get.return_value = plugins[0]
@@ -436,9 +436,9 @@ def test_plugin_install_no_sandbox_community_requires_name_confirmation() -> Non
 def test_plugin_install_no_sandbox_community_proceeds_with_correct_name() -> None:
     """--no-sandbox for COMMUNITY plugins proceeds when name is typed correctly."""
     with (
-        patch("autoship.cli.commands.plugin._run_pip_install") as mock_install,
-        patch("autoship.cli.commands.plugin.PluginRegistry"),
-        patch("autoship.cli.commands.plugin.PluginStats"),
+        patch("myagent.cli.commands.plugin._run_pip_install") as mock_install,
+        patch("myagent.cli.commands.plugin.PluginRegistry"),
+        patch("myagent.cli.commands.plugin.PluginStats"),
     ):
         mock_install.return_value = subprocess.CompletedProcess(
             args=["pip", "install", "jira-link"], returncode=0, stdout="", stderr=""
@@ -458,10 +458,10 @@ def test_plugin_install_no_sandbox_community_proceeds_with_correct_name() -> Non
 def test_plugin_install_no_sandbox_verified_is_noop() -> None:
     """--no-sandbox for VERIFIED plugins is a no-op (sandbox not applied anyway)."""
     with (
-        patch("autoship.cli.commands.plugin.RegistryIndex") as mock_index,
-        patch("autoship.cli.commands.plugin._run_pip_install") as mock_install,
-        patch("autoship.cli.commands.plugin.PluginRegistry"),
-        patch("autoship.cli.commands.plugin.PluginStats"),
+        patch("myagent.cli.commands.plugin.RegistryIndex") as mock_index,
+        patch("myagent.cli.commands.plugin._run_pip_install") as mock_install,
+        patch("myagent.cli.commands.plugin.PluginRegistry"),
+        patch("myagent.cli.commands.plugin.PluginStats"),
     ):
         mock_index.return_value.get.return_value = {
             "name": "verified-plugin",
@@ -496,14 +496,14 @@ def test_plugin_install_no_sandbox_dry_run_shows_warning() -> None:
 def test_run_pip_install_uv_local_path_uses_no_deps(tmp_path: Path) -> None:
     """uv pip install of a local plugin directory must pass --no-deps.
 
-    Local plugin packages declare ``autoship``/``autoship-sdk`` as
+    Local plugin packages declare ``myagent``/``myagent-sdk`` as
     dependencies, but neither name is published to PyPI. ``uv pip install``
     resolves against the registry and fails with "No solution found" even
     when both packages already exist in the host environment. Skipping
     dependency resolution for local sources under uv lets the install
-    succeed; runtime deps are provided by the autoship host environment.
+    succeed; runtime deps are provided by the myagent host environment.
     """
-    from autoship.cli.commands.plugin import _run_pip_install
+    from myagent.cli.commands.plugin import _run_pip_install
 
     plugin_dir = tmp_path / "my-plugin"
     plugin_dir.mkdir()
@@ -513,7 +513,7 @@ def test_run_pip_install_uv_local_path_uses_no_deps(tmp_path: Path) -> None:
         captured["args"] = args
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    with patch("autoship.cli.commands.plugin.SandboxRunner") as mock_runner_cls:
+    with patch("myagent.cli.commands.plugin.SandboxRunner") as mock_runner_cls:
         mock_runner_cls.return_value.run.side_effect = fake_run
         _run_pip_install(["uv", "pip"], str(plugin_dir), sandbox=True)
 
@@ -529,7 +529,7 @@ def test_run_pip_install_uv_registry_spec_skips_no_deps() -> None:
     Registry plugins are real PyPI packages whose dependencies should be
     resolved normally; --no-deps is only for local directory sources.
     """
-    from autoship.cli.commands.plugin import _run_pip_install
+    from myagent.cli.commands.plugin import _run_pip_install
 
     captured: dict[str, list[str]] = {}
 
@@ -537,7 +537,7 @@ def test_run_pip_install_uv_registry_spec_skips_no_deps() -> None:
         captured["args"] = args
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    with patch("autoship.cli.commands.plugin.subprocess.run", side_effect=fake_run):
+    with patch("myagent.cli.commands.plugin.subprocess.run", side_effect=fake_run):
         _run_pip_install(["uv", "pip"], "some-registry-plugin", sandbox=False)
 
     assert "--no-deps" not in captured["args"]
@@ -549,7 +549,7 @@ def test_run_pip_install_pip_local_path_skips_no_deps(tmp_path: Path) -> None:
     Plain pip already satisfies dependencies from the active environment, so
     --no-deps is unnecessary and would silently skip legitimate deps.
     """
-    from autoship.cli.commands.plugin import _run_pip_install
+    from myagent.cli.commands.plugin import _run_pip_install
 
     plugin_dir = tmp_path / "my-plugin"
     plugin_dir.mkdir()
@@ -559,7 +559,7 @@ def test_run_pip_install_pip_local_path_skips_no_deps(tmp_path: Path) -> None:
         captured["args"] = args
         return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
 
-    with patch("autoship.cli.commands.plugin.SandboxRunner") as mock_runner_cls:
+    with patch("myagent.cli.commands.plugin.SandboxRunner") as mock_runner_cls:
         mock_runner_cls.return_value.run.side_effect = fake_run
         _run_pip_install(["pip"], str(plugin_dir), sandbox=True)
 

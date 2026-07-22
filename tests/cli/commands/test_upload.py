@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from autoship.cli.commands import upload
-from autoship.exceptions import ConfigError
-from autoship.models.config import AppConfig
+from myagent.cli.commands import upload
+from myagent.exceptions import ConfigError
+from myagent.models.config import AppConfig
 
 
 def test_upload_pypi_dry_run(project_root, app_config: AppConfig) -> None:

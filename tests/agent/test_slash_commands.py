@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.slash_commands``.
+"""Tests for ``myagent.agent.slash_commands``.
 
 Covers:
 
@@ -25,7 +25,7 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.agent.slash_commands import (
+from myagent.agent.slash_commands import (
     CommandAction,
     CommandResult,
     SlashCommand,
@@ -752,7 +752,7 @@ class TestLintCommand:
     def setup_method(self) -> None:
         self.registry = create_default_registry()
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_lint_specific_files(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["ruff", "check", "a.py", "b.py"],
@@ -772,7 +772,7 @@ class TestLintCommand:
             check=False,
         )
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_lint_all_files_no_args(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["ruff", "check"],
@@ -791,7 +791,7 @@ class TestLintCommand:
             check=False,
         )
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_lint_ruff_not_found(self, mock_run: Any) -> None:
         mock_run.side_effect = FileNotFoundError("ruff")
         result = self.registry.execute("/lint file.py", context={})
@@ -800,7 +800,7 @@ class TestLintCommand:
         assert "ruff" in result.message.lower()
         assert "not installed" in result.message.lower()
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_lint_output_displayed(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["ruff", "check", "x.py"],
@@ -824,7 +824,7 @@ class TestTestCommand:
     def setup_method(self) -> None:
         self.registry = create_default_registry()
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_run_tests_with_args(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["pytest", "-k", "test_foo"],
@@ -847,7 +847,7 @@ class TestTestCommand:
             check=False,
         )
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_run_all_tests(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["pytest"],
@@ -868,7 +868,7 @@ class TestTestCommand:
             check=False,
         )
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_failure_output(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["pytest"],
@@ -882,7 +882,7 @@ class TestTestCommand:
         assert "1 failed" in result.message
         assert "error details" in result.message
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_timeout_handling(self, mock_run: Any) -> None:
         mock_run.side_effect = subprocess.TimeoutExpired(
             cmd=["pytest"], timeout=300
@@ -1027,7 +1027,7 @@ class TestDiffCommand:
     def setup_method(self) -> None:
         self.registry = create_default_registry()
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_diff_with_changes(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["git", "diff"],
@@ -1047,7 +1047,7 @@ class TestDiffCommand:
             check=False,
         )
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_diff_no_changes(self, mock_run: Any) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
             args=["git", "diff"],
@@ -1060,7 +1060,7 @@ class TestDiffCommand:
         assert result.action is CommandAction.DISPLAY
         assert "No uncommitted changes" in result.message
 
-    @patch("autoship.agent.slash_commands.subprocess.run")
+    @patch("myagent.agent.slash_commands.subprocess.run")
     def test_diff_git_not_available(self, mock_run: Any) -> None:
         mock_run.side_effect = FileNotFoundError("git")
         result = self.registry.execute("/diff", context={})

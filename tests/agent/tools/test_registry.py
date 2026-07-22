@@ -7,8 +7,8 @@ import asyncio
 import pytest
 from pydantic import BaseModel
 
-from autoship.agent.tools.base import Tool, ToolContext, ToolResult
-from autoship.agent.tools.registry import (
+from myagent.agent.tools.base import Tool, ToolContext, ToolResult
+from myagent.agent.tools.registry import (
     ToolRegistry,
     make_error_tool,
     make_invalid_tool,

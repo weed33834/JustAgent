@@ -6,10 +6,10 @@ import httpx
 import pytest
 import respx
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers.azure_openai import AzureOpenAIGateway
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import ModelBackendConfig, Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers.azure_openai import AzureOpenAIGateway
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import ModelBackendConfig, Provider
 
 BASE_URL = "https://my-resource.openai.azure.com/openai/deployments/my-deployment"
 API_VERSION = "2024-02-01"

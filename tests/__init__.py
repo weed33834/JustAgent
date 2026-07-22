@@ -1,1 +1,1 @@
-"""AutoShip test suite."""
+"""MyAgent test suite."""

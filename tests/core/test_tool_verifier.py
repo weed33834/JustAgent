@@ -9,9 +9,9 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.core.tool_verifier import ToolVerifier
-from autoship.exceptions import ConfigError
-from autoship.models.config import ToolConfig, ToolsConfig
+from myagent.core.tool_verifier import ToolVerifier
+from myagent.exceptions import ConfigError
+from myagent.models.config import ToolConfig, ToolsConfig
 
 
 def _sha256(path: Path) -> str:

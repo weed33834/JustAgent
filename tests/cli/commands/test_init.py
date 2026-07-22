@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from autoship.cli.commands import init
-from autoship.models.config import AppConfig
+from myagent.cli.commands import init
+from myagent.models.config import AppConfig
 
 
 def test_init_creates_config(project_root: Path, app_config: AppConfig, monkeypatch) -> None:
@@ -17,7 +17,7 @@ def test_init_creates_config(project_root: Path, app_config: AppConfig, monkeypa
         "dry_run": False,
         "yes": True,
     }
-    output = project_root / ".autoship.toml"
+    output = project_root / ".myagent.toml"
     init.init(ctx, output=output)
     assert output.exists()
     content = output.read_text(encoding="utf-8")
@@ -34,6 +34,6 @@ def test_init_dry_run_does_not_write(
         "dry_run": True,
         "yes": True,
     }
-    output = project_root / ".autoship.toml"
+    output = project_root / ".myagent.toml"
     init.init(ctx, output=output)
     assert not output.exists()

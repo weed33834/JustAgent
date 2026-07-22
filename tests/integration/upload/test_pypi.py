@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.adapters.upload.pypi import PyPIUploader
+from myagent.adapters.upload.pypi import PyPIUploader
 
 from .conftest import find_free_port, run_cmd, tool_available
 

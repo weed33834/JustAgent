@@ -1,4 +1,4 @@
-"""Tests for :mod:`autoship.cli.display` (:class:`RichDisplay`)."""
+"""Tests for :mod:`myagent.cli.display` (:class:`RichDisplay`)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import io
 
 from rich.console import Console
 
-from autoship.cli.display import RichDisplay
+from myagent.cli.display import RichDisplay
 
 
 def _make_display(
@@ -432,7 +432,7 @@ class TestPrintPermissionPrompt:
         # mocking stdin, but we can at least verify the description is
         # printed before the prompt. Use a console that won't block.
         # Patch Confirm.ask to avoid blocking on stdin.
-        import autoship.cli.display as display_module
+        import myagent.cli.display as display_module
 
         original = display_module.Confirm.ask
         display_module.Confirm.ask = lambda *a, **kw: True  # type: ignore[assignment]

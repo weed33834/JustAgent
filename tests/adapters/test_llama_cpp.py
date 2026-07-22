@@ -6,10 +6,10 @@ import httpx
 import pytest
 import respx
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers.llama_cpp import LlamaCppGateway
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import ModelBackendConfig, Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers.llama_cpp import LlamaCppGateway
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import ModelBackendConfig, Provider
 
 BASE_URL = "http://localhost:8080/v1"
 HEALTH_URL = "http://localhost:8080/health"

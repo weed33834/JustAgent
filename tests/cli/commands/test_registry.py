@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from autoship.cli.main import app
+from myagent.cli.main import app
 
 runner = CliRunner()
 
@@ -31,7 +31,7 @@ def test_registry_dashboard_shows_metrics() -> None:
             "rating": {"score": 3.0, "count": 2},
         },
     ]
-    with patch("autoship.cli.commands.registry.RegistryIndex") as mock_index:
+    with patch("myagent.cli.commands.registry.RegistryIndex") as mock_index:
         mock_index.return_value.list_plugins.return_value = plugins
         result = runner.invoke(app, ["registry", "dashboard"])
     assert result.exit_code == 0
@@ -43,7 +43,7 @@ def test_registry_dashboard_shows_metrics() -> None:
 
 
 def test_registry_dashboard_empty() -> None:
-    with patch("autoship.cli.commands.registry.RegistryIndex") as mock_index:
+    with patch("myagent.cli.commands.registry.RegistryIndex") as mock_index:
         mock_index.return_value.list_plugins.return_value = []
         result = runner.invoke(app, ["registry", "dashboard"])
     assert result.exit_code == 0
@@ -63,10 +63,10 @@ def test_registry_sync_writes_files(tmp_path: Path) -> None:
 
     with (
         patch(
-            "autoship.cli.commands.registry.RegistryClient.fetch_index",
+            "myagent.cli.commands.registry.RegistryClient.fetch_index",
             return_value=remote_data,
         ) as mock_fetch,
-        patch("autoship.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
+        patch("myagent.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
     ):
         result = runner.invoke(app, ["registry", "sync", "--output", str(output)])
 
@@ -91,10 +91,10 @@ def test_registry_sync_dry_run_does_not_write(tmp_path: Path) -> None:
 
     with (
         patch(
-            "autoship.cli.commands.registry.RegistryClient.fetch_index",
+            "myagent.cli.commands.registry.RegistryClient.fetch_index",
             return_value=remote_data,
         ),
-        patch("autoship.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
+        patch("myagent.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
     ):
         result = runner.invoke(app, ["registry", "sync", "--dry-run", "--output", str(output)])
 
@@ -106,7 +106,7 @@ def test_registry_sync_dry_run_does_not_write(tmp_path: Path) -> None:
 
 def test_registry_sync_remote_failure_exits_nonzero() -> None:
     with patch(
-        "autoship.cli.commands.registry.RegistryClient.fetch_index",
+        "myagent.cli.commands.registry.RegistryClient.fetch_index",
         return_value=None,
     ):
         result = runner.invoke(app, ["registry", "sync"])
@@ -121,10 +121,10 @@ def test_registry_sync_force_clears_cache(tmp_path: Path) -> None:
 
     with (
         patch(
-            "autoship.cli.commands.registry.RegistryClient.fetch_index",
+            "myagent.cli.commands.registry.RegistryClient.fetch_index",
             return_value=remote_data,
         ) as mock_fetch,
-        patch("autoship.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
+        patch("myagent.cli.commands.registry.BUNDLED_REGISTRY_PATH", bundled),
     ):
         result = runner.invoke(app, ["registry", "sync", "--force", "--output", str(output)])
 
@@ -134,7 +134,7 @@ def test_registry_sync_force_clears_cache(tmp_path: Path) -> None:
 
 def test_registry_mirror_dry_run_does_not_write(tmp_path: Path) -> None:
     output = tmp_path / "mirror"
-    with patch("autoship.cli.commands.registry.RegistryClient") as mock_client:
+    with patch("myagent.cli.commands.registry.RegistryClient") as mock_client:
         result = runner.invoke(app, ["registry", "mirror", "--output", str(output), "--dry-run"])
     assert result.exit_code == 0
     assert "[dry-run]" in result.output
@@ -149,7 +149,7 @@ def test_registry_mirror_writes_files(tmp_path: Path) -> None:
         "plugins": [{"name": "alpha", "version": "1.0.0"}],
         "sha256": "abc123",
     }
-    with patch("autoship.cli.commands.registry.RegistryClient") as mock_client_cls:
+    with patch("myagent.cli.commands.registry.RegistryClient") as mock_client_cls:
         mock_client = mock_client_cls.return_value
         mock_client.fetch_index.return_value = remote_data
         result = runner.invoke(app, ["registry", "mirror", "--output", str(output)])
@@ -165,7 +165,7 @@ def test_registry_mirror_writes_files(tmp_path: Path) -> None:
 
 def test_registry_mirror_fetch_failure_exits_one(tmp_path: Path) -> None:
     output = tmp_path / "mirror"
-    with patch("autoship.cli.commands.registry.RegistryClient") as mock_client_cls:
+    with patch("myagent.cli.commands.registry.RegistryClient") as mock_client_cls:
         mock_client_cls.return_value.fetch_index.side_effect = RuntimeError("network down")
         result = runner.invoke(app, ["registry", "mirror", "--output", str(output)])
     assert result.exit_code == 1

@@ -8,10 +8,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from autoship.core.audit_logger import AuditLogger
-from autoship.core.context import CommandContext
-from autoship.core.i18n import get_i18n
-from autoship.models.config import AppConfig
+from myagent.core.audit_logger import AuditLogger
+from myagent.core.context import CommandContext
+from myagent.core.i18n import get_i18n
+from myagent.models.config import AppConfig
 
 os.environ.setdefault("LANG", "en_US.UTF-8")
 
@@ -68,7 +68,7 @@ def mock_config(project_root: Path) -> AppConfig:
 
 @pytest.fixture
 def typer_context(app_config: AppConfig, audit_logger: AuditLogger, i18n) -> MagicMock:
-    """Return a mocked typer.Context with AutoShip state."""
+    """Return a mocked typer.Context with MyAgent state."""
     ctx = MagicMock()
     ctx.obj = {
         "config": app_config,

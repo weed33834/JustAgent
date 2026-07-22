@@ -1,4 +1,4 @@
-"""Tests for :mod:`autoship.core.notifications`."""
+"""Tests for :mod:`myagent.core.notifications`."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autoship.core.notifications import (
+from myagent.core.notifications import (
     DesktopChannel,
     LogChannel,
     Notification,
@@ -149,7 +149,7 @@ class TestDesktopChannel:
         channel = DesktopChannel()
         channel.platform = "linux"
         with patch(
-            "autoship.core.notifications.subprocess.run",
+            "myagent.core.notifications.subprocess.run",
             return_value=MagicMock(returncode=0),
         ) as mock_run:
             channel.send(
@@ -167,7 +167,7 @@ class TestDesktopChannel:
         channel = DesktopChannel()
         channel.platform = "linux"
         with patch(
-            "autoship.core.notifications.subprocess.run",
+            "myagent.core.notifications.subprocess.run",
             side_effect=FileNotFoundError("notify-send not installed"),
         ):
             channel.send(Notification(title="t", message="m"))
@@ -178,7 +178,7 @@ class TestDesktopChannel:
         channel = DesktopChannel()
         channel.platform = "darwin"
         with patch(
-            "autoship.core.notifications.subprocess.run",
+            "myagent.core.notifications.subprocess.run",
             return_value=MagicMock(returncode=0),
         ) as mock_run:
             channel.send(
@@ -211,7 +211,7 @@ class TestWebhookChannel:
     def test_success(self) -> None:
         channel = WebhookChannel(url="https://example.com/hook")
         with patch(
-            "autoship.core.notifications.httpx.post", return_value=MagicMock()
+            "myagent.core.notifications.httpx.post", return_value=MagicMock()
         ) as mock_post:
             channel.send(
                 Notification(
@@ -236,7 +236,7 @@ class TestWebhookChannel:
     ) -> None:
         channel = WebhookChannel(url="https://example.com/hook")
         with patch(
-            "autoship.core.notifications.httpx.post",
+            "myagent.core.notifications.httpx.post",
             side_effect=Exception("network down"),
         ):
             channel.send(Notification(title="t", message="m"))
@@ -250,7 +250,7 @@ class TestWebhookChannel:
             timeout=5.0,
         )
         with patch(
-            "autoship.core.notifications.httpx.post", return_value=MagicMock()
+            "myagent.core.notifications.httpx.post", return_value=MagicMock()
         ) as mock_post:
             channel.send(Notification(title="t", message="m"))
         _, kwargs = mock_post.call_args
@@ -264,7 +264,7 @@ class TestWebhookChannel:
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = Exception("HTTP 500")
         with patch(
-            "autoship.core.notifications.httpx.post", return_value=mock_response
+            "myagent.core.notifications.httpx.post", return_value=mock_response
         ):
             channel.send(Notification(title="t", message="m"))
         captured = capsys.readouterr()
@@ -320,7 +320,7 @@ class TestLogChannel:
         channel = LogChannel(log_path=log_path)
         # When timestamp=0.0 (default), the channel substitutes time.time().
         with patch(
-            "autoship.core.notifications.time.time", return_value=1700000000.0
+            "myagent.core.notifications.time.time", return_value=1700000000.0
         ):
             channel.send(Notification(title="t", message="m"))
         content = log_path.read_text(encoding="utf-8")
@@ -443,11 +443,11 @@ class TestNotify:
 # ---------------------------------------------------------------------------
 
 
-def test_notification_error_is_autoship_error() -> None:
-    """NotificationError must subclass AutoShipError per codebase conventions."""
-    from autoship.exceptions import AutoShipError
+def test_notification_error_is_myagent_error() -> None:
+    """NotificationError must subclass MyAgentError per codebase conventions."""
+    from myagent.exceptions import MyAgentError
 
-    assert issubclass(NotificationError, AutoShipError)
+    assert issubclass(NotificationError, MyAgentError)
 
 
 def test_unused_sys_import_safety() -> None:

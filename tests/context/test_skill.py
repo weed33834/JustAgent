@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.context.skill import (
+from myagent.context.skill import (
     Skill,
     SkillConfig,
     SkillError,
@@ -126,7 +126,7 @@ class TestSkillDataclass:
 class TestSkillConfig:
     def test_defaults(self) -> None:
         cfg = SkillConfig()
-        assert cfg.skills_dirs == [".autoship/skills"]
+        assert cfg.skills_dirs == [".myagent/skills"]
         assert cfg.max_skills == 50
         assert cfg.max_body_chars == 50000
         assert cfg.enabled is True
@@ -281,7 +281,7 @@ class TestParsing:
 
 class TestDiscover:
     def test_discover_finds_skills(self, tmp_path: Path) -> None:
-        skills_root = tmp_path / ".autoship" / "skills"
+        skills_root = tmp_path / ".myagent" / "skills"
         _write_skill_md(skills_root / "alpha", "alpha", description="a")
         _write_skill_md(skills_root / "beta", "beta", description="b")
         loader = SkillLoader(project_root=tmp_path)
@@ -788,22 +788,22 @@ class TestEdgeCases:
             loader.load_body("alpha")
 
     def test_context_reexport(self) -> None:
-        from autoship.context import (
+        from myagent.context import (
             Skill as ReexportedSkill,
         )
-        from autoship.context import (
+        from myagent.context import (
             SkillConfig as ReexportedSkillConfig,
         )
-        from autoship.context import (
+        from myagent.context import (
             SkillError as ReexportedSkillError,
         )
-        from autoship.context import (
+        from myagent.context import (
             SkillLoader as ReexportedSkillLoader,
         )
-        from autoship.context import (
+        from myagent.context import (
             SkillSummary as ReexportedSkillSummary,
         )
-        from autoship.context import (
+        from myagent.context import (
             SkillTrigger as ReexportedSkillTrigger,
         )
 

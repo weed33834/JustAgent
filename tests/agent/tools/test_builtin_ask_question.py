@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from autoship.agent.tools.base import (
+from myagent.agent.tools.base import (
     InvalidArgumentsError,
     PermissionAsker,
     ToolContext,
 )
-from autoship.agent.tools.builtin.ask_question import (
+from myagent.agent.tools.builtin.ask_question import (
     AskQuestionInput,
     make_ask_question_tool,
 )

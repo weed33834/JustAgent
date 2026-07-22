@@ -8,8 +8,8 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "autoship",
-    "autoship-sdk",
+    "myagent",
+    "myagent-sdk",
 ]
 
 [[package]]
@@ -256,7 +256,7 @@ wheels = [
 ]
 
 [[package]]
-name = "autoship"
+name = "myagent"
 version = "2.0.0"
 source = { editable = "." }
 dependencies = [
@@ -279,7 +279,7 @@ ai = [
     { name = "litellm" },
 ]
 dev = [
-    { name = "autoship-sdk" },
+    { name = "myagent-sdk" },
     { name = "build" },
     { name = "cyclonedx-bom" },
     { name = "freezegun" },
@@ -309,7 +309,7 @@ tui = [
 
 [package.metadata]
 requires-dist = [
-    { name = "autoship-sdk", marker = "extra == 'dev'", editable = "autoship-sdk" },
+    { name = "myagent-sdk", marker = "extra == 'dev'", editable = "myagent-sdk" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.2.0" },
     { name = "cryptography", specifier = ">=44.0.0" },
     { name = "cyclonedx-bom", marker = "extra == 'dev'", specifier = ">=4.0.0" },
@@ -348,11 +348,11 @@ requires-dist = [
 provides-extras = ["ai", "security", "tui", "dev"]
 
 [[package]]
-name = "autoship-sdk"
+name = "myagent-sdk"
 version = "1.2.0"
-source = { editable = "autoship-sdk" }
+source = { editable = "myagent-sdk" }
 dependencies = [
-    { name = "autoship" },
+    { name = "myagent" },
 ]
 
 [package.dev-dependencies]
@@ -365,7 +365,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "autoship", editable = "." }]
+requires-dist = [{ name = "myagent", editable = "." }]
 
 [package.metadata.requires-dev]
 dev = [

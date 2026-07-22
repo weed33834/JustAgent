@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.agent.tools.base import InvalidArgumentsError, ToolContext
-from autoship.agent.tools.builtin.web_fetch import (
+from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from myagent.agent.tools.builtin.web_fetch import (
     DEFAULT_TIMEOUT_MS,
     WebFetchInput,
     make_web_fetch_tool,

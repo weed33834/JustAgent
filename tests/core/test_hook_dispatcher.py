@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autoship.core.context import CommandContext
-from autoship.core.hook_dispatcher import HookDispatcher
-from autoship.core.plugin_registry import PluginRegistry, PluginSpec, TrustLevel
-from autoship.core.sandbox import SandboxResult
-from autoship.exceptions import PluginError
-from autoship.hookspec import hookimpl
-from autoship.models.config import AppConfig
-from autoship.plugins import defaults
+from myagent.core.context import CommandContext
+from myagent.core.hook_dispatcher import HookDispatcher
+from myagent.core.plugin_registry import PluginRegistry, PluginSpec, TrustLevel
+from myagent.core.sandbox import SandboxResult
+from myagent.exceptions import PluginError
+from myagent.hookspec import hookimpl
+from myagent.models.config import AppConfig
+from myagent.plugins import defaults
 
 
 @pytest.fixture
@@ -92,7 +92,7 @@ def test_entry_point_load_failure_is_logged(caplog) -> None:
 
     with (
         patch.object(HookDispatcher, "_load_builtin"),
-        patch("autoship.core.hook_dispatcher.entry_points") as mock_eps,
+        patch("myagent.core.hook_dispatcher.entry_points") as mock_eps,
     ):
         mock_eps.return_value.select.return_value = [fake_ep]
         HookDispatcher()
@@ -341,7 +341,7 @@ def test_call_failing_hook_fail_fast_raises(app_config: AppConfig) -> None:
 
 
 def test_entry_point_discovery(app_config: AppConfig) -> None:
-    """External plugins declared via ``autoship.plugins`` entry points are loaded."""
+    """External plugins declared via ``myagent.plugins`` entry points are loaded."""
 
     class EntryPointPlugin:
         @hookimpl
@@ -355,7 +355,7 @@ def test_entry_point_discovery(app_config: AppConfig) -> None:
     group = MagicMock()
     group.select.return_value = [ep]
 
-    with patch("autoship.core.hook_dispatcher.entry_points", return_value=group):
+    with patch("myagent.core.hook_dispatcher.entry_points", return_value=group):
         dispatcher = HookDispatcher()
 
     impls = dispatcher.pm.hook.pre_init.get_hookimpls()

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.adapters.tool_adapter import ToolChain
+from myagent.adapters.tool_adapter import ToolChain
 
 
 def test_toolchain_dry_run_returns_zero_exit(project_root: Path) -> None:

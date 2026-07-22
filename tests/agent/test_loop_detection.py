@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from autoship.agent.loop_detection import (
+from myagent.agent.loop_detection import (
     LoopDetectionCall,
     LoopDetectionConfig,
     LoopDetectionState,

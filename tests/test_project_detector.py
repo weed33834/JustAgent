@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from autoship.utils.project_detector import PROJECT_MARKERS, detect_project_type
+from myagent.utils.project_detector import PROJECT_MARKERS, detect_project_type
 
 
 def test_detect_python(project_root) -> None:

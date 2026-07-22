@@ -1,16 +1,16 @@
-"""Tests for the path-redaction helper in ``autoship.utils.redaction``."""
+"""Tests for the path-redaction helper in ``myagent.utils.redaction``."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
 
-from autoship.utils.redaction import redact_paths
+from myagent.utils.redaction import redact_paths
 
 
 def test_redact_paths_replaces_project_root_prefix_with_dot(tmp_path: Path) -> None:
     """Absolute paths inside the project root become relative (``./...``)."""
-    project = tmp_path / "autoship"
+    project = tmp_path / "myagent"
     project.mkdir()
     text = f"{project}/tests/test_x.py:123 failed"
 
@@ -26,7 +26,7 @@ def test_redact_paths_replaces_home_prefix_with_tilde(tmp_path: Path) -> None:
     fake_home.mkdir(parents=True)
     text = f"{fake_home}/.config/secret.toml is missing"
 
-    with patch("autoship.utils.redaction.Path.home", return_value=fake_home):
+    with patch("myagent.utils.redaction.Path.home", return_value=fake_home):
         result = redact_paths(text, project_root=None)
 
     assert result.startswith("~/.config/secret.toml is missing")
@@ -40,7 +40,7 @@ def test_redact_paths_applies_both_project_and_home(tmp_path: Path) -> None:
     fake_home = tmp_path
     text = f"{project}/src/app.py and {fake_home}/.cache/lost"
 
-    with patch("autoship.utils.redaction.Path.home", return_value=fake_home):
+    with patch("myagent.utils.redaction.Path.home", return_value=fake_home):
         result = redact_paths(text, project)
 
     assert "./src/app.py" in result
@@ -54,7 +54,7 @@ def test_redact_paths_handles_none_project_root() -> None:
     fake_home = Path("/very/unlikely/home/path")
     text = f"{fake_home}/file.txt"
 
-    with patch("autoship.utils.redaction.Path.home", return_value=fake_home):
+    with patch("myagent.utils.redaction.Path.home", return_value=fake_home):
         result = redact_paths(text, project_root=None)
 
     assert result == "~/file.txt"
@@ -68,7 +68,7 @@ def test_redact_paths_no_replacement_when_nothing_matches(tmp_path: Path) -> Non
     fake_home.mkdir()
     text = "no paths here at all"
 
-    with patch("autoship.utils.redaction.Path.home", return_value=fake_home):
+    with patch("myagent.utils.redaction.Path.home", return_value=fake_home):
         result = redact_paths(text, project)
 
     assert result == text
@@ -79,7 +79,7 @@ def test_redact_paths_can_disable_home_redaction(tmp_path: Path) -> None:
     fake_home = tmp_path
     text = f"{fake_home}/.bashrc"
 
-    with patch("autoship.utils.redaction.Path.home", return_value=fake_home):
+    with patch("myagent.utils.redaction.Path.home", return_value=fake_home):
         result = redact_paths(text, project_root=None, redact_home=False)
 
     assert result == text

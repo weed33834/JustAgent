@@ -1,7 +1,7 @@
 """Tests for the upload adapter registry/factory.
 
 Note:
-    ``src/autoship/adapters/upload/registry.py`` is currently a factory that
+    ``src/myagent/adapters/upload/registry.py`` is currently a factory that
     maps upload target names (``pypi``, ``docker``, ``github``) to adapter
     instances. There is no HTTP-based plugin registry upload adapter
     (``httpx.Client.post``) implemented yet, so this module tests the
@@ -14,14 +14,14 @@ from pathlib import Path
 
 import pytest
 
-from autoship.adapters.upload import get_uploader
-from autoship.adapters.upload.base import UploadAdapter, UploadResult
-from autoship.adapters.upload.docker import DockerUploader
-from autoship.adapters.upload.github import GitHubUploader
-from autoship.adapters.upload.pypi import PyPIUploader
-from autoship.adapters.upload.registry import register_uploader
-from autoship.exceptions import ConfigError
-from autoship.models.config import ToolConfig, ToolsConfig
+from myagent.adapters.upload import get_uploader
+from myagent.adapters.upload.base import UploadAdapter, UploadResult
+from myagent.adapters.upload.docker import DockerUploader
+from myagent.adapters.upload.github import GitHubUploader
+from myagent.adapters.upload.pypi import PyPIUploader
+from myagent.adapters.upload.registry import register_uploader
+from myagent.exceptions import ConfigError
+from myagent.models.config import ToolConfig, ToolsConfig
 
 
 def test_get_pypi_uploader(tmp_path: Path) -> None:

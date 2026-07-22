@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import InvalidArgumentsError, ToolContext
-from autoship.agent.tools.builtin.write import (
+from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from myagent.agent.tools.builtin.write import (
     WriteToFileInput,
     make_write_to_file_tool,
 )

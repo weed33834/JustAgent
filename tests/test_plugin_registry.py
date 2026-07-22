@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.core.plugin_registry import PluginRegistry, PluginSpec, TrustLevel
+from myagent.core.plugin_registry import PluginRegistry, PluginSpec, TrustLevel
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def test_trust_unknown_plugin_returns_false(registry: PluginRegistry) -> None:
 
 
 def test_capability_summary_with_network_and_shell() -> None:
-    from autoship.core.plugin_registry import CapabilityManifest
+    from myagent.core.plugin_registry import CapabilityManifest
 
     cap = CapabilityManifest(network=True, shell=True)
     summary = cap.summary()
@@ -75,7 +75,7 @@ def test_capability_summary_with_network_and_shell() -> None:
 
 
 def test_capability_summary_without_network_and_shell() -> None:
-    from autoship.core.plugin_registry import CapabilityManifest
+    from myagent.core.plugin_registry import CapabilityManifest
 
     cap = CapabilityManifest(network=False, shell=False)
     summary = cap.summary()
@@ -84,7 +84,7 @@ def test_capability_summary_without_network_and_shell() -> None:
 
 
 def test_capability_summary_with_env() -> None:
-    from autoship.core.plugin_registry import CapabilityManifest
+    from myagent.core.plugin_registry import CapabilityManifest
 
     cap = CapabilityManifest(env=["HOME", "PATH"])
     summary = cap.summary()

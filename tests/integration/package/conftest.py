@@ -18,11 +18,11 @@ def project_root() -> Path:
 
 
 @pytest.fixture(scope="session")
-def autoship_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the autoship wheel once per session and return its path."""
+def myagent_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build the myagent wheel once per session and return its path."""
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("autoship-dist")
+    output_dir = tmp_path_factory.mktemp("myagent-dist")
     wheels = build_wheel(project_root, output_dir)
     if not wheels:
         pytest.skip("wheel build produced no artifacts")
@@ -30,11 +30,11 @@ def autoship_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory)
 
 
 @pytest.fixture(scope="session")
-def autoship_sdist(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the autoship sdist once per session and return its path."""
+def myagent_sdist(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build the myagent sdist once per session and return its path."""
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("autoship-sdist")
+    output_dir = tmp_path_factory.mktemp("myagent-sdist")
     sdist = build_sdist(project_root, output_dir)
     if not sdist:
         pytest.skip("sdist build produced no artifacts")
@@ -43,16 +43,16 @@ def autoship_sdist(project_root: Path, tmp_path_factory: pytest.TempPathFactory)
 
 @pytest.fixture(scope="session")
 def sdk_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the autoship-sdk wheel once per session and return its path."""
-    sdk_root = project_root / "autoship-sdk"
+    """Build the myagent-sdk wheel once per session and return its path."""
+    sdk_root = project_root / "myagent-sdk"
     if not sdk_root.exists():
-        pytest.skip("autoship-sdk workspace member not found")
+        pytest.skip("myagent-sdk workspace member not found")
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("autoship-sdk-dist")
+    output_dir = tmp_path_factory.mktemp("myagent-sdk-dist")
     wheels = build_wheel(sdk_root, output_dir)
     if not wheels:
-        pytest.skip("autoship-sdk wheel build produced no artifacts")
+        pytest.skip("myagent-sdk wheel build produced no artifacts")
     return wheels[0]
 
 

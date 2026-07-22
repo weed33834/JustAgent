@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import InvalidArgumentsError, ToolContext
-from autoship.agent.tools.builtin.edit import (
+from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from myagent.agent.tools.builtin.edit import (
     ReplaceInFileInput,
     make_replace_in_file_tool,
 )

@@ -1,4 +1,4 @@
-"""Tests for the ``autoship session`` CLI commands."""
+"""Tests for the ``myagent session`` CLI commands."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from autoship.agent.session import SessionStore
-from autoship.cli.main import app
+from myagent.agent.session import SessionStore
+from myagent.cli.main import app
 
 runner = CliRunner()
 
@@ -16,7 +16,7 @@ runner = CliRunner()
 def _invoke(
     args: list[str], *, sessions_dir: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    monkeypatch.setenv("AUTOSHIP_SESSIONS_DIR", str(sessions_dir))
+    monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(sessions_dir))
     return runner.invoke(app, ["session", *args])
 
 

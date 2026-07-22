@@ -6,10 +6,10 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.core.context import CommandContext
-from autoship.exceptions import UploadError
-from autoship.models.config import AppConfig, DockerShipConfig
-from autoship.plugins import docker_ship
+from myagent.core.context import CommandContext
+from myagent.exceptions import UploadError
+from myagent.models.config import AppConfig, DockerShipConfig
+from myagent.plugins import docker_ship
 
 
 @pytest.fixture

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from autoship.core.context import CommandContext
-from autoship.models.config import AppConfig
+from myagent.core.context import CommandContext
+from myagent.models.config import AppConfig
 
 
 def test_command_context_defaults(app_config: AppConfig) -> None:

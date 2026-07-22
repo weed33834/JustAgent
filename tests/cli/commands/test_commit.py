@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autoship.cli.commands import commit
-from autoship.exceptions import GitError, ModelGatewayError
-from autoship.models.config import AppConfig
+from myagent.cli.commands import commit
+from myagent.exceptions import GitError, ModelGatewayError
+from myagent.models.config import AppConfig
 
 
 def test_commit_no_changes(project_root, app_config: AppConfig) -> None:

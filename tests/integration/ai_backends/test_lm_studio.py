@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers import LmStudioGateway
-from autoship.core.model_router import ModelRouter
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers import LmStudioGateway
+from myagent.core.model_router import ModelRouter
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import Provider
 
 from .conftest import (
     app_config_with_backend,

@@ -1,4 +1,4 @@
-"""Tests for :mod:`autoship.core.project_discovery`."""
+"""Tests for :mod:`myagent.core.project_discovery`."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from autoship.core.project_discovery import (
+from myagent.core.project_discovery import (
     DiscoveredProject,
     DiscoveryConfig,
     ProjectDiscovery,
     ProjectDiscoveryError,
     ProjectType,
 )
-from autoship.core.project_store import ProjectStore
-from autoship.models.project import ManagedProject
+from myagent.core.project_store import ProjectStore
+from myagent.models.project import ManagedProject
 
 # ---------------------------------------------------------------------------
 # TestProjectType

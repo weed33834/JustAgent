@@ -1,4 +1,4 @@
-"""Tests for the interactive REPL mode of the ``autoship agent`` command.
+"""Tests for the interactive REPL mode of the ``myagent agent`` command.
 
 Covers:
 
@@ -21,11 +21,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from autoship.agent.plan_act import AgentMode
-from autoship.agent.runtime import RunResult
-from autoship.agent.slash_commands import create_default_registry
-from autoship.cli.commands import agent as agent_module
-from autoship.cli.main import app
+from myagent.agent.plan_act import AgentMode
+from myagent.agent.runtime import RunResult
+from myagent.agent.slash_commands import create_default_registry
+from myagent.cli.commands import agent as agent_module
+from myagent.cli.main import app
 
 runner = CliRunner()
 
@@ -36,9 +36,9 @@ runner = CliRunner()
 
 
 def _write_legacy_llm_config(root: Path, *, api_key: str = "fake-key") -> None:
-    """Write a ``.autoship.toml`` with a legacy ``[llm]`` section."""
+    """Write a ``.myagent.toml`` with a legacy ``[llm]`` section."""
 
-    config_file = root / ".autoship.toml"
+    config_file = root / ".myagent.toml"
     config_file.write_text(
         f'[llm]\napi_key = "{api_key}"\nmodel = "gpt-4o-mini"\n',
         encoding="utf-8",
@@ -128,7 +128,7 @@ class TestInteractiveFlag:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=EOFError),
         ):
@@ -158,7 +158,7 @@ class TestWelcomeBanner:
             mode="act", model="gpt-4o", cwd="/tmp", json_mode=False
         )
         captured = capsys.readouterr()
-        assert "AutoShip Agent" in captured.out
+        assert "MyAgent Agent" in captured.out
         assert "interactive" in captured.out
         assert "act" in captured.out
         assert "gpt-4o" in captured.out
@@ -421,7 +421,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["/exit"]),
         ):
@@ -437,7 +437,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=EOFError),
         ):
@@ -453,13 +453,13 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
 
-        assert "AutoShip Agent" in result.output
+        assert "MyAgent Agent" in result.output
         assert "interactive" in result.output
 
     def test_interactive_with_initial_prompt_then_exit(
@@ -471,7 +471,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["/exit"]),
         ):
@@ -489,7 +489,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["hello there", "/exit"]),
         ):
@@ -507,7 +507,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["/clear", "/exit"]),
         ):
@@ -526,7 +526,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=["/mode plan", "/exit"]),
         ):
@@ -545,7 +545,7 @@ class TestAgentInteractiveCli:
         mock_runtime = _make_mock_runtime()
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch("builtins.input", side_effect=EOFError),
         ):

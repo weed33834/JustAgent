@@ -1,4 +1,4 @@
-# AutoShip
+# MyAgent
 
 Personal dev assistant — an AI agent CLI that lives in your terminal and helps you ship code.
 
@@ -6,7 +6,7 @@ Personal dev assistant — an AI agent CLI that lives in your terminal and helps
 
 ## What it does
 
-AutoShip is a local-first AI coding agent that grows with you. It runs an interactive agent loop, manages your project, and orchestrates a delivery pipeline — all from the command line.
+MyAgent is a local-first AI coding agent that grows with you. It runs an interactive agent loop, manages your project, and orchestrates a delivery pipeline — all from the command line.
 
 Three modes, one tool:
 
@@ -17,13 +17,13 @@ Three modes, one tool:
 ## Install
 
 ```bash
-pip install autoship
+pip install myagent
 ```
 
 AI-powered commits, security scanning, and the agent mode require the optional extras:
 
 ```bash
-pip install "autoship[ai,security]"
+pip install "myagent[ai,security]"
 ```
 
 Python 3.11 or later. Git 2.30+ recommended.
@@ -34,41 +34,41 @@ Python 3.11 or later. Git 2.30+ recommended.
 
 ```bash
 cd your-project
-autoship agent                    # interactive agent loop
-autoship agent "refactor utils"   # one-shot task
-autoship agent --plan "..."       # plan first, then act
-autoship agent --yolo "..."       # auto-approve all tool calls
-autoship agent --json "..."       # NDJSON event stream for CI
+myagent agent                    # interactive agent loop
+myagent agent "refactor utils"   # one-shot task
+myagent agent --plan "..."       # plan first, then act
+myagent agent --yolo "..."       # auto-approve all tool calls
+myagent agent --json "..."       # NDJSON event stream for CI
 ```
 
 ### Pipeline mode (classic)
 
 ```bash
 cd your-project
-autoship init
-autoship ship                     # clean → verify → commit → upload
+myagent init
+myagent ship                     # clean → verify → commit → upload
 ```
 
 Or pick individual stages:
 
 ```bash
-autoship clean
-autoship verify
-autoship commit
-autoship upload
+myagent clean
+myagent verify
+myagent commit
+myagent upload
 ```
 
 ### Project mode (new)
 
 ```bash
-autoship project list             # list managed projects
-autoship project add ./my-app
-autoship project run my-app ship  # run a command in a managed project
+myagent project list             # list managed projects
+myagent project add ./my-app
+myagent project run my-app ship  # run a command in a managed project
 ```
 
 ## Configuration
 
-AutoShip reads `.autoship.toml` from your project root:
+MyAgent reads `.myagent.toml` from your project root:
 
 ```toml
 [clean]
@@ -97,13 +97,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-Environment variables in config values (`${VAR}`) are expanded at runtime. See `.autoship.toml.example` for the full set of options.
+Environment variables in config values (`${VAR}`) are expanded at runtime. See `.myagent.toml.example` for the full set of options.
 
 ## AI backends
 
-AutoShip routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), which means any provider LiteLLM handles is supported out of the box — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and 100+ others.
+MyAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), which means any provider LiteLLM handles is supported out of the box — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and 100+ others.
 
-Configure one or more backends in `.autoship.toml`:
+Configure one or more backends in `.myagent.toml`:
 
 ```toml
 [[model.backends]]
@@ -132,7 +132,7 @@ The agent mode is built around an iterative tool-calling loop with safety rails:
 | **Loop detection** | Detect repeated tool calls (soft=3, hard=5) and break out of doom loops. |
 | **Mistake tracker** | Count consecutive errors, stop or continue based on config. |
 | **Permissions** | `allow` / `deny` / `ask` rules with `once` / `always` scope and wildcard patterns. |
-| **Skills** | Load `SKILL.md` files from `.autoship/skills/` with progressive disclosure. |
+| **Skills** | Load `SKILL.md` files from `.myagent/skills/` with progressive disclosure. |
 | **Instructions** | Auto-discover `AGENTS.md` / `CLAUDE.md` / `CONTEXT.md` at multiple directory levels. |
 | **Subagents** | Spawn read-only parallel research subagents with isolated context. |
 | **MCP** | Connect Model Context Protocol servers (stdio / SSE / HTTP) with OAuth support. |
@@ -141,28 +141,28 @@ The agent mode is built around an iterative tool-calling loop with safety rails:
 
 | Command | Description |
 |---------|-------------|
-| `autoship agent` | Interactive AI agent (new) |
-| `autoship project` | Manage multiple local projects (new) |
-| `autoship init` | Initialize in the current directory |
-| `autoship clean` | Format and lint source files |
-| `autoship verify` | Run test suite and checks |
-| `autoship commit` | Generate and create a commit |
-| `autoship upload` | Build and publish artifacts |
-| `autoship ship` | Run clean, verify, commit, upload in sequence |
-| `autoship fix` | AI-powered code fix suggestions |
-| `autoship config` | View and manage configuration |
-| `autoship doctor` | Diagnose environment and dependencies |
-| `autoship plugin` | Manage plugins |
-| `autoship hooks` | Manage lifecycle hooks |
-| `autoship lsp` | Language Server Protocol integration |
-| `autoship artifacts` | Manage build artifacts |
-| `autoship metrics` | Show usage and cost metrics |
+| `myagent agent` | Interactive AI agent (new) |
+| `myagent project` | Manage multiple local projects (new) |
+| `myagent init` | Initialize in the current directory |
+| `myagent clean` | Format and lint source files |
+| `myagent verify` | Run test suite and checks |
+| `myagent commit` | Generate and create a commit |
+| `myagent upload` | Build and publish artifacts |
+| `myagent ship` | Run clean, verify, commit, upload in sequence |
+| `myagent fix` | AI-powered code fix suggestions |
+| `myagent config` | View and manage configuration |
+| `myagent doctor` | Diagnose environment and dependencies |
+| `myagent plugin` | Manage plugins |
+| `myagent hooks` | Manage lifecycle hooks |
+| `myagent lsp` | Language Server Protocol integration |
+| `myagent artifacts` | Manage build artifacts |
+| `myagent metrics` | Show usage and cost metrics |
 
 ## Development
 
 ```bash
-git clone https://gitcode.com/badhope/autoship.git
-cd autoship
+git clone https://gitcode.com/badhope/myagent.git
+cd myagent
 uv sync --all-extras
 ```
 
@@ -196,7 +196,7 @@ uv run mypy src/
 ## Architecture
 
 ```
-src/autoship/
+src/myagent/
 ├── cli/                 # Typer commands
 │   ├── commands/        # One module per command
 │   └── main.py          # Entry point + global options
@@ -235,7 +235,7 @@ src/autoship/
 
 ## Mirrors
 
-- [GitCode](https://gitcode.com/badhope/autoship) — faster clone for users in mainland China
+- [GitCode](https://gitcode.com/badhope/myagent) — faster clone for users in mainland China
 
 ## License
 

@@ -29,15 +29,15 @@ def mod() -> Any:
 def _valid_builtin() -> dict[str, Any]:
     return {
         "name": "my-plugin",
-        "package": "autoship-my-plugin",
-        "module": "autoship_my_plugin.plugin",
+        "package": "myagent-my-plugin",
+        "module": "myagent_my_plugin.plugin",
         "version": "1.0.0",
         "description": "A test plugin.",
         "trust_level": "builtin",
-        "entry_point": "autoship_my_plugin.plugin:MyPlugin",
+        "entry_point": "myagent_my_plugin.plugin:MyPlugin",
         "hooks": ["pre_commit"],
-        "publisher": {"id": "autoship-team", "verified": True, "url": "https://autoship.dev"},
-        "maintainer": "AutoShip Team",
+        "publisher": {"id": "myagent-team", "verified": True, "url": "https://myagent.dev"},
+        "maintainer": "MyAgent Team",
         "license": "MIT",
         "permissions": {
             "filesystem": "read-only",
@@ -53,7 +53,7 @@ def _valid_builtin() -> dict[str, Any]:
 
 def _publisher_index() -> dict[str, dict[str, Any]]:
     return {
-        "autoship-team": {"id": "autoship-team", "verified": True},
+        "myagent-team": {"id": "myagent-team", "verified": True},
         "alice-chen": {"id": "alice-chen", "verified": True},
     }
 

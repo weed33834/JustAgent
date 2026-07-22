@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "autoship-node-ship"
+name = "myagent-node-ship"
 version = "0.1.0"
-description = "AutoShip-CLI language pack: Node build artifacts and verify hints"
+description = "MyAgent-CLI language pack: Node build artifacts and verify hints"
 requires-python = ">=3.10"
 dependencies = [
-    "autoship>=1.0.0",
-    "autoship-sdk>=1.0.0",
+    "myagent>=1.0.0",
+    "myagent-sdk>=1.0.0",
 ]
 
-[project.entry-points."autoship.plugins"]
-node = "autoship_node_ship.plugin:register"
+[project.entry-points."myagent.plugins"]
+node = "myagent_node_ship.plugin:register"

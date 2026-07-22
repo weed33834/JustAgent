@@ -10,12 +10,12 @@ Thanks for considering a contribution. Here is how things work.
 ## Setup
 
 ```bash
-git clone https://gitcode.com/badhope/autoship.git
-cd autoship
+git clone https://gitcode.com/badhope/myagent.git
+cd myagent
 uv sync --group dev
 ```
 
-This installs AutoShip in editable mode with all dev dependencies — Ruff, mypy, Pyright, pytest, and tooling.
+This installs MyAgent in editable mode with all dev dependencies — Ruff, mypy, Pyright, pytest, and tooling.
 
 ## Making changes
 
@@ -48,7 +48,7 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore
 
 - Unit tests go in `tests/unit/`.
 - Integration tests go in `tests/integration/` and are marked with `@pytest.mark.integration`.
-- Coverage must stay at or above 85%. Check with `uv run pytest --cov=autoship`.
+- Coverage must stay at or above 85%. Check with `uv run pytest --cov=myagent`.
 
 ## License
 

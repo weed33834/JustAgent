@@ -1,4 +1,4 @@
-"""Tests for the ``autoship agent`` CLI command.
+"""Tests for the ``myagent agent`` CLI command.
 
 These tests cover:
 
@@ -21,8 +21,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from autoship.agent.plan_act import AgentMode
-from autoship.agent.runtime import (
+from myagent.agent.plan_act import AgentMode
+from myagent.agent.runtime import (
     AssistantMessageEvent,
     RunCompletedEvent,
     RunStartedEvent,
@@ -31,9 +31,9 @@ from autoship.agent.runtime import (
     ToolStartedEvent,
     TurnStartedEvent,
 )
-from autoship.cli.commands import agent as agent_module
-from autoship.cli.main import app
-from autoship.models.config import (
+from myagent.cli.commands import agent as agent_module
+from myagent.cli.main import app
+from myagent.models.config import (
     AppConfig,
     LlmConfig,
     LlmProvider,
@@ -57,9 +57,9 @@ def _make_event(type_: str, run_id: str = "test-run") -> RuntimeEvent:
 
 
 def _write_legacy_llm_config(root: Path, *, api_key: str = "fake-key") -> None:
-    """Write a ``.autoship.toml`` with a legacy ``[llm]`` section."""
+    """Write a ``.myagent.toml`` with a legacy ``[llm]`` section."""
 
-    config_file = root / ".autoship.toml"
+    config_file = root / ".myagent.toml"
     config_file.write_text(
         f'[llm]\napi_key = "{api_key}"\nmodel = "gpt-4o-mini"\n',
         encoding="utf-8",
@@ -67,9 +67,9 @@ def _write_legacy_llm_config(root: Path, *, api_key: str = "fake-key") -> None:
 
 
 def _write_newstyle_model_config(root: Path, *, api_key: str = "fake-key") -> None:
-    """Write a ``.autoship.toml`` with a ``[model.backends]]`` section."""
+    """Write a ``.myagent.toml`` with a ``[model.backends]]`` section."""
 
-    config_file = root / ".autoship.toml"
+    config_file = root / ".myagent.toml"
     config_file.write_text(
         f'''[[model.backends]]
 provider = "openai"
@@ -440,7 +440,7 @@ class TestEventToDict:
         assert d["iteration"] == 3
 
     def test_assistant_message(self) -> None:
-        from autoship.agent.runtime import ToolCall
+        from myagent.agent.runtime import ToolCall
 
         event = AssistantMessageEvent(
             type="assistant-message",
@@ -627,7 +627,7 @@ class TestAgentCliEndToEnd:
             return_value=_async_wrap(_make_run_result(status="completed"))
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "say hello"])
 
@@ -647,7 +647,7 @@ class TestAgentCliEndToEnd:
             )
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "do something"])
 
@@ -666,7 +666,7 @@ class TestAgentCliEndToEnd:
             )
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "loop forever"])
 
@@ -683,7 +683,7 @@ class TestAgentCliEndToEnd:
             return_value=_async_wrap(_make_run_result())
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "hello"])
 
@@ -702,7 +702,7 @@ class TestAgentCliEndToEnd:
             )
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "--json", "task"])
 
@@ -730,7 +730,7 @@ class TestAgentCliEndToEnd:
             return mock
 
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", side_effect=fake_init
+            "myagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
         ):
             result = runner.invoke(app, ["agent", "--plan", "explore"])
 
@@ -753,7 +753,7 @@ class TestAgentCliEndToEnd:
             return mock
 
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", side_effect=fake_init
+            "myagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
         ):
             result = runner.invoke(app, ["agent", "--yolo", "just do it"])
 
@@ -776,7 +776,7 @@ class TestAgentCliEndToEnd:
             return mock
 
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", side_effect=fake_init
+            "myagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
         ):
             result = runner.invoke(app, ["agent", "--yes", "go"])
 
@@ -799,7 +799,7 @@ class TestAgentCliEndToEnd:
             return mock
 
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", side_effect=fake_init
+            "myagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
         ):
             result = runner.invoke(app, ["agent", "--mode", "plan", "explore"])
 
@@ -817,10 +817,10 @@ class TestAgentCliEndToEnd:
         mock_runtime.run = MagicMock(return_value=_async_wrap(_make_run_result()))
         with (
             patch(
-                "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+                "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
             ),
             patch(
-                "autoship.cli.commands.agent.LLMClient"
+                "myagent.cli.commands.agent.LLMClient"
             ) as mock_llm_client_class,
         ):
             result = runner.invoke(
@@ -861,13 +861,13 @@ class TestAgentCliEndToEnd:
             return_value=_async_wrap(_make_run_result(status="completed"))
         )
         with patch(
-            "autoship.cli.commands.agent.AgentRuntime", return_value=mock_runtime
+            "myagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
         ):
             result = runner.invoke(app, ["agent", "task"])
 
         assert result.exit_code == 0
         # The audit log file should exist and contain agent.start / agent.done.
-        audit_log = Path.home() / ".autoship" / "logs"
+        audit_log = Path.home() / ".myagent" / "logs"
         # Find today's audit log
         audit_files = list(audit_log.glob("audit.*.jsonl"))
         assert audit_files, "Expected at least one audit log file"

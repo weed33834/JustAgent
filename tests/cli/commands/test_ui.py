@@ -1,4 +1,4 @@
-"""Tests for the ``autoship ui`` command (textual dashboard wrapper).
+"""Tests for the ``myagent ui`` command (textual dashboard wrapper).
 
 The textual TUI itself is never started — ``_build_app`` is exercised to
 construct the dashboard, and the ``action_run_*`` handlers are driven with
@@ -19,22 +19,22 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from autoship.cli.commands import ui as ui_module
-from autoship.cli.commands.ui import (
+from myagent.cli.commands import ui as ui_module
+from myagent.cli.commands.ui import (
     _build_app,
     _check_textual_available,
     _project_summary,
     _tail_audit,
 )
-from autoship.cli.main import app
-from autoship.core.audit_logger import AuditLogger
-from autoship.models.config import AppConfig
+from myagent.cli.main import app
+from myagent.core.audit_logger import AuditLogger
+from myagent.models.config import AppConfig
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path, log_dir: Path) -> Path:
-    config_path = tmp_path / ".autoship.toml"
+    config_path = tmp_path / ".myagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n\n[audit]\nlog_dir = "{log_dir}"\n',
         encoding="utf-8",
@@ -230,22 +230,22 @@ def test_project_summary_go_project_has_matching_rule(tmp_path: Path) -> None:
 def test_build_app_returns_dashboard_with_bindings(tmp_path: Path) -> None:
     dashboard = _make_dashboard(tmp_path)
     assert dashboard is not None
-    assert dashboard.__class__.__name__ == "AutoShipDashboard"
+    assert dashboard.__class__.__name__ == "MyAgentDashboard"
     # Quit binding + one per action (clean/verify/commit/upload/doctor).
     assert len(dashboard.BINDINGS) == 6  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
-# AutoShipDashboard action_run_* — subprocess.run + DOM mocked.
+# MyAgentDashboard action_run_* — subprocess.run + DOM mocked.
 # ---------------------------------------------------------------------------
 
 
 _ACTION_COMMANDS = [
-    ("action_run_clean", [sys.executable, "-m", "autoship", "clean", "--yes"]),
-    ("action_run_verify", [sys.executable, "-m", "autoship", "verify", "pytest"]),
-    ("action_run_commit", [sys.executable, "-m", "autoship", "commit"]),
-    ("action_run_upload", [sys.executable, "-m", "autoship", "upload", "--dry-run"]),
-    ("action_run_doctor", [sys.executable, "-m", "autoship", "doctor"]),
+    ("action_run_clean", [sys.executable, "-m", "myagent", "clean", "--yes"]),
+    ("action_run_verify", [sys.executable, "-m", "myagent", "verify", "pytest"]),
+    ("action_run_commit", [sys.executable, "-m", "myagent", "commit"]),
+    ("action_run_upload", [sys.executable, "-m", "myagent", "upload", "--dry-run"]),
+    ("action_run_doctor", [sys.executable, "-m", "myagent", "doctor"]),
 ]
 
 
@@ -291,7 +291,7 @@ def test_run_command_no_output_fallback(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(subprocess, "run", fake_run)
     right = _wire_dashboard(dashboard, mount=AsyncMock())
 
-    asyncio.run(dashboard._run_command([sys.executable, "-m", "autoship", "doctor"]))  # type: ignore[attr-defined]
+    asyncio.run(dashboard._run_command([sys.executable, "-m", "myagent", "doctor"]))  # type: ignore[attr-defined]
 
     # The "(no output, exit=...)" fallback is mounted into the right pane.
     assert right.mount.await_count >= 1
@@ -310,7 +310,7 @@ def test_run_command_handles_subprocess_error(
     # _flash calls mount synchronously (no await), so mount is a plain Mock.
     right = _wire_dashboard(dashboard, mount=MagicMock())
 
-    asyncio.run(dashboard._run_command([sys.executable, "-m", "autoship", "doctor"]))  # type: ignore[attr-defined]
+    asyncio.run(dashboard._run_command([sys.executable, "-m", "myagent", "doctor"]))  # type: ignore[attr-defined]
 
     # The error path surfaces a red error line in the right pane.
     right.mount.assert_called_once()

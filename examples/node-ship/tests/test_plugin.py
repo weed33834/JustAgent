@@ -6,9 +6,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from autoship_node_ship.plugin import NodeShipPlugin, plugin
+from myagent_node_ship.plugin import NodeShipPlugin, plugin
 
-from autoship.core.context import CommandContext
+from myagent.core.context import CommandContext
 
 
 @pytest.fixture
@@ -87,6 +87,6 @@ def test_pre_verify_noop_without_package_json(node_plugin: NodeShipPlugin, tmp_p
 
 
 def test_register_factory_returns_plugin() -> None:
-    from autoship_node_ship.plugin import register
+    from myagent_node_ship.plugin import register
 
     assert isinstance(register(), NodeShipPlugin)

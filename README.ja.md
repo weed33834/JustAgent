@@ -1,4 +1,4 @@
-# AutoShip CLI
+# MyAgent CLI
 
 ターミナルで完結するデリバリーパイプライン——コード整形、検証、コミット、公開を一つのCLIで。
 
@@ -6,7 +6,7 @@
 
 ## 概要
 
-AutoShip はデリバリーパイプラインを4つのステージに分割し、それぞれを独立して実行・設定できます。
+MyAgent はデリバリーパイプラインを4つのステージに分割し、それぞれを独立して実行・設定できます。
 
 1. **Clean** — Ruff によるコード整形、インポート整理、デッドコード除去
 2. **Verify** — テストスイートとリンターの実行
@@ -18,13 +18,13 @@ AutoShip はデリバリーパイプラインを4つのステージに分割し�
 ## インストール
 
 ```bash
-pip install autoship
+pip install myagent
 ```
 
 AI によるコミットメッセージ生成やセキュリティスキャンが必要な場合：
 
 ```bash
-pip install "autoship[ai,security]"
+pip install "myagent[ai,security]"
 ```
 
 Python 3.11 以上、Git 2.30 以上を推奨。
@@ -33,22 +33,22 @@ Python 3.11 以上、Git 2.30 以上を推奨。
 
 ```bash
 cd プロジェクトディレクトリ
-autoship init
-autoship ship
+myagent init
+myagent ship
 ```
 
 ステージごとの実行：
 
 ```bash
-autoship clean
-autoship verify
-autoship commit
-autoship upload
+myagent clean
+myagent verify
+myagent commit
+myagent upload
 ```
 
 ## 設定
 
-プロジェクトルートに `.autoship.toml` を配置します：
+プロジェクトルートに `.myagent.toml` を配置します：
 
 ```toml
 [clean]
@@ -71,13 +71,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-設定値内の `${VAR}` は実行時に環境変数へ展開されます。全設定項目は `.autoship.toml.example` を参照してください。
+設定値内の `${VAR}` は実行時に環境変数へ展開されます。全設定項目は `.myagent.toml.example` を参照してください。
 
 ## AI バックエンド
 
-AutoShip は [LiteLLM](https://github.com/BerriAI/litellm) をモデルゲートウェイとして使用しており、LiteLLM が対応する全てのプロバイダ（OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 他、100以上）をそのまま利用できます。
+MyAgent は [LiteLLM](https://github.com/BerriAI/litellm) をモデルゲートウェイとして使用しており、LiteLLM が対応する全てのプロバイダ（OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 他、100以上）をそのまま利用できます。
 
-`.autoship.toml` に一つまたは複数のバックエンドを設定：
+`.myagent.toml` に一つまたは複数のバックエンドを設定：
 
 ```toml
 [[model.backends]]
@@ -97,22 +97,22 @@ model = "anthropic/claude-sonnet-4"
 
 | コマンド | 説明 |
 |----------|------|
-| `autoship init` | カレントディレクトリに初期化 |
-| `autoship clean` | ソースの整形と lint |
-| `autoship verify` | テストスイートの実行 |
-| `autoship commit` | コミットの生成と作成 |
-| `autoship upload` | アーティファクトのビルドと公開 |
-| `autoship ship` | 全ステージを順次実行 |
-| `autoship fix` | AI によるコード修正提案 |
-| `autoship config` | 設定の確認と管理 |
-| `autoship doctor` | 環境と依存関係の診断 |
-| `autoship plugin` | プラグイン管理 |
+| `myagent init` | カレントディレクトリに初期化 |
+| `myagent clean` | ソースの整形と lint |
+| `myagent verify` | テストスイートの実行 |
+| `myagent commit` | コミットの生成と作成 |
+| `myagent upload` | アーティファクトのビルドと公開 |
+| `myagent ship` | 全ステージを順次実行 |
+| `myagent fix` | AI によるコード修正提案 |
+| `myagent config` | 設定の確認と管理 |
+| `myagent doctor` | 環境と依存関係の診断 |
+| `myagent plugin` | プラグイン管理 |
 
 ## 開発
 
 ```bash
-git clone https://gitcode.com/badhope/autoship.git
-cd autoship
+git clone https://gitcode.com/badhope/myagent.git
+cd myagent
 pip install -e ".[dev]"
 ```
 
@@ -143,7 +143,7 @@ mypy src/
 
 ## ミラーリポジトリ
 
-- [GitCode](https://gitcode.com/badhope/autoship) — 中国本土からのクローンが高速です
+- [GitCode](https://gitcode.com/badhope/myagent) — 中国本土からのクローンが高速です
 
 ## ライセンス
 

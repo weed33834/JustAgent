@@ -1,6 +1,6 @@
-# autoship-go-ship
+# myagent-go-ship
 
-A language-aware AutoShip-CLI plugin pack for Go projects. It hooks into the
+A language-aware MyAgent-CLI plugin pack for Go projects. It hooks into the
 `clean` and `verify` lifecycle to report Go-specific build artifacts and
 suggest the conventional Go test command.
 
@@ -21,7 +21,7 @@ your own cleanup workflow.
 ## Install
 
 ```bash
-pipx install autoship-go-ship
+pipx install myagent-go-ship
 ```
 
 Or, for local development:
@@ -31,16 +31,16 @@ cd examples/go-ship
 pip install -e .
 ```
 
-The `[project.entry-points."autoship.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
 
-Add `go` to the verify allowlist so `autoship verify "go test ./..."` is
+Add `go` to the verify allowlist so `myagent verify "go test ./..."` is
 permitted (the default allowlist is Python-centric):
 
 ```toml
-# .autoship.toml
+# .myagent.toml
 [verify]
 allowed_commands = ["pytest", "go"]
 ```
@@ -55,6 +55,6 @@ pytest
 ## Notes
 
 - Artifacts are matched at the project root. Adjust `ARTIFACTS` in
-  `src/autoship_go_ship/plugin.py` to scan subdirectories if needed.
+  `src/myagent_go_ship/plugin.py` to scan subdirectories if needed.
 - This pack is part of the 1.1.0 forward-expansion examples and is not
   distributed via the official plugin registry.

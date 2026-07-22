@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from autoship.core.cache import DiskCache
+from myagent.core.cache import DiskCache
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def test_ttl_expiration(cache: DiskCache, monkeypatch) -> None:
     def advancing_time() -> float:
         return now[0]
 
-    monkeypatch.setattr("autoship.core.cache.time.time", advancing_time)
+    monkeypatch.setattr("myagent.core.cache.time.time", advancing_time)
     cache.set("key", "value", ttl=0)
     # Advance the clock so get() sees a timestamp strictly greater than the
     # expiry written by set().
@@ -106,8 +106,8 @@ def test_concurrent_access(cache: DiskCache) -> None:
     assert len(results) == 100
 
 
-def test_default_cache_dir_is_autoship_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_cache_dir_is_myagent_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_home = Path("/tmp/fake-home")
     monkeypatch.setattr(Path, "home", lambda: fake_home)
     default_cache = DiskCache()
-    assert default_cache.cache_dir == fake_home / ".autoship" / "cache"
+    assert default_cache.cache_dir == fake_home / ".myagent" / "cache"

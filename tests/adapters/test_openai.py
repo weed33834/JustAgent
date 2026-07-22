@@ -6,10 +6,10 @@ import httpx
 import pytest
 import respx
 
-from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
-from autoship.adapters.providers.openai import OpenAIGateway
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import ModelBackendConfig, Provider
+from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+from myagent.adapters.providers.openai import OpenAIGateway
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import ModelBackendConfig, Provider
 
 BASE_URL = "https://api.openai.com/v1"
 

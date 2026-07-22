@@ -17,8 +17,8 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.adapters.upload.pypi import PyPIUploader
-from autoship.exceptions import UploadError
+from myagent.adapters.upload.pypi import PyPIUploader
+from myagent.exceptions import UploadError
 
 
 @pytest.mark.parametrize(
@@ -39,8 +39,8 @@ def _write_dist_artifacts(root: Path) -> None:
     """Create temporary wheel/sdist artifacts in ``dist/``."""
     dist = root / "dist"
     dist.mkdir(parents=True, exist_ok=True)
-    (dist / "autoship-1.0.0-py3-none-any.whl").write_text("wheel", encoding="utf-8")
-    (dist / "autoship-1.0.0.tar.gz").write_text("sdist", encoding="utf-8")
+    (dist / "myagent-1.0.0-py3-none-any.whl").write_text("wheel", encoding="utf-8")
+    (dist / "myagent-1.0.0.tar.gz").write_text("sdist", encoding="utf-8")
 
 
 def test_pypi_dry_run(tmp_path: Path) -> None:

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import ToolContext
-from autoship.agent.tools.builtin.read import (
+from myagent.agent.tools.base import ToolContext
+from myagent.agent.tools.builtin.read import (
     ReadFileInput,
     make_read_file_tool,
 )
@@ -100,7 +100,7 @@ async def test_read_file_input_validation() -> None:
     tool = make_read_file_tool()
     # Pass an invalid offset; pydantic raises ValidationError which Tool.invoke
     # converts to InvalidArgumentsError.
-    from autoship.agent.tools.base import InvalidArgumentsError
+    from myagent.agent.tools.base import InvalidArgumentsError
 
     with pytest.raises(InvalidArgumentsError):
         await tool.invoke(

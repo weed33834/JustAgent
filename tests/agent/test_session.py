@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.session`` (session persistence)."""
+"""Tests for ``myagent.agent.session`` (session persistence)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-from autoship.agent.runtime import Message, ToolCall, ToolResultPart
-from autoship.agent.session import (
+from myagent.agent.runtime import Message, ToolCall, ToolResultPart
+from myagent.agent.session import (
     Session,
     SessionError,
     SessionMetadata,
@@ -256,7 +256,7 @@ class TestSessionStore:
     def test_default_store_dir(self) -> None:
         d = default_store_dir()
         assert d.name == "sessions"
-        assert d.parent.name == ".autoship"
+        assert d.parent.name == ".myagent"
 
     def test_create_session(self, tmp_path: Path) -> None:
         store = SessionStore(tmp_path / "sessions")
@@ -464,7 +464,7 @@ class TestGetSessionStore:
     def test_explicit_store_dir_wins(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("AUTOSHIP_SESSIONS_DIR", str(tmp_path / "env"))
+        monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(tmp_path / "env"))
         store = get_session_store(tmp_path / "explicit")
         assert store.store_dir == tmp_path / "explicit"
 
@@ -472,7 +472,7 @@ class TestGetSessionStore:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         env_dir = tmp_path / "env-sessions"
-        monkeypatch.setenv("AUTOSHIP_SESSIONS_DIR", str(env_dir))
+        monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(env_dir))
         store = get_session_store()
         assert store.store_dir == env_dir
         s = store.create_session("act", "m", ".", "p")
@@ -480,7 +480,7 @@ class TestGetSessionStore:
         assert (env_dir / f"{s.metadata.id}.json").exists()
 
     def test_default_when_no_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("AUTOSHIP_SESSIONS_DIR", raising=False)
+        monkeypatch.delenv("MYAGENT_SESSIONS_DIR", raising=False)
         store = get_session_store()
         assert store.store_dir == default_store_dir()
 

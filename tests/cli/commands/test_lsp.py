@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from autoship.cli.commands.lsp import _LSPServer, _read_message, _uri_to_path, _write_message
+from myagent.cli.commands.lsp import _LSPServer, _read_message, _uri_to_path, _write_message
 
 
 class _BytesStdin:
@@ -88,7 +88,7 @@ def test_initialize_returns_server_capabilities(tmp_path: Path) -> None:
     capabilities = response["result"]["capabilities"]
     assert "textDocumentSync" in capabilities
     assert "diagnosticProvider" in capabilities
-    assert response["result"]["serverInfo"]["name"] == "autoship-lsp"
+    assert response["result"]["serverInfo"]["name"] == "myagent-lsp"
 
 
 def test_initialized_notification_returns_none(tmp_path: Path) -> None:
@@ -200,7 +200,7 @@ def test_diagnostics_for_open_docs_includes_open_uri(tmp_path: Path) -> None:
 
 def test_serve_returns_zero_on_eof(tmp_path: Path) -> None:
     """An empty stdin (immediate EOF) causes _serve to return 0."""
-    from autoship.cli.commands.lsp import _serve
+    from myagent.cli.commands.lsp import _serve
 
     stdin = _BytesStdin(b"")
     stdout = _BytesStdout()
@@ -212,7 +212,7 @@ def test_serve_returns_zero_on_eof(tmp_path: Path) -> None:
 
 def test_serve_handles_initialize_and_exit(tmp_path: Path) -> None:
     """A full initialize -> shutdown -> exit round-trip through _serve."""
-    from autoship.cli.commands.lsp import _serve
+    from myagent.cli.commands.lsp import _serve
 
     init_msg = _frame({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
     shutdown_msg = _frame({"jsonrpc": "2.0", "id": 2, "method": "shutdown"})
@@ -235,7 +235,7 @@ def test_serve_handles_initialize_and_exit(tmp_path: Path) -> None:
 
 def test_serve_skips_malformed_json(tmp_path: Path) -> None:
     """Malformed JSON bodies are silently skipped, not crashed."""
-    from autoship.cli.commands.lsp import _serve
+    from myagent.cli.commands.lsp import _serve
 
     bad_body = b"{not valid json"
     bad_msg = f"Content-Length: {len(bad_body)}\r\n\r\n".encode("ascii") + bad_body
@@ -319,12 +319,12 @@ def test_serve_republishes_diagnostics_on_did_save(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """didSave triggers a fresh publishDiagnostics push."""
-    from autoship.cli.commands.lsp import _serve
+    from myagent.cli.commands.lsp import _serve
 
     # Stub run_on_save_hooks so no real subprocess is spawned.
     monkeypatch.setattr(_LSPServer, "run_on_save_hooks", lambda self, uri: None)
     # Stub _run_verify so diagnostics computation does not spawn a subprocess.
-    import autoship.cli.commands.lsp as lsp_mod
+    import myagent.cli.commands.lsp as lsp_mod
 
     monkeypatch.setattr(lsp_mod, "_run_verify", lambda root, uri: [])
 
@@ -405,7 +405,7 @@ def _fake_completed_process(returncode: int, stdout: str = "", stderr: str = "")
 
 def test_run_verify_returns_empty_list_for_non_file_uri(tmp_path: Path) -> None:
     """A non-file:// URI means file_path is None — no diagnostics."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     assert _run_verify(tmp_path, "untitled:Untitled-1") == []
 
@@ -414,7 +414,7 @@ def test_run_verify_returns_empty_on_zero_exit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """When verify exits 0, no diagnostics are produced."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -422,7 +422,7 @@ def test_run_verify_returns_empty_on_zero_exit(
     def fake_run(*_args: object, **_kwargs: object) -> Any:
         return _fake_completed_process(0)
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", fake_run)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", fake_run)
     assert _run_verify(tmp_path, file_path.as_uri()) == []
 
 
@@ -430,7 +430,7 @@ def test_run_verify_maps_nonzero_exit_to_error_severity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A non-zero verify exit produces a single Error-severity diagnostic."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -438,12 +438,12 @@ def test_run_verify_maps_nonzero_exit_to_error_severity(
     def fake_run(*_args: object, **_kwargs: object) -> Any:
         return _fake_completed_process(1, stderr="syntax error on line 1\ntraceback")
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", fake_run)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", fake_run)
     diagnostics = _run_verify(tmp_path, file_path.as_uri())
     assert len(diagnostics) == 1
     diag = diagnostics[0]
     assert diag["severity"] == 1  # Error
-    assert diag["source"] == "autoship"
+    assert diag["source"] == "myagent"
     assert diag["message"] == "syntax error on line 1"
     assert diag["range"]["start"] == {"line": 0, "character": 0}
     assert diag["range"]["end"] == {"line": 0, "character": 0}
@@ -453,7 +453,7 @@ def test_run_verify_falls_back_to_stdout_when_stderr_empty(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """When stderr is empty, the first line of stdout is the diagnostic message."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -461,7 +461,7 @@ def test_run_verify_falls_back_to_stdout_when_stderr_empty(
     def fake_run(*_args: object, **_kwargs: object) -> Any:
         return _fake_completed_process(2, stdout="issue found\nmore")
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", fake_run)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", fake_run)
     diagnostics = _run_verify(tmp_path, file_path.as_uri())
     assert len(diagnostics) == 1
     assert diagnostics[0]["message"] == "issue found"
@@ -471,7 +471,7 @@ def test_run_verify_falls_back_to_default_message_when_no_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """When both stderr and stdout are empty, a default message is used."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -479,7 +479,7 @@ def test_run_verify_falls_back_to_default_message_when_no_output(
     def fake_run(*_args: object, **_kwargs: object) -> Any:
         return _fake_completed_process(1)
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", fake_run)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", fake_run)
     diagnostics = _run_verify(tmp_path, file_path.as_uri())
     assert len(diagnostics) == 1
     assert diagnostics[0]["message"] == "verify reported issues"
@@ -489,7 +489,7 @@ def test_run_verify_returns_empty_on_subprocess_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """If subprocess.run raises SubprocessError/OSError, return an empty list."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -497,7 +497,7 @@ def test_run_verify_returns_empty_on_subprocess_error(
     def boom(*_args: object, **_kwargs: object) -> Any:
         raise OSError("interpreter gone")
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", boom)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", boom)
     assert _run_verify(tmp_path, file_path.as_uri()) == []
 
 
@@ -510,7 +510,7 @@ def test_text_document_diagnostic_returns_full_kind(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """textDocument/diagnostic (pull mode) returns {kind: full, items: [...]}."""
-    import autoship.cli.commands.lsp as lsp_mod
+    import myagent.cli.commands.lsp as lsp_mod
 
     monkeypatch.setattr(lsp_mod, "_run_verify", lambda root, uri: [])
     server = _LSPServer(tmp_path)
@@ -591,7 +591,7 @@ def test_handle_with_non_string_method_returns_method_not_found(tmp_path: Path) 
 
 def test_serve_skips_non_dict_json_body(tmp_path: Path) -> None:
     """A JSON body that parses to a non-dict (e.g. a list) is skipped."""
-    from autoship.cli.commands.lsp import _serve
+    from myagent.cli.commands.lsp import _serve
 
     body = b"[1, 2, 3]"
     msg = f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body
@@ -613,7 +613,7 @@ def test_lsp_command_entry_invokes_serve_and_exits_with_code(
     """The lsp typer command invokes _serve and exits with its return code."""
     from typer.testing import CliRunner
 
-    from autoship.cli.main import app
+    from myagent.cli.main import app
 
     captured: dict[str, object] = {}
 
@@ -621,7 +621,7 @@ def test_lsp_command_entry_invokes_serve_and_exits_with_code(
         captured["root"] = root
         return 0
 
-    monkeypatch.setattr("autoship.cli.commands.lsp._serve", fake_serve)
+    monkeypatch.setattr("myagent.cli.commands.lsp._serve", fake_serve)
 
     runner = CliRunner()
     result = runner.invoke(app, ["lsp", "--project-root", str(tmp_path)])
@@ -635,12 +635,12 @@ def test_lsp_command_entry_propagates_nonzero_exit_code(
     """A non-zero _serve return code propagates as a non-zero CLI exit code."""
     from typer.testing import CliRunner
 
-    from autoship.cli.main import app
+    from myagent.cli.main import app
 
     def fake_serve(_stdin: object, _stdout: object, _root: Path) -> int:
         return 1
 
-    monkeypatch.setattr("autoship.cli.commands.lsp._serve", fake_serve)
+    monkeypatch.setattr("myagent.cli.commands.lsp._serve", fake_serve)
 
     runner = CliRunner()
     result = runner.invoke(app, ["lsp"])
@@ -654,8 +654,8 @@ def test_lsp_command_entry_propagates_nonzero_exit_code(
 
 def test_resolve_verify_command_returns_pytest_when_no_verify_hook() -> None:
     """With no on-save hooks configured, the default ``pytest`` is returned."""
-    from autoship.cli.commands.lsp import _resolve_verify_command
-    from autoship.models.config import AppConfig
+    from myagent.cli.commands.lsp import _resolve_verify_command
+    from myagent.models.config import AppConfig
 
     config = AppConfig()
     assert _resolve_verify_command(config) == "pytest"
@@ -663,8 +663,8 @@ def test_resolve_verify_command_returns_pytest_when_no_verify_hook() -> None:
 
 def test_resolve_verify_command_returns_hook_verify_command() -> None:
     """The first ``verify`` hook's ``verify_command`` is returned."""
-    from autoship.cli.commands.lsp import _resolve_verify_command
-    from autoship.models.config import AppConfig, HookConfig, HooksConfig
+    from myagent.cli.commands.lsp import _resolve_verify_command
+    from myagent.models.config import AppConfig, HookConfig, HooksConfig
 
     config = AppConfig(
         hooks=HooksConfig(on_save=[HookConfig(command="verify", verify_command="ruff check .")])
@@ -674,8 +674,8 @@ def test_resolve_verify_command_returns_hook_verify_command() -> None:
 
 def test_resolve_verify_command_skips_clean_hooks() -> None:
     """``clean`` hooks are skipped; the first ``verify`` hook wins."""
-    from autoship.cli.commands.lsp import _resolve_verify_command
-    from autoship.models.config import AppConfig, HookConfig, HooksConfig
+    from myagent.cli.commands.lsp import _resolve_verify_command
+    from myagent.models.config import AppConfig, HookConfig, HooksConfig
 
     config = AppConfig(
         hooks=HooksConfig(
@@ -697,14 +697,14 @@ def test_run_verify_truncates_long_message_to_200_chars(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The diagnostic message is capped at 200 characters."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
 
     long_message = "E" * 500
     monkeypatch.setattr(
-        "autoship.cli.commands.lsp.subprocess.run",
+        "myagent.cli.commands.lsp.subprocess.run",
         lambda *_a, **_k: _fake_completed_process(1, stderr=long_message),
     )
     diagnostics = _run_verify(tmp_path, file_path.as_uri())
@@ -717,7 +717,7 @@ def test_run_verify_returns_empty_on_timeout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A subprocess timeout yields an empty diagnostics list, not a crash."""
-    from autoship.cli.commands.lsp import _run_verify
+    from myagent.cli.commands.lsp import _run_verify
 
     file_path = tmp_path / "example.py"
     file_path.write_text("x = 1\n")
@@ -725,5 +725,5 @@ def test_run_verify_returns_empty_on_timeout(
     def _timeout(*_args: object, **_kwargs: object) -> Any:
         raise subprocess.TimeoutExpired(cmd=["pytest"], timeout=30)
 
-    monkeypatch.setattr("autoship.cli.commands.lsp.subprocess.run", _timeout)
+    monkeypatch.setattr("myagent.cli.commands.lsp.subprocess.run", _timeout)
     assert _run_verify(tmp_path, file_path.as_uri()) == []

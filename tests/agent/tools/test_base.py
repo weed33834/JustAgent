@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from pydantic import BaseModel
 
-from autoship.agent.tools.base import (
+from myagent.agent.tools.base import (
     Attachment,
     InvalidArgumentsError,
     PermissionDeniedError,

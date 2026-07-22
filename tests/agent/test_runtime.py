@@ -1,4 +1,4 @@
-"""Tests for ``autoship.agent.runtime`` (the agent iterative loop)."""
+"""Tests for ``myagent.agent.runtime`` (the agent iterative loop)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from autoship.agent.runtime import (
+from myagent.agent.runtime import (
     AgentRuntime,
     AgentRuntimeConfig,
     LLMClient,
@@ -21,8 +21,8 @@ from autoship.agent.runtime import (
     ToolStartedEvent,
     TurnStartedEvent,
 )
-from autoship.agent.tools.base import Tool, ToolContext, ToolResult
-from autoship.agent.tools.registry import ToolRegistry
+from myagent.agent.tools.base import Tool, ToolContext, ToolResult
+from myagent.agent.tools.registry import ToolRegistry
 
 # ---------------------------------------------------------------------------
 # Test fixtures

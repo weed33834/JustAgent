@@ -1,4 +1,4 @@
-"""Unit tests for the core redaction primitives in ``autoship.utils.redaction``.
+"""Unit tests for the core redaction primitives in ``myagent.utils.redaction``.
 
 These tests focus on the lower-level helpers (``redact_text``, ``redact_scalar``,
 ``redact_dict``, ``is_sensitive_key``, ``_is_hash_field``, ``_BARE_HEX_PATTERN``)
@@ -8,7 +8,7 @@ do not cover directly.
 
 from __future__ import annotations
 
-from autoship.utils.redaction import (
+from myagent.utils.redaction import (
     _BARE_HEX_PATTERN,
     _is_hash_field,
     is_sensitive_key,

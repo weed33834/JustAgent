@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from autoship.adapters.upload.docker import DockerUploader
+from myagent.adapters.upload.docker import DockerUploader
 
 from .conftest import find_free_port, run_cmd, tool_available
 
@@ -43,7 +43,7 @@ def local_registry():
 
     port = find_free_port()
     registry = f"127.0.0.1:{port}"
-    name = f"autoship-test-registry-{port}"
+    name = f"myagent-test-registry-{port}"
 
     run_cmd(
         [
@@ -91,7 +91,7 @@ def test_docker_build_and_push_to_local_registry(
     minimal_docker_project: Path, local_registry: str
 ) -> None:
     """Build and push a real image to a local Docker registry."""
-    image = "autoship-upload-test"
+    image = "myagent-upload-test"
     tag = "v1"
     uploader = DockerUploader(
         minimal_docker_project,
@@ -109,7 +109,7 @@ def test_docker_build_and_push_to_local_registry(
         [
             "docker",
             "exec",
-            f"autoship-test-registry-{local_registry.split(':')[1]}",
+            f"myagent-test-registry-{local_registry.split(':')[1]}",
             "wget",
             "-qO-",
             "http://localhost:5000/v2/_catalog",

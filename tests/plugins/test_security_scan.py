@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.core.context import CommandContext
-from autoship.exceptions import SecurityScanError
-from autoship.models.config import AppConfig, SecurityThreshold
-from autoship.plugins import security_scan
+from myagent.core.context import CommandContext
+from myagent.exceptions import SecurityScanError
+from myagent.models.config import AppConfig, SecurityThreshold
+from myagent.plugins import security_scan
 
 
 @pytest.fixture

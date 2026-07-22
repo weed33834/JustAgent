@@ -12,10 +12,10 @@ from pathlib import Path
 
 import pytest
 
-from autoship.adapters.providers import OllamaGateway
-from autoship.core.model_router import ModelRouter
-from autoship.exceptions import ModelGatewayError
-from autoship.models.config import Provider
+from myagent.adapters.providers import OllamaGateway
+from myagent.core.model_router import ModelRouter
+from myagent.exceptions import ModelGatewayError
+from myagent.models.config import Provider
 
 from .conftest import (
     app_config_with_backend,
@@ -65,7 +65,7 @@ def test_ollama_list_models_includes_configured_model(
 
 def test_ollama_chat_returns_content(ollama_gateway: OllamaGateway, chat_messages) -> None:
     """A simple chat request returns non-empty content."""
-    from autoship.adapters.model_gateway import ChatCompletionRequest
+    from myagent.adapters.model_gateway import ChatCompletionRequest
 
     request = ChatCompletionRequest(messages=chat_messages, max_tokens=64)
     response = ollama_gateway.chat(request)
@@ -87,7 +87,7 @@ def test_ollama_chat_missing_model_raises(
     )
     gateway = OllamaGateway(cfg)
 
-    from autoship.adapters.model_gateway import ChatCompletionRequest, ChatMessage
+    from myagent.adapters.model_gateway import ChatCompletionRequest, ChatMessage
 
     with pytest.raises(ModelGatewayError):
         gateway.chat(

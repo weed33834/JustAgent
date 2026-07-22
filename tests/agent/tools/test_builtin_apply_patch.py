@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import InvalidArgumentsError, ToolContext
-from autoship.agent.tools.builtin.apply_patch import (
+from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from myagent.agent.tools.builtin.apply_patch import (
     ApplyPatchInput,
     make_apply_patch_tool,
 )

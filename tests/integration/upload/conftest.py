@@ -40,7 +40,7 @@ def minimal_python_package(tmp_path: Path) -> Path:
         "requires = ['hatchling']\n"
         "build-backend = 'hatchling.build'\n\n"
         "[project]\n"
-        "name = 'demo-pkg-for-autoship-upload'\n"
+        "name = 'demo-pkg-for-myagent-upload'\n"
         "version = '0.0.1'\n"
         "description = 'Demo package for upload integration tests'\n"
         "requires-python = '>=3.10'\n\n"

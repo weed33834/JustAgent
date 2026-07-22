@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from autoship.adapters.upload.docker import DockerUploader
-from autoship.exceptions import UploadError
+from myagent.adapters.upload.docker import DockerUploader
+from myagent.exceptions import UploadError
 
 
 def _write_docker_project(root: Path) -> None:
@@ -101,7 +101,7 @@ def test_docker_upload_failure_redacts_and_tails_output(tmp_path: Path) -> None:
     ``redact_text`` replaces the *entire* string with ``"***"`` when any
     secret pattern matches, which would otherwise hide the tail marker.
     """
-    from autoship.adapters.upload.docker import _MAX_OUTPUT_CHARS
+    from myagent.adapters.upload.docker import _MAX_OUTPUT_CHARS
 
     _write_docker_project(tmp_path)
     uploader = DockerUploader(tmp_path, image="myapp", tag="v1")

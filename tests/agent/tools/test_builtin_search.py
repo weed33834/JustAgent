@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from autoship.agent.tools.base import InvalidArgumentsError, ToolContext
-from autoship.agent.tools.builtin.search import (
+from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from myagent.agent.tools.builtin.search import (
     MAX_MATCHES_PER_FILE,
     MAX_TOTAL_MATCHES,
     SearchInput,

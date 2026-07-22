@@ -45,9 +45,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# AutoShip local
-.autoship/
-.autoship.toml
+# MyAgent local
+.myagent/
+.myagent.toml
 
 # Secrets — never commit
 .env

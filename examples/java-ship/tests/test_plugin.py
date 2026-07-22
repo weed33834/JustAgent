@@ -6,9 +6,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from autoship_java_ship.plugin import JavaShipPlugin, plugin
+from myagent_java_ship.plugin import JavaShipPlugin, plugin
 
-from autoship.core.context import CommandContext
+from myagent.core.context import CommandContext
 
 
 @pytest.fixture
@@ -102,6 +102,6 @@ def test_pre_verify_noop_without_build_file(java_plugin: JavaShipPlugin, tmp_pat
 
 
 def test_register_factory_returns_plugin() -> None:
-    from autoship_java_ship.plugin import register
+    from myagent_java_ship.plugin import register
 
     assert isinstance(register(), JavaShipPlugin)

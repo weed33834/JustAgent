@@ -12,9 +12,9 @@ import json
 import threading
 from pathlib import Path
 
-from autoship.core.audit_logger import AuditLogger
-from autoship.core.metrics import MetricsRegistry
-from autoship.models.config import AppConfig
+from myagent.core.audit_logger import AuditLogger
+from myagent.core.metrics import MetricsRegistry
+from myagent.models.config import AppConfig
 
 THREADS = 8
 ITERS = 500

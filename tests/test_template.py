@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from autoship.utils.template import render_default_config
+from myagent.utils.template import render_default_config
 
 
 def test_render_default_config_contains_project_type() -> None:
@@ -15,7 +15,7 @@ def test_render_default_config_contains_project_type() -> None:
 
 def test_render_default_config_is_valid_toml(project_root) -> None:
     rendered = render_default_config("node")
-    config_file = project_root / ".autoship.toml"
+    config_file = project_root / ".myagent.toml"
     config_file.write_text(rendered, encoding="utf-8")
     try:
         import tomllib

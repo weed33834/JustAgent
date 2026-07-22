@@ -8,8 +8,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from autoship.adapters.model_gateway import ChatMessage
-from autoship.models.config import AppConfig, ModelBackendConfig, ModelConfig, Provider
+from myagent.adapters.model_gateway import ChatMessage
+from myagent.models.config import AppConfig, ModelBackendConfig, ModelConfig, Provider
 
 
 def _env_or_default(name: str, default: str) -> str:

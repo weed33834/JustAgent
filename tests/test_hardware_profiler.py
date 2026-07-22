@@ -5,14 +5,14 @@ from __future__ import annotations
 import sys
 from unittest.mock import patch
 
-from autoship.core.hardware_profiler import HardwareProfile, detect_hardware
+from myagent.core.hardware_profiler import HardwareProfile, detect_hardware
 
 
 def test_detect_hardware_recommends_tier_3() -> None:
     with (
-        patch("autoship.core.hardware_profiler._cpu_count", return_value=16),
-        patch("autoship.core.hardware_profiler._memory_gb", return_value=32.0),
-        patch("autoship.core.hardware_profiler._has_gpu", return_value=True),
+        patch("myagent.core.hardware_profiler._cpu_count", return_value=16),
+        patch("myagent.core.hardware_profiler._memory_gb", return_value=32.0),
+        patch("myagent.core.hardware_profiler._has_gpu", return_value=True),
     ):
         profile = detect_hardware()
     assert profile.recommended_tier == 3
@@ -20,9 +20,9 @@ def test_detect_hardware_recommends_tier_3() -> None:
 
 def test_detect_hardware_recommends_tier_2() -> None:
     with (
-        patch("autoship.core.hardware_profiler._cpu_count", return_value=4),
-        patch("autoship.core.hardware_profiler._memory_gb", return_value=8.0),
-        patch("autoship.core.hardware_profiler._has_gpu", return_value=False),
+        patch("myagent.core.hardware_profiler._cpu_count", return_value=4),
+        patch("myagent.core.hardware_profiler._memory_gb", return_value=8.0),
+        patch("myagent.core.hardware_profiler._has_gpu", return_value=False),
     ):
         profile = detect_hardware()
     assert profile.recommended_tier == 2
@@ -30,9 +30,9 @@ def test_detect_hardware_recommends_tier_2() -> None:
 
 def test_detect_hardware_recommends_tier_1() -> None:
     with (
-        patch("autoship.core.hardware_profiler._cpu_count", return_value=2),
-        patch("autoship.core.hardware_profiler._memory_gb", return_value=4.0),
-        patch("autoship.core.hardware_profiler._has_gpu", return_value=False),
+        patch("myagent.core.hardware_profiler._cpu_count", return_value=2),
+        patch("myagent.core.hardware_profiler._memory_gb", return_value=4.0),
+        patch("myagent.core.hardware_profiler._has_gpu", return_value=False),
     ):
         profile = detect_hardware()
     assert profile.recommended_tier == 1
@@ -46,7 +46,7 @@ def test_hardware_profile_fields() -> None:
 
 
 def test_memory_gb_fallback_from_proc(tmp_path, monkeypatch) -> None:
-    from autoship.core.hardware_profiler import _memory_gb
+    from myagent.core.hardware_profiler import _memory_gb
 
     monkeypatch.setitem(sys.modules, "psutil", None)
     meminfo = tmp_path / "meminfo"
@@ -60,7 +60,7 @@ def test_memory_gb_fallback_from_proc(tmp_path, monkeypatch) -> None:
 
 
 def test_memory_gb_assumes_default_on_failure(monkeypatch) -> None:
-    from autoship.core.hardware_profiler import _memory_gb
+    from myagent.core.hardware_profiler import _memory_gb
 
     monkeypatch.setitem(sys.modules, "psutil", None)
     with patch("builtins.open", side_effect=OSError("no /proc")):
@@ -68,14 +68,14 @@ def test_memory_gb_assumes_default_on_failure(monkeypatch) -> None:
 
 
 def test_has_gpu_detects_nvidia_smi() -> None:
-    from autoship.core.hardware_profiler import _has_gpu
+    from myagent.core.hardware_profiler import _has_gpu
 
     with patch("shutil.which", return_value="/usr/bin/nvidia-smi"):
         assert _has_gpu() is True
 
 
 def test_has_gpu_no_torch() -> None:
-    from autoship.core.hardware_profiler import _has_gpu
+    from myagent.core.hardware_profiler import _has_gpu
 
     with patch("shutil.which", return_value=None), patch.dict("sys.modules", {"torch": None}):
         assert _has_gpu() is False
@@ -107,7 +107,7 @@ def _make_open(files: dict[str, str]):
 
 def test_cgroup_cpu_count_v2_quota(tmp_path, monkeypatch) -> None:
     """cgroup v2 ``cpu.max`` with a finite quota yields the ceiled CPU count."""
-    from autoship.core.hardware_profiler import _cgroup_cpu_count
+    from myagent.core.hardware_profiler import _cgroup_cpu_count
 
     # quota=400000 period=100000 -> ceil(400000/100000) = 4 CPUs.
     files = {"/sys/fs/cgroup/cpu.max": "400000 100000\n"}
@@ -117,7 +117,7 @@ def test_cgroup_cpu_count_v2_quota(tmp_path, monkeypatch) -> None:
 
 def test_cgroup_cpu_count_v2_max_returns_none(tmp_path, monkeypatch) -> None:
     """cgroup v2 ``cpu.max`` set to ``"max"`` means unlimited -> None."""
-    from autoship.core.hardware_profiler import _cgroup_cpu_count
+    from myagent.core.hardware_profiler import _cgroup_cpu_count
 
     files = {"/sys/fs/cgroup/cpu.max": "max 100000\n"}
     with patch("builtins.open", _make_open(files)):
@@ -126,7 +126,7 @@ def test_cgroup_cpu_count_v2_max_returns_none(tmp_path, monkeypatch) -> None:
 
 def test_cgroup_cpu_count_v1_fallback(tmp_path, monkeypatch) -> None:
     """When v2 ``cpu.max`` is missing, the v1 fallback path is used."""
-    from autoship.core.hardware_profiler import _cgroup_cpu_count
+    from myagent.core.hardware_profiler import _cgroup_cpu_count
 
     # No cpu.max file -> v1 reads succeed. quota=200000 period=100000 -> 2 CPUs.
     files = {
@@ -139,7 +139,7 @@ def test_cgroup_cpu_count_v1_fallback(tmp_path, monkeypatch) -> None:
 
 def test_cgroup_cpu_count_unreadable_returns_none(tmp_path, monkeypatch) -> None:
     """When no cgroup files are readable, ``None`` is returned."""
-    from autoship.core.hardware_profiler import _cgroup_cpu_count
+    from myagent.core.hardware_profiler import _cgroup_cpu_count
 
     with patch("builtins.open", _make_open({})):
         assert _cgroup_cpu_count() is None
@@ -147,7 +147,7 @@ def test_cgroup_cpu_count_unreadable_returns_none(tmp_path, monkeypatch) -> None
 
 def test_cgroup_memory_gb_v2(tmp_path, monkeypatch) -> None:
     """cgroup v2 ``memory.max`` byte count is converted to GB."""
-    from autoship.core.hardware_profiler import _cgroup_memory_gb
+    from myagent.core.hardware_profiler import _cgroup_memory_gb
 
     # 4 GiB = 4 * 1024**3 bytes.
     files = {"/sys/fs/cgroup/memory.max": str(4 * 1024**3) + "\n"}
@@ -157,7 +157,7 @@ def test_cgroup_memory_gb_v2(tmp_path, monkeypatch) -> None:
 
 def test_cgroup_memory_gb_v1(tmp_path, monkeypatch) -> None:
     """When v2 ``memory.max`` is missing, the v1 fallback path is used."""
-    from autoship.core.hardware_profiler import _cgroup_memory_gb
+    from myagent.core.hardware_profiler import _cgroup_memory_gb
 
     # 8 GiB = 8 * 1024**3 bytes.
     files = {"/sys/fs/cgroup/memory/memory.limit_in_bytes": str(8 * 1024**3) + "\n"}

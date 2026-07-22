@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from autoship.cli import main
-from autoship.cli.main import app
-from autoship.core.i18n import I18n
+from myagent.cli import main
+from myagent.cli.main import app
+from myagent.core.i18n import I18n
 
 
 class _FakeContext:
@@ -77,7 +77,7 @@ def test_lang_none_defaults_to_config_locale() -> None:
 
 
 def test_lang_zh_with_subcommand_help_exits_cleanly() -> None:
-    """``autoship --lang zh clean --help`` must not crash."""
+    """``myagent --lang zh clean --help`` must not crash."""
     runner = CliRunner()
     result = runner.invoke(app, ["--lang", "zh", "clean", "--help"])
     assert result.exit_code == 0
@@ -85,7 +85,7 @@ def test_lang_zh_with_subcommand_help_exits_cleanly() -> None:
 
 
 def test_lang_ja_with_subcommand_help_exits_cleanly() -> None:
-    """``autoship --lang ja init --help`` must not crash."""
+    """``myagent --lang ja init --help`` must not crash."""
     runner = CliRunner()
     result = runner.invoke(app, ["--lang", "ja", "init", "--help"])
     assert result.exit_code == 0

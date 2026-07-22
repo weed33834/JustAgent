@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from autoship.agent.mistake_tracker import (
+from myagent.agent.mistake_tracker import (
     AppendRecoveryNotice,
     ConsecutiveMistakeLimitContext,
     ConsecutiveMistakeLimitDecision,

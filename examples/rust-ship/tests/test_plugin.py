@@ -7,9 +7,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from autoship_rust_ship.plugin import RustShipPlugin
+from myagent_rust_ship.plugin import RustShipPlugin
 
-from autoship.core.context import CommandContext
+from myagent.core.context import CommandContext
 
 
 @pytest.fixture
@@ -87,6 +87,6 @@ def test_pre_verify_noop_without_cargo_toml(rust_plugin: RustShipPlugin, tmp_pat
 
 
 def test_register_factory_returns_plugin() -> None:
-    from autoship_rust_ship.plugin import register
+    from myagent_rust_ship.plugin import register
 
     assert isinstance(register(), RustShipPlugin)
