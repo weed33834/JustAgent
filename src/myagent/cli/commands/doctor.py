@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import typer
@@ -19,7 +19,7 @@ from myagent.exceptions import ConfigError
 from myagent.models.config import AppConfig
 
 
-class Status(str, Enum):
+class Status(StrEnum):
     OK = "OK"
     WARNING = "WARNING"
     ERROR = "ERROR"

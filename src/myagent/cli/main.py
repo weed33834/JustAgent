@@ -14,7 +14,7 @@ from myagent.cli import commands
 from myagent.core.audit_logger import AuditLogger
 from myagent.core.config_center import load_config
 from myagent.core.logging_config import configure_structlog
-from myagent.exceptions import MyAgentError, ConfigError, ExitCode
+from myagent.exceptions import ConfigError, ExitCode, MyAgentError
 
 # AuditLogger 在 main_callback 中创建，在 cli_entrypoint 的 finally 中关闭。
 # 两者不共享 ctx，故用模块级变量桥接。

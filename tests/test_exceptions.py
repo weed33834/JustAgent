@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from myagent.exceptions import MyAgentError, ConfigError, ExitCode
+from myagent.exceptions import ConfigError, ExitCode, MyAgentError
 
 
 def test_exit_codes() -> None:

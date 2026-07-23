@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import cast
 
 from myagent.adapters.model_gateway import ChatMessage
 from myagent.adapters.web_search import (
@@ -131,7 +132,7 @@ def _search(
     registry.set(
         "web_search_results_last", len(results), description="Last web search result count"
     )
-    return results
+    return cast(list[WebSearchResult], results)
 
 
 def _build_query(error: Exception) -> str:

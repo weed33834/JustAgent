@@ -13,7 +13,7 @@ from typing import Any, cast
 try:
     import tomllib  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
 except ImportError:  # pragma: no cover
-    import tomli as tomllib  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
+    import tomli as tomllib  # type: ignore[no-redef]  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
 
 
 def load_toml(path: Path) -> dict[str, Any]:

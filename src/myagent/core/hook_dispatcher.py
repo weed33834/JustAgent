@@ -153,11 +153,7 @@ class HookDispatcher:
         """Discover and register external plugins via ``myagent.plugins`` entry points."""
         try:
             eps = entry_points()
-            group: Sequence[Any] = (
-                eps.select(group="myagent.plugins")
-                if hasattr(eps, "select")
-                else eps.get("myagent.plugins", [])
-            )
+            group: Sequence[Any] = eps.select(group="myagent.plugins")
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to discover entry-point plugins: %s", exc)
             return

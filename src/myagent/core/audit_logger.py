@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
 import uuid
@@ -185,6 +186,82 @@ class AuditLogger:
             except OSError:
                 continue
         return removed
+
+    def export_siem_bundle(
+        self, output: Path, since: datetime | None = None
+    ) -> Path:
+        """Export audit records as a SIEM ingestion bundle.
+
+        Creates a directory at *output* containing ``audit.jsonl``,
+        ``audit.jsonl.sha256`` and ``MANIFEST.json`` (record count, time range
+        and sha256). Raises ``RuntimeError`` when the bundle cannot be written.
+        Returns the bundle directory path.
+        """
+        bundle_dir = Path(output)
+        try:
+            bundle_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Cannot create SIEM bundle directory: {bundle_dir}"
+            ) from exc
+
+        jsonl_path = bundle_dir / "audit.jsonl"
+        self.export(since=since, output=jsonl_path)
+        content = jsonl_path.read_text(encoding="utf-8")
+        digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        record_count = 0
+        time_min: datetime | None = None
+        time_max: datetime | None = None
+        for line in content.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            record_count += 1
+            try:
+                entry_raw = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            ts = entry_raw.get("ts") if isinstance(entry_raw, dict) else None
+            if isinstance(ts, str):
+                try:
+                    dt = datetime.fromisoformat(ts)
+                except ValueError:
+                    continue
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=UTC)
+                if time_min is None or dt < time_min:
+                    time_min = dt
+                if time_max is None or dt > time_max:
+                    time_max = dt
+
+        sha_path = bundle_dir / "audit.jsonl.sha256"
+        sha_path.write_text(f"{digest}  audit.jsonl\n", encoding="utf-8")
+        ensure_file_permissions(sha_path, 0o600)
+
+        manifest = {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "record_count": record_count,
+            "time_range": {
+                "start": time_min.isoformat() if time_min else None,
+                "end": time_max.isoformat() if time_max else None,
+            },
+            "sha256": digest,
+            "files": ["audit.jsonl", "audit.jsonl.sha256", "MANIFEST.json"],
+        }
+        manifest_path = bundle_dir / "MANIFEST.json"
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        ensure_file_permissions(manifest_path, 0o600)
+        return bundle_dir
+
+    def close(self) -> None:
+        """Release resources held by the logger.
+
+        The default file-based logger opens files per-record, so this is a
+        no-op kept for interface compatibility with callers that manage the
+        logger lifecycle (e.g. the CLI entrypoint). It is idempotent.
+        """
+        return
 
     def bind_context(self, **kwargs: Any) -> AuditLogger:
         """Bind extra context to future records. Returns self for chaining."""

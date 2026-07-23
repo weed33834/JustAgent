@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Any
+from typing import Any, cast
 
 import litellm
 
@@ -136,10 +136,13 @@ class UnifiedGateway(ModelGateway):
 
     def list_models(self) -> list[str]:
         try:
-            return litellm.get_model_list(
-                custom_llm_provider=self._litellm_provider,
-                api_base=self._base_url or None,
-                api_key=self._api_key,
+            return cast(
+                list[str],
+                litellm.get_model_list(
+                    custom_llm_provider=self._litellm_provider,
+                    api_base=self._base_url or None,
+                    api_key=self._api_key,
+                ),
             )
         except Exception as exc:
             raise ModelGatewayError(

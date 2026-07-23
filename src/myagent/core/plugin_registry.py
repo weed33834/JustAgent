@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import structlog
@@ -16,7 +16,7 @@ logger = structlog.get_logger("myagent")
 DEFAULT_REGISTRY_DIR = Path.home() / ".config" / "myagent"
 
 
-class TrustLevel(str, Enum):
+class TrustLevel(StrEnum):
     """Trust levels for installed plugins."""
 
     BUILTIN = "builtin"

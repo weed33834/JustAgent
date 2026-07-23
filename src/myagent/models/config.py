@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 
-class Provider(str, Enum):
+class Provider(StrEnum):
     """Supported model backend providers."""
 
     LM_STUDIO = "lm_studio"
@@ -79,7 +79,7 @@ class CommitConfig(BaseModel):
     )
 
 
-class SecurityThreshold(str, Enum):
+class SecurityThreshold(StrEnum):
     """Severity threshold for security scans."""
 
     LOW = "low"
@@ -104,7 +104,7 @@ class AuditConfig(BaseModel):
     redact_unknown_fields: bool = False
 
 
-class WebSearchProvider(str, Enum):
+class WebSearchProvider(StrEnum):
     """Supported web search backends."""
 
     DUCKDUCKGO = "duckduckgo"
@@ -176,7 +176,7 @@ class CacheConfig(BaseModel):
     dir: Path | None = None
 
 
-class LlmProvider(str, Enum):
+class LlmProvider(StrEnum):
     """Supported LLM providers for the fix command."""
 
     OPENAI = "openai"

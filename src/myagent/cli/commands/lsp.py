@@ -188,7 +188,6 @@ def _run_verify(
     # config/audit stack at module load time.
     from myagent.cli.commands.verify import validate_verify_command
     from myagent.core.config_center import load_config
-    from myagent.core.i18n import get_i18n
     from myagent.exceptions import VerifyError
 
     if config is None:
@@ -212,7 +211,7 @@ def _run_verify(
     verify_command = _resolve_verify_command(config)
 
     try:
-        cmd_parts = validate_verify_command(verify_command, config.verify, get_i18n())
+        cmd_parts = validate_verify_command(verify_command, config.verify)
     except VerifyError:
         logger.warning(
             "LSP verify command %r rejected by allowlist; skipping diagnostics",

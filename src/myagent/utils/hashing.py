@@ -6,6 +6,10 @@ import hashlib
 import shutil
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from myagent.models.config import ToolsConfig
 
 
 def compute_sha256(path: Path | str) -> str:
@@ -55,7 +59,7 @@ class ToolVerifier:
     executable and rejects it if the digest does not match.
     """
 
-    def __init__(self, tools_config=None) -> None:
+    def __init__(self, tools_config: ToolsConfig | None = None) -> None:
         """Create a verifier from a ``ToolsConfig`` model.
 
         If no config is provided the verifier operates in PATH-only mode.

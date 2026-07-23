@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -191,7 +192,7 @@ def mirror(
     later (provided ``registry.public_key`` is also pinned).
     """
     import hashlib
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from myagent.utils.permissions import ensure_dir_permissions, ensure_file_permissions
 
@@ -234,7 +235,7 @@ def mirror(
     ensure_file_permissions(plugins_path, 0o600)
 
     manifest = {
-        "mirrored_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "mirrored_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source_url": str(config.registry.url),
         "source_sha256": data.get("sha256"),
         "computed_sha256": sha256,

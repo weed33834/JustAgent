@@ -480,7 +480,7 @@ async def _run_interactive(
                 "\n[turn aborted]", fg=typer.colors.YELLOW, err=True
             )
             runtime.abort()
-            runtime._abort.clear()  # type: ignore[attr-defined]  # reset for next turn
+            runtime._abort.clear()  # reset for next turn
 
     # REPL loop.
     while True:
@@ -561,7 +561,7 @@ async def _run_interactive(
                 "\n[turn aborted]", fg=typer.colors.YELLOW, err=True
             )
             runtime.abort()
-            runtime._abort.clear()  # type: ignore[attr-defined]  # reset for next turn
+            runtime._abort.clear()  # reset for next turn
         except MyAgentError as exc:
             typer.secho(
                 f"  [error] {exc}", fg=typer.colors.RED, err=True
@@ -832,7 +832,7 @@ def agent(
                 {
                     "status": "completed",
                     "interactive": True,
-                    "total_tokens": runtime._total_usage.get(  # type: ignore[attr-defined]
+                    "total_tokens": runtime._total_usage.get(
                         "total_tokens", 0
                     ),
                 },
