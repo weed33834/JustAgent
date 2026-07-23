@@ -1,17 +1,17 @@
 # MyAgent
 
-本地优先的 AI 编码智能体，运行在终端中。与 AI 对话，让它读取、写入、编辑你的代码，运行命令，搜索网页——所有操作都有权限控制，所有对话都可保存和恢复。
+[English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-[English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+本地优先的 AI 编码智能体，运行在终端中。它读取、写入、编辑代码，执行命令，搜索网页，每个操作都带权限控制，每个对话都可保存与恢复。
 
 ## 它做什么
 
-MyAgent 是一个本地优先的 AI 编码智能体——可以理解为 Cline / Aider / OpenCode / Continue.dev，但封装成一个 CLI 工具。它运行一个迭代的工具调用循环：LLM 读取你的代码库，提出修改，通过工具执行，然后验证结果。每个破坏性操作都经过权限引擎；每个对话都可以保存和恢复。
+MyAgent 是一个本地优先的 AI 编码智能体，封装为单个 CLI 工具，与 Cline / Aider / OpenCode / Continue.dev 处于同类定位。它运行一个迭代的工具调用循环：LLM 读取代码库，提出修改，通过工具执行，然后验证结果。每个破坏性操作都经过权限引擎，每个对话都可以保存与恢复。
 
-三种模式，一个工具：
+提供三种模式：
 
-1. **Agent 模式** — 交互式 REPL 或一次性任务。先规划（只读），再执行（带权限提示）。或全 Yolo 模式（自动批准）。多轮对话跨会话持久化。
-2. **Pipeline 模式** — 可选的 `clean → verify → commit → upload` 快捷方式，用于发布时。
+1. **Agent 模式** — 交互式 REPL 或一次性任务。先规划（只读），再执行（带权限提示），或启用 Yolo 模式自动批准工具调用。多轮对话跨会话持久化。
+2. **Pipeline 模式** — 可选的 `clean → verify → commit → upload` 快捷方式，用于发布流程。
 3. **Project 模式** — 管理多个本地项目，运行跨项目操作。
 
 ## 安装
@@ -96,7 +96,7 @@ threshold = "medium"
 
 ## AI 后端
 
-MyAgent 通过 [LiteLLM](https://github.com/BerriAI/litellm) 路由 LLM 调用，LiteLLM 支持的任何提供商都开箱即用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等 100+ 家。
+MyAgent 通过 [LiteLLM](https://github.com/BerriAI/litellm) 路由 LLM 调用，LiteLLM 支持的任何提供商都无需额外配置即可使用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等一百余家。
 
 在 `.myagent.toml` 中配置一个或多个后端：
 
@@ -116,7 +116,7 @@ model = "anthropic/claude-sonnet-4"
 
 ## Agent 能力
 
-Agent 模式基于迭代的工具调用循环，带安全护栏：
+Agent 模式基于迭代的工具调用循环，带安全控制：
 
 | 能力 | 说明 |
 |------|------|
@@ -127,7 +127,7 @@ Agent 模式基于迭代的工具调用循环，带安全护栏：
 | **变更追踪** | 追踪每次运行中创建/修改/删除的文件，计算行数差异，结束时显示汇总表。 |
 | **检查点** | 每次工具调用后创建影子 git 快照。可恢复文件、对话或两者。 |
 | **上下文压缩** | 90% 上下文预算时自动压缩长对话。基础（截断）或智能（LLM 摘要）模式。 |
-| **循环检测** | 检测重复工具调用（软=3，硬=5），跳出死循环。 |
+| **循环检测** | 检测重复工具调用（软=3，硬=5），跳出重复循环。 |
 | **错误追踪** | 统计连续错误，根据配置停止或继续。 |
 | **Repo Map** | 正则提取 Python/JS/TS/Rust/Go 符号，格式化为紧凑树。 |
 | **Skills** | 从 `.myagent/skills/` 加载 `SKILL.md` 文件，渐进式展示。 |
@@ -195,7 +195,7 @@ uv run mypy src/
 | CLI 框架 | Typer |
 | 插件系统 | Pluggy |
 | AI 网关 | LiteLLM |
-| Agent 循环 | 自研（工具调用迭代 + 安全护栏） |
+| Agent 循环 | 自研（工具调用迭代 + 安全控制） |
 | 配置 / schema | Pydantic v2 + pydantic-settings |
 | 终端输出 | Rich |
 | 日志 | Structlog（Rich 控制台 + JSON 文件） |

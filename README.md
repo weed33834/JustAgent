@@ -1,18 +1,18 @@
 # MyAgent
 
-A local-first AI coding agent that lives in your terminal. Chat with an AI that can read, write, and edit your code, run commands, and search the web — all with permission controls and session persistence.
+[English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-[English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+A local-first AI coding agent that runs in the terminal. It reads, writes, and edits code, runs commands, and searches the web, with permission controls on every action and persistence for every conversation.
 
 ## What it does
 
-MyAgent is a local-first AI coding agent — think Cline / Aider / OpenCode / Continue.dev, but as a single CLI tool. It runs an iterative tool-calling loop: the LLM reads your codebase, proposes changes, executes them via tools, and verifies the results. Every destructive action goes through a permission engine; every conversation can be saved and resumed.
+MyAgent is a local-first AI coding agent packaged as a single CLI tool, comparable to Cline, Aider, OpenCode, and Continue.dev. It runs an iterative tool-calling loop: the LLM reads the codebase, proposes changes, executes them through tools, and verifies the results. Every destructive action passes through a permission engine, and every conversation can be saved and resumed.
 
-Three modes, one tool:
+Three modes are available:
 
-1. **Agent mode** — interactive REPL or one-shot. Plan first (read-only), then act (with permission prompts). Or go full Yolo (auto-approve). Multi-turn conversations persist across sessions.
-2. **Pipeline mode** — optional `clean → verify → commit → upload` shortcut for when you just want to ship a release.
-3. **Project mode** — manage multiple local projects, run cross-project operations.
+1. **Agent mode** — interactive REPL or one-shot task. Plan first (read-only), then act (with permission prompts), or enable Yolo mode to auto-approve tool calls. Multi-turn conversations persist across sessions.
+2. **Pipeline mode** — an optional `clean → verify → commit → upload` shortcut for release workflows.
+3. **Project mode** — manage multiple local projects and run cross-project operations.
 
 ## Install
 
@@ -20,7 +20,7 @@ Three modes, one tool:
 pip install myagent
 ```
 
-AI-powered commits, security scanning, and the agent mode require the optional extras:
+AI-powered commits, security scanning, and agent mode require the optional extras:
 
 ```bash
 pip install "myagent[ai,security]"
@@ -50,7 +50,7 @@ myagent init
 myagent ship                     # clean → verify → commit → upload
 ```
 
-Or pick individual stages:
+Or run individual stages:
 
 ```bash
 myagent clean
@@ -69,7 +69,7 @@ myagent project run my-app ship  # run a command in a managed project
 
 ## Configuration
 
-MyAgent reads `.myagent.toml` from your project root:
+MyAgent reads `.myagent.toml` from the project root:
 
 ```toml
 [clean]
@@ -96,7 +96,7 @@ Environment variables in config values (`${VAR}`) are expanded at runtime. See `
 
 ## AI backends
 
-MyAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), which means any provider LiteLLM handles is supported out of the box — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and 100+ others.
+MyAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), so any provider LiteLLM supports is available without additional configuration — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and more than a hundred others.
 
 Configure one or more backends in `.myagent.toml`:
 
@@ -116,7 +116,7 @@ The gateway handles retry, rate limiting, and automatic failover across provider
 
 ## Agent capabilities
 
-The agent mode is built around an iterative tool-calling loop with safety rails:
+Agent mode is built on an iterative tool-calling loop with safety controls:
 
 | Capability | Description |
 |---|---|
@@ -127,7 +127,7 @@ The agent mode is built around an iterative tool-calling loop with safety rails:
 | **Change tracking** | Tracks every file created/modified/deleted during a run, with line-count deltas. Shows a summary table at the end. |
 | **Checkpoints** | Shadow git snapshots after every tool call. Restore files, conversation, or both. |
 | **Compaction** | Auto-compact long conversations at 90% context budget. Basic (truncate) or agentic (LLM summary) modes. |
-| **Loop detection** | Detect repeated tool calls (soft=3, hard=5) and break out of doom loops. |
+| **Loop detection** | Detect repeated tool calls (soft=3, hard=5) and break out of repetitive loops. |
 | **Mistake tracker** | Count consecutive errors, stop or continue based on config. |
 | **Repo map** | Regex-based symbol extraction (Python/JS/TS/Rust/Go) formatted as a compact tree. |
 | **Skills** | Load `SKILL.md` files from `.myagent/skills/` with progressive disclosure. |
@@ -195,7 +195,7 @@ uv run mypy src/
 | CLI framework | Typer |
 | Plugin system | Pluggy |
 | AI gateway | LiteLLM |
-| Agent loop | Custom (tool-calling iteration with safety rails) |
+| Agent loop | Custom (tool-calling iteration with safety controls) |
 | Config / schema | Pydantic v2 + pydantic-settings |
 | Terminal output | Rich |
 | Logging | Structlog (Rich console + JSON file) |
