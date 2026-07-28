@@ -1,0 +1,225 @@
+{
+  "version": 2,
+  "updated_at": "2026-06-22",
+  "plugins": [
+    {
+      "name": "security-scan",
+      "package": "justagent",
+      "module": "justagent.plugins.security_scan",
+      "version": "1.0.0",
+      "description": "提交前运行 semgrep/gitleaks/osv-scanner 安全扫描。",
+      "trust_level": "builtin",
+      "entry_point": "justagent.plugins.security_scan",
+      "hooks": ["pre_commit"],
+      "publisher": {
+        "id": "justagent-team",
+        "verified": true,
+        "url": "https://justagent.dev"
+      },
+      "maintainer": "JustAgent Team",
+      "license": "CNCL-1.0",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": false,
+        "git": true,
+        "env": []
+      },
+      "categories": ["security"],
+      "tags": ["bandit", "gitleaks", "osv-scanner", "sast"],
+      "downloads": 0,
+      "rating": {"score": 0.0, "count": 0},
+      "homepage": "https://justagent.dev/plugins/security-scan",
+      "source_url": "https://gitcode.com/badhope/justagent",
+      "audit_status": "approved"
+    },
+    {
+      "name": "docker-ship",
+      "package": "justagent",
+      "module": "justagent.plugins.docker_ship",
+      "version": "1.0.0",
+      "description": "upload --target docker 时自动构建并推送 Docker 镜像。",
+      "trust_level": "builtin",
+      "entry_point": "justagent.plugins.docker_ship",
+      "hooks": ["pre_upload", "post_upload"],
+      "publisher": {
+        "id": "justagent-team",
+        "verified": true,
+        "url": "https://justagent.dev"
+      },
+      "maintainer": "JustAgent Team",
+      "license": "CNCL-1.0",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": true,
+        "git": false,
+        "env": []
+      },
+      "categories": ["ci-cd", "container"],
+      "tags": ["docker", "build", "push"],
+      "downloads": 0,
+      "rating": {"score": 0.0, "count": 0},
+      "homepage": "https://justagent.dev/plugins/docker-ship",
+      "source_url": "https://gitcode.com/badhope/justagent",
+      "audit_status": "approved"
+    },
+    {
+      "name": "typecheck",
+      "package": "justagent",
+      "module": "justagent.plugins.typecheck",
+      "version": "1.0.0",
+      "description": "提交前运行 pyright 静态类型检查。",
+      "trust_level": "builtin",
+      "entry_point": "justagent.plugins.typecheck",
+      "hooks": ["pre_commit"],
+      "publisher": {
+        "id": "justagent-team",
+        "verified": true,
+        "url": "https://justagent.dev"
+      },
+      "maintainer": "JustAgent Team",
+      "license": "CNCL-1.0",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": false,
+        "git": false,
+        "env": []
+      },
+      "categories": ["quality", "ci-cd"],
+      "tags": ["pyright", "type", "static-analysis"],
+      "downloads": 0,
+      "rating": {"score": 0.0, "count": 0},
+      "homepage": "https://justagent.dev/plugins/typecheck",
+      "source_url": "https://gitcode.com/badhope/justagent",
+      "audit_status": "approved"
+    },
+    {
+      "name": "commit-sign",
+      "package": "justagent-commit-sign",
+      "module": "myagent_commit_sign.plugin",
+      "version": "0.1.0",
+      "description": "自动为生成的 commit 添加 GPG 签名。",
+      "trust_level": "community",
+      "entry_point": "myagent_commit_sign.plugin:CommitSignPlugin",
+      "hooks": ["pre_commit"],
+      "publisher": {
+        "id": "alice-chen",
+        "verified": true,
+        "url": "https://github.com/alice-chen"
+      },
+      "maintainer": "Alice Chen <alice@example.com>",
+      "license": "Apache-2.0",
+      "sha256": "e4d7f2a1b3c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1",
+      "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEEJ7tVzXK7fFqBcuFB3Rk9vPxBqd4FAmZkXR8ACgkQ3Rk9vPxB\nqd7Qbw//RcqXkLmNpOqRsTtUvVwWxYyZzAaBbCcDdEeFfGgHhIiJjKkLlMmNnOoP\npQqRrSsTtUuVvWwXxYyZzAaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuV\nvWwXxYyZzAaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzAaB\nbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzAaBbCcDdEeFfGgH\nhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzAaBbCcDdEeFfGgHhIiJjKkLlMmN\nnOoPpQqRrSsTtUuVvWwXxYyZzAaBbCcDdEeFf=sig3\n-----END PGP SIGNATURE-----",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": false,
+        "git": true,
+        "env": []
+      },
+      "categories": ["security", "git"],
+      "tags": ["gpg", "sign", "commit"],
+      "downloads": 42,
+      "rating": {"score": 4.5, "count": 12},
+      "homepage": "https://github.com/example/justagent-commit-sign",
+      "source_url": "https://github.com/example/justagent-commit-sign",
+      "audit_status": "approved"
+    },
+    {
+      "name": "jira-link",
+      "package": "justagent-jira-link",
+      "module": "myagent_jira_link.plugin",
+      "version": "0.2.1",
+      "description": "从分支名提取 Jira Ticket 并写入 commit message。",
+      "trust_level": "community",
+      "entry_point": "myagent_jira_link.plugin:JiraLinkPlugin",
+      "hooks": ["pre_commit"],
+      "publisher": {
+        "id": "jira-link-contrib",
+        "verified": false,
+        "url": "https://github.com/jira-link-contrib"
+      },
+      "maintainer": "Community",
+      "license": "MIT",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": false,
+        "git": true,
+        "env": ["JIRA_BASE_URL"]
+      },
+      "categories": ["productivity", "git"],
+      "tags": ["jira", "ticket", "commit"],
+      "downloads": 128,
+      "rating": {"score": 3.8, "count": 5},
+      "homepage": "https://github.com/example/justagent-jira-link",
+      "source_url": "https://github.com/example/justagent-jira-link",
+      "audit_status": "pending"
+    },
+    {
+      "name": "changelog",
+      "package": "justagent-changelog",
+      "module": "myagent_changelog.plugin",
+      "version": "0.1.0",
+      "description": "根据 commit 历史自动生成或更新 CHANGELOG.md。",
+      "trust_level": "community",
+      "entry_point": "myagent_changelog.plugin:ChangelogPlugin",
+      "hooks": ["post_commit"],
+      "publisher": {
+        "id": "changelog-contrib",
+        "verified": false,
+        "url": "https://github.com/changelog-contrib"
+      },
+      "maintainer": "Community",
+      "license": "MIT",
+      "permissions": {
+        "filesystem": "read-write",
+        "network": false,
+        "shell": false,
+        "git": true,
+        "env": []
+      },
+      "categories": ["productivity", "git"],
+      "tags": ["changelog", "release", "git"],
+      "downloads": 36,
+      "rating": {"score": 4.0, "count": 4},
+      "homepage": "https://github.com/example/justagent-changelog",
+      "source_url": "https://github.com/example/justagent-changelog",
+      "audit_status": "approved"
+    },
+    {
+      "name": "pytest-cov",
+      "package": "justagent-pytest-cov",
+      "module": "myagent_pytest_cov.plugin",
+      "version": "0.1.2",
+      "description": "pre_commit 阶段运行 pytest 并检查覆盖率阈值。",
+      "trust_level": "community",
+      "entry_point": "myagent_pytest_cov.plugin:PytestCovPlugin",
+      "hooks": ["pre_commit"],
+      "publisher": {
+        "id": "pytest-cov-contrib",
+        "verified": false,
+        "url": "https://github.com/pytest-cov-contrib"
+      },
+      "maintainer": "Community",
+      "license": "MIT",
+      "permissions": {
+        "filesystem": "read-only",
+        "network": false,
+        "shell": true,
+        "git": false,
+        "env": []
+      },
+      "categories": ["quality", "testing"],
+      "tags": ["pytest", "coverage", "testing"],
+      "downloads": 89,
+      "rating": {"score": 4.2, "count": 6},
+      "homepage": "https://github.com/example/justagent-pytest-cov",
+      "source_url": "https://github.com/example/justagent-pytest-cov",
+      "audit_status": "approved"
+    }
+  ]
+}

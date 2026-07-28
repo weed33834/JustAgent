@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from myagent.agent.loop_detection import (
+from justagent.agent.loop_detection import (
     LoopDetectionCall,
     LoopDetectionConfig,
     LoopDetectionState,

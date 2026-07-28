@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.core.batch_ops`."""
+"""Tests for :mod:`justagent.core.batch_ops`."""
 
 from __future__ import annotations
 
@@ -10,14 +10,14 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.batch_ops import (
+from justagent.core.batch_ops import (
     BatchOperation,
     BatchResult,
     BatchRunner,
     BatchSummary,
 )
-from myagent.core.project_store import ProjectStore
-from myagent.models.project import ManagedProject
+from justagent.core.project_store import ProjectStore
+from justagent.models.project import ManagedProject
 
 
 def _completed(
@@ -117,7 +117,7 @@ class TestBatchSummary:
         _add_project(store, tmp_path, "p1")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             side_effect=[_completed(0, "", ""), _completed(1, "", "err")],
         ):
             summary = runner.run_status(None)
@@ -137,7 +137,7 @@ class TestBatchRunnerStatus:
         proj_dir = _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             summary = runner.run_status(["proj"])
@@ -155,7 +155,7 @@ class TestBatchRunnerStatus:
         _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, " M file.txt\n", ""),
         ):
             summary = runner.run_status(["proj"])
@@ -168,7 +168,7 @@ class TestBatchRunnerStatus:
             _add_project(store, tmp_path, name)
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ):
             summary = runner.run_status(None)
@@ -191,7 +191,7 @@ class TestBatchRunnerStatus:
             _add_project(store, tmp_path, name)
         runner = BatchRunner(store, parallel=True, max_workers=2)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             summary = runner.run_status(None)
@@ -245,7 +245,7 @@ class TestBatchRunnerPipeline:
         proj_dir = _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "ok", ""),
         ) as mock_run:
             summary = runner.run_pipeline(["proj"], [BatchOperation.CLEAN])
@@ -254,7 +254,7 @@ class TestBatchRunnerPipeline:
         assert summary.operation == BatchOperation.CLEAN
         mock_run.assert_called_once()
         args, kwargs = mock_run.call_args
-        assert args[0] == ["myagent", "clean"]
+        assert args[0] == ["justagent", "clean"]
         assert kwargs["cwd"] == str(proj_dir)
 
     def test_multiple_stages(self, tmp_path: Path) -> None:
@@ -263,7 +263,7 @@ class TestBatchRunnerPipeline:
         runner = BatchRunner(store)
         stages = [BatchOperation.CLEAN, BatchOperation.VERIFY, BatchOperation.SHIP]
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             summary = runner.run_pipeline(["proj"], stages)
@@ -279,7 +279,7 @@ class TestBatchRunnerPipeline:
         stages = [BatchOperation.CLEAN, BatchOperation.VERIFY, BatchOperation.SHIP]
         # First stage (clean) fails; verify and ship should be skipped.
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(1, "", "fail"),
         ) as mock_run:
             summary = runner.run_pipeline(["proj"], stages)
@@ -293,12 +293,12 @@ class TestBatchRunnerPipeline:
         _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             runner.run_pipeline(["proj"], [BatchOperation.SHIP])
         args, _ = mock_run.call_args
-        assert args[0] == ["myagent", "ship"]
+        assert args[0] == ["justagent", "ship"]
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +387,7 @@ class TestEdgeCases:
         _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             side_effect=subprocess.TimeoutExpired(cmd=["x"], timeout=300),
         ):
             summary = runner.run_status(["proj"])
@@ -401,7 +401,7 @@ class TestEdgeCases:
         _add_project(store, tmp_path, "proj")
         runner = BatchRunner(store)
         with patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             side_effect=FileNotFoundError("no such binary"),
         ):
             summary = runner.run_status(["proj"])

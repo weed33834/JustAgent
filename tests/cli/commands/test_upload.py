@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from myagent.cli.commands import upload
-from myagent.exceptions import ConfigError
-from myagent.models.config import AppConfig
+from justagent.cli.commands import upload
+from justagent.exceptions import ConfigError
+from justagent.models.config import AppConfig
 
 
 def test_upload_pypi_dry_run(project_root, app_config: AppConfig) -> None:

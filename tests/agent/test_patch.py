@@ -1,4 +1,4 @@
-"""Tests for ``myagent.agent.patch`` (ported from Cline's apply-patch.test.ts)."""
+"""Tests for ``justagent.agent.patch`` (ported from Cline's apply-patch.test.ts)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from myagent.agent.patch import (
+from justagent.agent.patch import (
     DiffError,
     apply_patch_text,
     compute_patch_changes,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from myagent.agent.tools.truncation import (
+from justagent.agent.tools.truncation import (
     DEFAULT_MAX_BYTES,
     DEFAULT_MAX_LINES,
     TruncationService,

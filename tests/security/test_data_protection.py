@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 
-from myagent.security.data_protection import (
+from justagent.security.data_protection import (
     DLPAction,
     DLPError,
     DLPScanner,

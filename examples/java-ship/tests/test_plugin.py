@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from myagent_java_ship.plugin import JavaShipPlugin, plugin
 
-from myagent.core.context import CommandContext
+from justagent.core.context import CommandContext
 
 
 @pytest.fixture

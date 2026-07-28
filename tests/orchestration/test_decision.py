@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.orchestration.decision` (intent parsing & execution)."""
+"""Tests for :mod:`justagent.orchestration.decision` (intent parsing & execution)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from myagent.orchestration.decision import (
+from justagent.orchestration.decision import (
     DecisionAction,
     DecisionError,
     DecisionExecutor,

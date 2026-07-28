@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "myagent-project-guard"
+name = "justagent-project-guard"
 version = "0.1.0"
-description = "Real-world MyAgent-CLI plugin example: project health checks"
+description = "Real-world JustAgent-CLI plugin example: project health checks"
 requires-python = ">=3.10"
 dependencies = [
-    "myagent>=0.2.0b1",
-    "myagent-sdk>=0.1.0b1",
+    "justagent>=0.2.0b1",
+    "justagent-sdk>=0.1.0b1",
 ]
 
-[project.entry-points."myagent.plugins"]
+[project.entry-points."justagent.plugins"]
 custom = "myagent_custom_plugin.plugin:register"

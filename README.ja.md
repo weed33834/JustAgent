@@ -1,4 +1,4 @@
-# MyAgent
+# JustAgent
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
@@ -6,7 +6,7 @@
 
 ## 概要
 
-MyAgent はローカルファーストの AI コーディングエージェントで、単一の CLI ツールとして提供され、Cline / Aider / OpenCode / Continue.dev と同等の位置づけにあります。反復的なツール呼び出しループを実行し、LLM がコードベースを読み、変更を提案し、ツールで実行し、結果を検証します。すべての破壊的操作は権限エンジンを経由し、すべての会話は保存・再開できます。
+JustAgent はローカルファーストの AI コーディングエージェントで、単一の CLI ツールとして提供され、Cline / Aider / OpenCode / Continue.dev と同等の位置づけにあります。反復的なツール呼び出しループを実行し、LLM がコードベースを読み、変更を提案し、ツールで実行し、結果を検証します。すべての破壊的操作は権限エンジンを経由し、すべての会話は保存・再開できます。
 
 3つのモードを提供します：
 
@@ -17,13 +17,13 @@ MyAgent はローカルファーストの AI コーディングエージェン�
 ## インストール
 
 ```bash
-pip install myagent
+pip install justagent
 ```
 
 AI コミット、セキュリティスキャン、agent モードにはオプション依存関係が必要：
 
 ```bash
-pip install "myagent[ai,security]"
+pip install "justagent[ai,security]"
 ```
 
 Python 3.11 以降。Git 2.30+ 推奨。
@@ -34,42 +34,42 @@ Python 3.11 以降。Git 2.30+ 推奨。
 
 ```bash
 cd your-project
-myagent agent                    # インタラクティブ REPL（複数ターン会話）
-myagent agent "refactor utils"   # ワンショットタスク
-myagent agent --plan "..."       # まず計画（読み取り専用、編集なし）
-myagent agent --yolo "..."       # すべてのツール呼び出しを自動承認
-myagent agent -i --resume <id>   # 保存されたセッションを再開
-myagent agent --json "..."       # NDJSON イベントストリーム（自動化用）
+justagent agent                    # インタラクティブ REPL（複数ターン会話）
+justagent agent "refactor utils"   # ワンショットタスク
+justagent agent --plan "..."       # まず計画（読み取り専用、編集なし）
+justagent agent --yolo "..."       # すべてのツール呼び出しを自動承認
+justagent agent -i --resume <id>   # 保存されたセッションを再開
+justagent agent --json "..."       # NDJSON イベントストリーム（自動化用）
 ```
 
 ### Pipeline モード（オプション）
 
 ```bash
 cd your-project
-myagent init
-myagent ship                     # clean → verify → commit → upload
+justagent init
+justagent ship                     # clean → verify → commit → upload
 ```
 
 または各ステージを個別に実行：
 
 ```bash
-myagent clean
-myagent verify
-myagent commit
-myagent upload
+justagent clean
+justagent verify
+justagent commit
+justagent upload
 ```
 
 ### Project モード
 
 ```bash
-myagent project list             # 管理プロジェクト一覧
-myagent project add ./my-app
-myagent project run my-app ship  # プロジェクト内でコマンド実行
+justagent project list             # 管理プロジェクト一覧
+justagent project add ./my-app
+justagent project run my-app ship  # プロジェクト内でコマンド実行
 ```
 
 ## 設定
 
-MyAgent はプロジェクトルートの `.myagent.toml` を読み取ります：
+JustAgent はプロジェクトルートの `.justagent.toml` を読み取ります：
 
 ```toml
 [clean]
@@ -92,13 +92,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-設定値内の環境変数（`${VAR}`）は実行時に展開されます。全オプションは `.myagent.toml.example` を参照。
+設定値内の環境変数（`${VAR}`）は実行時に展開されます。全オプションは `.justagent.toml.example` を参照。
 
 ## AI バックエンド
 
-MyAgent は [LiteLLM](https://github.com/BerriAI/litellm) 経由で LLM 呼び出しをルーティングします。LiteLLM が対応するすべてのプロバイダーを追加設定なしで利用できます——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp など 100 社以上。
+JustAgent は [LiteLLM](https://github.com/BerriAI/litellm) 経由で LLM 呼び出しをルーティングします。LiteLLM が対応するすべてのプロバイダーを追加設定なしで利用できます——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp など 100 社以上。
 
-`.myagent.toml` で1つ以上のバックエンドを設定：
+`.justagent.toml` で1つ以上のバックエンドを設定：
 
 ```toml
 [[model.backends]]
@@ -122,7 +122,7 @@ Agent モードは安全制御付きの反復ツール呼び出しループに�
 |------|------|
 | **Plan/Act モード** | Plan モードは読み取り専用分析、Act モードは権限プロンプト付きで変更を実行。`--plan` / `--yolo` または REPL で `/mode` で切り替え。 |
 | **ツール呼び出し** | 組み込みツール：`read_file`、`write_to_file`、`replace_in_file`、`apply_patch`、`run_command`、`search`、`web_fetch`、`ask_question`。MCP ツールも利用可能。 |
-| **セッション永続化** | 会話は `~/.myagent/sessions/` に保存。`--resume <id>` で再開。Slash コマンド：`/tokens`、`/history`、`/diff`。 |
+| **セッション永続化** | 会話は `~/.justagent/sessions/` に保存。`--resume <id>` で再開。Slash コマンド：`/tokens`、`/history`、`/diff`。 |
 | **権限エンジン** | `allow` / `deny` / `ask` ルール、`once` / `always` スコープとワイルドカード対応。`write_to_file`、`replace_in_file`、`apply_patch`、`run_command` に組み込み済み。 |
 | **変更追跡** | 実行中に作成/変更/削除されたファイルを追跡し、行数差分を計算。終了時にサマリテーブルを表示。 |
 | **チェックポイント** | 各ツール呼び出し後にシャドー git スナップショットを作成。ファイル、会話、または両方を復元可能。 |
@@ -130,7 +130,7 @@ Agent モードは安全制御付きの反復ツール呼び出しループに�
 | **ループ検出** | 繰り返しツール呼び出しを検出（soft=3、hard=5）、反復ループから脱出。 |
 | **ミステイクトラッカー** | 連続エラーをカウント、設定に基づき停止または継続。 |
 | **Repo Map** | Python/JS/TS/Rust/Go のシンボルを正規表現で抽出、コンパクトなツリーとして整形。 |
-| **Skills** | `.myagent/skills/` から `SKILL.md` をロード、段階的開示。 |
+| **Skills** | `.justagent/skills/` から `SKILL.md` をロード、段階的開示。 |
 | **サブエージェント** | 読み取り専用の並列研究サブエージェントを生成、コンテキストを分離。 |
 | **MCP** | Model Context Protocol サーバー（stdio / SSE / HTTP）に接続、OAuth サポート。 |
 
@@ -154,29 +154,29 @@ Agent モードは安全制御付きの反復ツール呼び出しループに�
 
 | コマンド | 説明 |
 |---------|------|
-| `myagent agent` | インタラクティブ AI エージェント（REPL またはワンショット） |
-| `myagent session` | 保存されたセッションを管理（list / show / resume / delete） |
-| `myagent project` | 複数のローカルプロジェクトを管理 |
-| `myagent init` | 現在のディレクトリで初期化 |
-| `myagent clean` | ソースファイルをフォーマット・リント |
-| `myagent verify` | テストスイートとチェックを実行 |
-| `myagent commit` | コミットを生成・作成 |
-| `myagent upload` | ビルドしてアーティファクトを公開 |
-| `myagent ship` | clean、verify、commit、upload を順番に実行 |
-| `myagent fix` | AI 駆動のコード修正提案 |
-| `myagent config` | 設定の表示・管理 |
-| `myagent doctor` | 環境と依存関係を診断 |
-| `myagent plugin` | プラグインを管理 |
-| `myagent hooks` | ライフサイクルフックを管理 |
-| `myagent lsp` | Language Server Protocol 統合 |
-| `myagent artifacts` | ビルドアーティファクトを管理 |
-| `myagent metrics` | 使用量とコスト指標を表示 |
+| `justagent agent` | インタラクティブ AI エージェント（REPL またはワンショット） |
+| `justagent session` | 保存されたセッションを管理（list / show / resume / delete） |
+| `justagent project` | 複数のローカルプロジェクトを管理 |
+| `justagent init` | 現在のディレクトリで初期化 |
+| `justagent clean` | ソースファイルをフォーマット・リント |
+| `justagent verify` | テストスイートとチェックを実行 |
+| `justagent commit` | コミットを生成・作成 |
+| `justagent upload` | ビルドしてアーティファクトを公開 |
+| `justagent ship` | clean、verify、commit、upload を順番に実行 |
+| `justagent fix` | AI 駆動のコード修正提案 |
+| `justagent config` | 設定の表示・管理 |
+| `justagent doctor` | 環境と依存関係を診断 |
+| `justagent plugin` | プラグインを管理 |
+| `justagent hooks` | ライフサイクルフックを管理 |
+| `justagent lsp` | Language Server Protocol 統合 |
+| `justagent artifacts` | ビルドアーティファクトを管理 |
+| `justagent metrics` | 使用量とコスト指標を表示 |
 
 ## 開発
 
 ```bash
-git clone https://gitcode.com/badhope/myagent.git
-cd myagent
+git clone https://gitcode.com/badhope/justagent.git
+cd justagent
 uv sync --all-extras
 ```
 
@@ -210,7 +210,7 @@ uv run mypy src/
 ## アーキテクチャ
 
 ```
-src/myagent/
+src/justagent/
 ├── cli/                 # Typer コマンド
 │   ├── commands/        # コマンドごとに1モジュール（agent, session, project, ...）
 │   ├── display.py       # Rich ベースのターミナル出力（スピナー、パネル、diff）
@@ -259,7 +259,7 @@ src/myagent/
 
 ## ミラー
 
-- [GitCode](https://gitcode.com/badhope/myagent) — 中国本土ユーザー向け高速クローン
+- [GitCode](https://gitcode.com/badhope/justagent) — 中国本土ユーザー向け高速クローン
 
 ## ライセンス
 

@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.context import CommandContext
-from myagent.exceptions import SecurityScanError
-from myagent.models.config import AppConfig, SecurityThreshold
-from myagent.plugins import security_scan
+from justagent.core.context import CommandContext
+from justagent.exceptions import SecurityScanError
+from justagent.models.config import AppConfig, SecurityThreshold
+from justagent.plugins import security_scan
 
 
 @pytest.fixture

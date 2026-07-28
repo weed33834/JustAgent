@@ -1,1 +1,1 @@
-"""MyAgent test suite."""
+"""JustAgent test suite."""

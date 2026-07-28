@@ -1,4 +1,4 @@
-"""Tests for ``myagent.agent.plan_act`` (Plan / Act / Yolo mode switching).
+"""Tests for ``justagent.agent.plan_act`` (Plan / Act / Yolo mode switching).
 
 Covers:
 
@@ -11,7 +11,7 @@ Covers:
   when no switch.
 * :class:`ModeSwitchTracker` — record/consume/pending, coalescing.
 * :class:`ModeConfig` — switch_to + consume_switch_notice.
-* :func:`default_plan_file_path` — ``.myagent/plans/plan.md`` layout.
+* :func:`default_plan_file_path` — ``.justagent/plans/plan.md`` layout.
 * Runtime integration: mode-aware tool filtering and user-message
   wrapping via :class:`AgentRuntime`.
 """
@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel
 
-from myagent.agent.plan_act import (
+from justagent.agent.plan_act import (
     MODE_TAG_INSTRUCTIONS,
     PLAN_MODE_INSTRUCTIONS,
     YOLO_MODE_INSTRUCTIONS,
@@ -40,7 +40,7 @@ from myagent.agent.plan_act import (
     is_command_tool,
     is_edit_tool,
 )
-from myagent.agent.runtime import (
+from justagent.agent.runtime import (
     AgentRuntime,
     AgentRuntimeConfig,
     LLMClient,
@@ -48,7 +48,7 @@ from myagent.agent.runtime import (
     LLMResponse,
     ToolCall,
 )
-from myagent.agent.tools.base import Tool, ToolContext, ToolResult
+from justagent.agent.tools.base import Tool, ToolContext, ToolResult
 
 # ---------------------------------------------------------------------------
 # Test fixtures
@@ -406,11 +406,11 @@ class TestModeConfig:
 class TestDefaultPlanFilePath:
     def test_returns_myagent_plans_plan_md(self) -> None:
         path = default_plan_file_path("/tmp/project")
-        assert path == Path("/tmp/project/.myagent/plans/plan.md")
+        assert path == Path("/tmp/project/.justagent/plans/plan.md")
 
     def test_accepts_path_object(self) -> None:
         path = default_plan_file_path(Path("/tmp/project"))
-        assert path == Path("/tmp/project/.myagent/plans/plan.md")
+        assert path == Path("/tmp/project/.justagent/plans/plan.md")
 
     def test_does_not_create_directories(self, tmp_path: Path) -> None:
         path = default_plan_file_path(tmp_path)
@@ -507,7 +507,7 @@ class TestRuntimeModeIntegration:
             client=client,
             tools=[],
             config=AgentRuntimeConfig(
-                system_prompt="You are myagent.",
+                system_prompt="You are justagent.",
                 max_iterations=3,
                 initial_mode=AgentMode.PLAN,
             ),
@@ -515,7 +515,7 @@ class TestRuntimeModeIntegration:
         await runtime.run("explore")
         system_msg = client._calls[0].messages[0]
         assert system_msg.role == "system"
-        assert "You are myagent." in system_msg.content
+        assert "You are justagent." in system_msg.content
         assert PLAN_MODE_INSTRUCTIONS in system_msg.content
 
     @pytest.mark.asyncio
@@ -525,7 +525,7 @@ class TestRuntimeModeIntegration:
             client=client,
             tools=[],
             config=AgentRuntimeConfig(
-                system_prompt="You are myagent.",
+                system_prompt="You are justagent.",
                 max_iterations=3,
                 initial_mode=AgentMode.ACT,
             ),

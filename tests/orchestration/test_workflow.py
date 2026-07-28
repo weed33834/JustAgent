@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.orchestration.workflow` (DAG workflow engine)."""
+"""Tests for :mod:`justagent.orchestration.workflow` (DAG workflow engine)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 
-from myagent.orchestration.workflow import (
+from justagent.orchestration.workflow import (
     NodeStatus,
     NodeType,
     Workflow,

@@ -11,8 +11,8 @@ import threading
 
 import pytest
 
-from myagent.permissions import PermissionAction, PermissionEngine, PermissionRule
-from myagent.permissions.enterprise import (
+from justagent.permissions import PermissionAction, PermissionEngine, PermissionRule
+from justagent.permissions.enterprise import (
     ClearanceLevel,
     DataOperation,
     DataPermission,

@@ -1,6 +1,6 @@
-# myagent-java-ship
+# justagent-java-ship
 
-A language-aware MyAgent-CLI plugin pack for Java projects. It hooks into
+A language-aware JustAgent-CLI plugin pack for Java projects. It hooks into
 the `clean` and `verify` lifecycle to report Java-specific build artifacts
 and suggest the conventional test command for the build tool in use
 (`mvn test` or `gradle test`).
@@ -38,7 +38,7 @@ and the local repository cache) as a single cleanable artifact. Loose
 ## Install
 
 ```bash
-pipx install myagent-java-ship
+pipx install justagent-java-ship
 ```
 
 Or, for local development:
@@ -48,7 +48,7 @@ cd examples/java-ship
 pip install -e .
 ```
 
-The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."justagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
@@ -57,7 +57,7 @@ Add `mvn` and `gradle` to the verify allowlist (the default allowlist is
 Python-centric):
 
 ```toml
-# .myagent.toml
+# .justagent.toml
 [verify]
 allowed_commands = ["pytest", "mvn", "gradle"]
 ```

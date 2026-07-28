@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from myagent.agent.tools.base import Tool
-from myagent.agent.tools.builtin import (
+from justagent.agent.tools.base import Tool
+from justagent.agent.tools.builtin import (
     ApplyPatchInput,
     AskQuestionInput,
     ReadFileInput,

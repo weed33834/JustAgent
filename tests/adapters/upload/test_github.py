@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.adapters.upload.github import GitHubUploader
-from myagent.exceptions import UploadError
+from justagent.adapters.upload.github import GitHubUploader
+from justagent.exceptions import UploadError
 
 
 def _write_artifacts(root: Path, names: list[str]) -> list[Path]:

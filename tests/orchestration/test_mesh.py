@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.orchestration.mesh` (agent mesh networking)."""
+"""Tests for :mod:`justagent.orchestration.mesh` (agent mesh networking)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from myagent.orchestration.mesh import (
+from justagent.orchestration.mesh import (
     AgentCapability,
     AgentMesh,
     MeshError,

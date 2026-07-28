@@ -1,13 +1,13 @@
-# myagent model-relay (self-hosted)
+# justagent model-relay (self-hosted)
 
-A tiny, dependency-free HTTP relay that lets MyAgent-CLI talk to a local
+A tiny, dependency-free HTTP relay that lets JustAgent-CLI talk to a local
 model backend (such as [Ollama](https://ollama.com/)) through an
 OpenAI-compatible endpoint, without ever exposing a port to the network or
 calling out to a third-party API.
 
 ## Why this preserves local-first
 
-MyAgent's local-first promise means your code, prompts, and error snippets
+JustAgent's local-first promise means your code, prompts, and error snippets
 should never leave your machine. This relay is a **thin localhost-only proxy**:
 
 - It binds to `127.0.0.1` exclusively -- never `0.0.0.0`.
@@ -16,7 +16,7 @@ should never leave your machine. This relay is a **thin localhost-only proxy**:
 - It uses only the Python standard library, so there is nothing extra to
   audit or supply-chain.
 
-Your data stays on the loopback interface between MyAgent, the relay, and
+Your data stays on the loopback interface between JustAgent, the relay, and
 your local model server. Nothing is sent to a public endpoint.
 
 ## Run it
@@ -41,9 +41,9 @@ curl http://127.0.0.1:8787/healthz
 # {"status": "ok", "upstream": "http://localhost:11434"}
 ```
 
-## Point MyAgent at the relay
+## Point JustAgent at the relay
 
-In your `.myagent.toml`, add an Ollama backend whose `base_url` is the
+In your `.justagent.toml`, add an Ollama backend whose `base_url` is the
 relay. You can think of this as setting
 `model.ollama_base_url = "http://localhost:8787"`; the canonical, working
 form is:
@@ -56,9 +56,9 @@ model = "qwen2.5:7b"
 timeout = 30.0
 ```
 
-Because the relay speaks OpenAI's `/v1/chat/completions` dialect, MyAgent
+Because the relay speaks OpenAI's `/v1/chat/completions` dialect, JustAgent
 addresses it exactly like any other OpenAI-compatible backend. Run
-`myagent doctor` to confirm reachability.
+`justagent doctor` to confirm reachability.
 
 ## Security model
 

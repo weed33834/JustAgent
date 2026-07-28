@@ -8,9 +8,9 @@ from unittest.mock import MagicMock
 import pytest
 import typer
 
-from myagent.cli.commands import config
-from myagent.core.i18n import get_i18n
-from myagent.models.config import AppConfig
+from justagent.cli.commands import config
+from justagent.core.i18n import get_i18n
+from justagent.models.config import AppConfig
 
 
 def _ctx(app_config: AppConfig, config_path: Path | None = None) -> MagicMock:
@@ -50,7 +50,7 @@ def test_get_config_missing_key(app_config: AppConfig, capsys) -> None:
 
 
 def test_telemetry_disable_writes_project_config(project_root: Path, app_config: AppConfig) -> None:
-    config_file = project_root / ".myagent.toml"
+    config_file = project_root / ".justagent.toml"
     config_file.write_text("schema_version = 1\ntelemetry_enabled = true\n", encoding="utf-8")
     ctx = _ctx(app_config, config_path=config_file)
     config.telemetry_config(ctx, enable=False, disable=True, status=False)
@@ -66,14 +66,14 @@ def test_telemetry_status_prints_current_state(app_config: AppConfig, capsys) ->
 
 
 def test_legacy_telemetry_enabled_migrates_to_telemetry_config() -> None:
-    from myagent.models.config import AppConfig
+    from justagent.models.config import AppConfig
 
     cfg = AppConfig(telemetry_enabled=True)
     assert cfg.telemetry.enabled is True
 
 
 def test_telemetry_disabled_by_default() -> None:
-    from myagent.models.config import AppConfig
+    from justagent.models.config import AppConfig
 
     cfg = AppConfig()
     assert cfg.telemetry.enabled is False

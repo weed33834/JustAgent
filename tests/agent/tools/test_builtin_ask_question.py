@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from myagent.agent.tools.base import (
+from justagent.agent.tools.base import (
     InvalidArgumentsError,
     PermissionAsker,
     ToolContext,
 )
-from myagent.agent.tools.builtin.ask_question import (
+from justagent.agent.tools.builtin.ask_question import (
     AskQuestionInput,
     make_ask_question_tool,
 )

@@ -1,4 +1,4 @@
-"""Tests for the ``myagent schedule`` CLI command group."""
+"""Tests for the ``justagent schedule`` CLI command group."""
 
 from __future__ import annotations
 
@@ -9,15 +9,15 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from myagent.cli.main import app
-from myagent.core.project_store import ProjectStore
-from myagent.core.scheduler import (
+from justagent.cli.main import app
+from justagent.core.project_store import ProjectStore
+from justagent.core.scheduler import (
     ScheduledTask,
     Scheduler,
     ScheduleStore,
     ScheduleType,
 )
-from myagent.models.project import ManagedProject
+from justagent.models.project import ManagedProject
 
 runner = CliRunner()
 
@@ -34,7 +34,7 @@ def _completed(
 def _patch_scheduler(store: ScheduleStore) -> patch[Scheduler]:
     """Patch the CLI's scheduler factory to use ``store``."""
     return patch(
-        "myagent.cli.commands.schedule.Scheduler",
+        "justagent.cli.commands.schedule.Scheduler",
         return_value=Scheduler(store=store, project_store=ProjectStore()),
     )
 
@@ -83,7 +83,7 @@ def test_add_task_with_project(tmp_path: Path) -> None:
     schedule_store = ScheduleStore(store_path=tmp_path / "schedules.json")
 
     with patch(
-        "myagent.cli.commands.schedule.Scheduler",
+        "justagent.cli.commands.schedule.Scheduler",
         return_value=Scheduler(store=schedule_store, project_store=project_store),
     ):
         add_result = runner.invoke(
@@ -156,7 +156,7 @@ def test_run_task(tmp_path: Path) -> None:
         )
 
     with _patch_scheduler(store), patch(
-        "myagent.core.scheduler.subprocess.run",
+        "justagent.core.scheduler.subprocess.run",
         return_value=_completed(0, "hi\n", ""),
     ) as mock_run:
         run_result = runner.invoke(app, ["schedule", "run", "alpha"])
@@ -189,7 +189,7 @@ def test_due(tmp_path: Path) -> None:
     )
 
     with _patch_scheduler(store), patch(
-        "myagent.core.scheduler.subprocess.run",
+        "justagent.core.scheduler.subprocess.run",
         return_value=_completed(0, "", ""),
     ) as mock_run:
         result = runner.invoke(app, ["schedule", "due"])
@@ -268,7 +268,7 @@ def test_run_task_failure_exit_code(tmp_path: Path) -> None:
             ],
         )
     with _patch_scheduler(store), patch(
-        "myagent.core.scheduler.subprocess.run",
+        "justagent.core.scheduler.subprocess.run",
         return_value=_completed(2, "", "boom"),
     ):
         result = runner.invoke(app, ["schedule", "run", "alpha"])
@@ -310,7 +310,7 @@ def test_due_failure_propagates_exit_code(tmp_path: Path) -> None:
         )
     )
     with _patch_scheduler(store), patch(
-        "myagent.core.scheduler.subprocess.run",
+        "justagent.core.scheduler.subprocess.run",
         return_value=_completed(1, "", ""),
     ):
         result = runner.invoke(app, ["schedule", "due"])
@@ -332,7 +332,7 @@ def test_daemon_does_not_block_on_keyboard_interrupt(tmp_path: Path) -> None:
         return
 
     with patch(
-        "myagent.cli.commands.schedule.Scheduler",
+        "justagent.cli.commands.schedule.Scheduler",
         return_value=Scheduler(store=store, project_store=ProjectStore()),
     ) as mock_scheduler_cls:
         mock_scheduler_cls.return_value.run_daemon = fake_run_daemon  # type: ignore[method-assign]

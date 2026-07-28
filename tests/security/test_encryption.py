@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from myagent.security.encryption import (
+from justagent.security.encryption import (
     DataClassification,
     EncryptionAlgorithm,
     EncryptionEngine,

@@ -1,4 +1,4 @@
-"""Tests for the ``myagent hooks`` command."""
+"""Tests for the ``justagent hooks`` command."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
-from myagent.cli.main import app
+from justagent.cli.main import app
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path, body: str) -> Path:
-    config_path = tmp_path / ".myagent.toml"
+    config_path = tmp_path / ".justagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n{body}', encoding="utf-8"
     )

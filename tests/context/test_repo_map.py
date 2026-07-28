@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from myagent.context.repo_map import (
+from justagent.context.repo_map import (
     FileSymbols,
     RepoMapConfig,
     RepoMapGenerator,
@@ -418,7 +418,7 @@ class TestFormatTree:
         result = gen._format_tree(files)
         lines = result.split("\n")
         assert "src/" in lines
-        assert "  myagent/" not in lines  # only src/ in this case
+        assert "  justagent/" not in lines  # only src/ in this case
         assert "  agent/" in lines
         assert "    runtime.py" in lines
         assert "      class AgentRuntime" in lines
@@ -534,7 +534,7 @@ class TestHelpers:
         assert isinstance(result, bool)
 
     def test_line_of(self) -> None:
-        from myagent.context.repo_map import _line_of
+        from justagent.context.repo_map import _line_of
 
         content = "a\nb\nc"
         assert _line_of(content, 0) == 1

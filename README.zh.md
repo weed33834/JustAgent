@@ -1,4 +1,4 @@
-# MyAgent
+# JustAgent
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
@@ -6,7 +6,7 @@
 
 ## 它做什么
 
-MyAgent 是一个本地优先的 AI 编码智能体，封装为单个 CLI 工具，与 Cline / Aider / OpenCode / Continue.dev 处于同类定位。它运行一个迭代的工具调用循环：LLM 读取代码库，提出修改，通过工具执行，然后验证结果。每个破坏性操作都经过权限引擎，每个对话都可以保存与恢复。
+JustAgent 是一个本地优先的 AI 编码智能体，封装为单个 CLI 工具，与 Cline / Aider / OpenCode / Continue.dev 处于同类定位。它运行一个迭代的工具调用循环：LLM 读取代码库，提出修改，通过工具执行，然后验证结果。每个破坏性操作都经过权限引擎，每个对话都可以保存与恢复。
 
 提供三种模式：
 
@@ -17,13 +17,13 @@ MyAgent 是一个本地优先的 AI 编码智能体，封装为单个 CLI 工具
 ## 安装
 
 ```bash
-pip install myagent
+pip install justagent
 ```
 
 AI 提交、安全扫描和 agent 模式需要可选依赖：
 
 ```bash
-pip install "myagent[ai,security]"
+pip install "justagent[ai,security]"
 ```
 
 Python 3.11 或更高版本。推荐 Git 2.30+。
@@ -34,42 +34,42 @@ Python 3.11 或更高版本。推荐 Git 2.30+。
 
 ```bash
 cd your-project
-myagent agent                    # 交互式 REPL（多轮对话）
-myagent agent "refactor utils"   # 一次性任务
-myagent agent --plan "..."       # 先规划（只读，不修改文件）
-myagent agent --yolo "..."       # 自动批准所有工具调用
-myagent agent -i --resume <id>   # 恢复已保存的会话
-myagent agent --json "..."       # NDJSON 事件流（自动化用）
+justagent agent                    # 交互式 REPL（多轮对话）
+justagent agent "refactor utils"   # 一次性任务
+justagent agent --plan "..."       # 先规划（只读，不修改文件）
+justagent agent --yolo "..."       # 自动批准所有工具调用
+justagent agent -i --resume <id>   # 恢复已保存的会话
+justagent agent --json "..."       # NDJSON 事件流（自动化用）
 ```
 
 ### Pipeline 模式（可选）
 
 ```bash
 cd your-project
-myagent init
-myagent ship                     # clean → verify → commit → upload
+justagent init
+justagent ship                     # clean → verify → commit → upload
 ```
 
 或单独执行各阶段：
 
 ```bash
-myagent clean
-myagent verify
-myagent commit
-myagent upload
+justagent clean
+justagent verify
+justagent commit
+justagent upload
 ```
 
 ### Project 模式
 
 ```bash
-myagent project list             # 列出管理的项目
-myagent project add ./my-app
-myagent project run my-app ship  # 在项目中运行命令
+justagent project list             # 列出管理的项目
+justagent project add ./my-app
+justagent project run my-app ship  # 在项目中运行命令
 ```
 
 ## 配置
 
-MyAgent 从项目根目录读取 `.myagent.toml`：
+JustAgent 从项目根目录读取 `.justagent.toml`：
 
 ```toml
 [clean]
@@ -92,13 +92,13 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-配置值中的环境变量（`${VAR}`）会在运行时展开。完整选项见 `.myagent.toml.example`。
+配置值中的环境变量（`${VAR}`）会在运行时展开。完整选项见 `.justagent.toml.example`。
 
 ## AI 后端
 
-MyAgent 通过 [LiteLLM](https://github.com/BerriAI/litellm) 路由 LLM 调用，LiteLLM 支持的任何提供商都无需额外配置即可使用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等一百余家。
+JustAgent 通过 [LiteLLM](https://github.com/BerriAI/litellm) 路由 LLM 调用，LiteLLM 支持的任何提供商都无需额外配置即可使用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等一百余家。
 
-在 `.myagent.toml` 中配置一个或多个后端：
+在 `.justagent.toml` 中配置一个或多个后端：
 
 ```toml
 [[model.backends]]
@@ -122,7 +122,7 @@ Agent 模式基于迭代的工具调用循环，带安全控制：
 |------|------|
 | **Plan/Act 模式** | Plan 模式只读分析；Act 模式带权限提示执行修改。用 `--plan` / `--yolo` 或 REPL 中 `/mode` 切换。 |
 | **工具调用** | 内置工具：`read_file`、`write_to_file`、`replace_in_file`、`apply_patch`、`run_command`、`search`、`web_fetch`、`ask_question`。外加 MCP 工具。 |
-| **会话持久化** | 对话保存到 `~/.myagent/sessions/`。用 `--resume <id>` 恢复。Slash 命令：`/tokens`、`/history`、`/diff`。 |
+| **会话持久化** | 对话保存到 `~/.justagent/sessions/`。用 `--resume <id>` 恢复。Slash 命令：`/tokens`、`/history`、`/diff`。 |
 | **权限引擎** | `allow` / `deny` / `ask` 规则，支持 `once` / `always` 作用域和通配符。已接入 `write_to_file`、`replace_in_file`、`apply_patch`、`run_command`。 |
 | **变更追踪** | 追踪每次运行中创建/修改/删除的文件，计算行数差异，结束时显示汇总表。 |
 | **检查点** | 每次工具调用后创建影子 git 快照。可恢复文件、对话或两者。 |
@@ -130,7 +130,7 @@ Agent 模式基于迭代的工具调用循环，带安全控制：
 | **循环检测** | 检测重复工具调用（软=3，硬=5），跳出重复循环。 |
 | **错误追踪** | 统计连续错误，根据配置停止或继续。 |
 | **Repo Map** | 正则提取 Python/JS/TS/Rust/Go 符号，格式化为紧凑树。 |
-| **Skills** | 从 `.myagent/skills/` 加载 `SKILL.md` 文件，渐进式展示。 |
+| **Skills** | 从 `.justagent/skills/` 加载 `SKILL.md` 文件，渐进式展示。 |
 | **子智能体** | 生成只读并行研究子智能体，隔离上下文。 |
 | **MCP** | 连接 Model Context Protocol 服务器（stdio / SSE / HTTP），支持 OAuth。 |
 
@@ -154,29 +154,29 @@ Agent 模式基于迭代的工具调用循环，带安全控制：
 
 | 命令 | 说明 |
 |------|------|
-| `myagent agent` | 交互式 AI 智能体（REPL 或一次性） |
-| `myagent session` | 管理已保存的会话（list / show / resume / delete） |
-| `myagent project` | 管理多个本地项目 |
-| `myagent init` | 在当前目录初始化 |
-| `myagent clean` | 格式化和 lint 源文件 |
-| `myagent verify` | 运行测试套件和检查 |
-| `myagent commit` | 生成并创建提交 |
-| `myagent upload` | 构建并发布产物 |
-| `myagent ship` | 依次执行 clean、verify、commit、upload |
-| `myagent fix` | AI 驱动的代码修复建议 |
-| `myagent config` | 查看和管理配置 |
-| `myagent doctor` | 诊断环境和依赖 |
-| `myagent plugin` | 管理插件 |
-| `myagent hooks` | 管理生命周期钩子 |
-| `myagent lsp` | 语言服务器协议集成 |
-| `myagent artifacts` | 管理构建产物 |
-| `myagent metrics` | 显示用量和成本指标 |
+| `justagent agent` | 交互式 AI 智能体（REPL 或一次性） |
+| `justagent session` | 管理已保存的会话（list / show / resume / delete） |
+| `justagent project` | 管理多个本地项目 |
+| `justagent init` | 在当前目录初始化 |
+| `justagent clean` | 格式化和 lint 源文件 |
+| `justagent verify` | 运行测试套件和检查 |
+| `justagent commit` | 生成并创建提交 |
+| `justagent upload` | 构建并发布产物 |
+| `justagent ship` | 依次执行 clean、verify、commit、upload |
+| `justagent fix` | AI 驱动的代码修复建议 |
+| `justagent config` | 查看和管理配置 |
+| `justagent doctor` | 诊断环境和依赖 |
+| `justagent plugin` | 管理插件 |
+| `justagent hooks` | 管理生命周期钩子 |
+| `justagent lsp` | 语言服务器协议集成 |
+| `justagent artifacts` | 管理构建产物 |
+| `justagent metrics` | 显示用量和成本指标 |
 
 ## 开发
 
 ```bash
-git clone https://gitcode.com/badhope/myagent.git
-cd myagent
+git clone https://gitcode.com/badhope/justagent.git
+cd justagent
 uv sync --all-extras
 ```
 
@@ -210,7 +210,7 @@ uv run mypy src/
 ## 架构
 
 ```
-src/myagent/
+src/justagent/
 ├── cli/                 # Typer 命令
 │   ├── commands/        # 每个命令一个模块（agent, session, project, ...）
 │   ├── display.py       # Rich 终端输出（spinner、面板、diff）
@@ -259,7 +259,7 @@ src/myagent/
 
 ## 镜像
 
-- [GitCode](https://gitcode.com/badhope/myagent) — 中国大陆用户快速克隆
+- [GitCode](https://gitcode.com/badhope/justagent) — 中国大陆用户快速克隆
 
 ## 许可证
 

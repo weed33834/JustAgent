@@ -1,4 +1,4 @@
-"""Tests for the ``myagent session`` CLI commands."""
+"""Tests for the ``justagent session`` CLI commands."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from myagent.agent.session import SessionStore
-from myagent.cli.main import app
+from justagent.agent.session import SessionStore
+from justagent.cli.main import app
 
 runner = CliRunner()
 

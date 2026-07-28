@@ -1,4 +1,4 @@
-"""Tests for ``myagent.agent.subagent`` (parallel read-only research subagents)."""
+"""Tests for ``justagent.agent.subagent`` (parallel read-only research subagents)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from myagent.agent.subagent import (
+from justagent.agent.subagent import (
     SubagentConfig,
     SubagentError,
     SubagentManager,
@@ -18,7 +18,7 @@ from myagent.agent.subagent import (
     filter_readonly_tools,
     run_research_sync,
 )
-from myagent.exceptions import MyAgentError
+from justagent.exceptions import MyAgentError
 
 # ---------------------------------------------------------------------------
 # Mock doubles

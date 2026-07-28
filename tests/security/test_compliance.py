@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from myagent.security.compliance import (
+from justagent.security.compliance import (
     AuditResult,
     AuditTrail,
     AuditTrailManager,

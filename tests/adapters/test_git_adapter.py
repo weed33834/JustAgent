@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from myagent.adapters.git_adapter import GitAdapter
+from justagent.adapters.git_adapter import GitAdapter
 
 
 @pytest.fixture
@@ -56,7 +56,7 @@ def test_commit_stages_and_commits(git_repo: GitAdapter, project_root) -> None:
 
 
 def test_non_git_directory_raises(project_root) -> None:
-    from myagent.exceptions import GitError
+    from justagent.exceptions import GitError
 
     adapter = GitAdapter(project_root)
     with pytest.raises(GitError):
@@ -64,7 +64,7 @@ def test_non_git_directory_raises(project_root) -> None:
 
 
 def test_commit_with_no_changes_raises(git_repo: GitAdapter) -> None:
-    from myagent.exceptions import GitError
+    from justagent.exceptions import GitError
 
     with pytest.raises(GitError):
         git_repo.commit("Empty commit")

@@ -6,10 +6,10 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.context import CommandContext
-from myagent.exceptions import UploadError
-from myagent.models.config import AppConfig, DockerShipConfig
-from myagent.plugins import docker_ship
+from justagent.core.context import CommandContext
+from justagent.exceptions import UploadError
+from justagent.models.config import AppConfig, DockerShipConfig
+from justagent.plugins import docker_ship
 
 
 @pytest.fixture

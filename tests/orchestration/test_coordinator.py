@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.orchestration.coordinator` (task coordination)."""
+"""Tests for :mod:`justagent.orchestration.coordinator` (task coordination)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from myagent.orchestration.coordinator import (
+from justagent.orchestration.coordinator import (
     AgentCapability,
     AgentResult,
     AgentTask,

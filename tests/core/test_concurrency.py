@@ -12,9 +12,9 @@ import json
 import threading
 from pathlib import Path
 
-from myagent.core.audit_logger import AuditLogger
-from myagent.core.metrics import MetricsRegistry
-from myagent.models.config import AppConfig
+from justagent.core.audit_logger import AuditLogger
+from justagent.core.metrics import MetricsRegistry
+from justagent.models.config import AppConfig
 
 THREADS = 8
 ITERS = 500

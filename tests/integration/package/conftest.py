@@ -19,10 +19,10 @@ def project_root() -> Path:
 
 @pytest.fixture(scope="session")
 def myagent_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the myagent wheel once per session and return its path."""
+    """Build the justagent wheel once per session and return its path."""
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("myagent-dist")
+    output_dir = tmp_path_factory.mktemp("justagent-dist")
     wheels = build_wheel(project_root, output_dir)
     if not wheels:
         pytest.skip("wheel build produced no artifacts")
@@ -31,10 +31,10 @@ def myagent_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) 
 
 @pytest.fixture(scope="session")
 def myagent_sdist(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the myagent sdist once per session and return its path."""
+    """Build the justagent sdist once per session and return its path."""
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("myagent-sdist")
+    output_dir = tmp_path_factory.mktemp("justagent-sdist")
     sdist = build_sdist(project_root, output_dir)
     if not sdist:
         pytest.skip("sdist build produced no artifacts")
@@ -43,16 +43,16 @@ def myagent_sdist(project_root: Path, tmp_path_factory: pytest.TempPathFactory) 
 
 @pytest.fixture(scope="session")
 def sdk_wheel(project_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the myagent-sdk wheel once per session and return its path."""
-    sdk_root = project_root / "myagent-sdk"
+    """Build the justagent-sdk wheel once per session and return its path."""
+    sdk_root = project_root / "justagent-sdk"
     if not sdk_root.exists():
-        pytest.skip("myagent-sdk workspace member not found")
+        pytest.skip("justagent-sdk workspace member not found")
     if not shutil.which("python"):
         pytest.skip("python is not available")
-    output_dir = tmp_path_factory.mktemp("myagent-sdk-dist")
+    output_dir = tmp_path_factory.mktemp("justagent-sdk-dist")
     wheels = build_wheel(sdk_root, output_dir)
     if not wheels:
-        pytest.skip("myagent-sdk wheel build produced no artifacts")
+        pytest.skip("justagent-sdk wheel build produced no artifacts")
     return wheels[0]
 
 

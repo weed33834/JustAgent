@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from myagent.cli.main import app
+from justagent.cli.main import app
 
 runner = CliRunner()
 
@@ -16,11 +16,11 @@ runner = CliRunner()
 def test_help_prints_usage() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "MyAgent" in result.output
+    assert "JustAgent" in result.output
 
 
 def test_init_creates_config(tmp_path: Path) -> None:
-    config_path = tmp_path / ".myagent.toml"
+    config_path = tmp_path / ".justagent.toml"
     result = runner.invoke(
         app,
         ["--yes", "init", "--output", str(config_path)],
@@ -65,7 +65,7 @@ def test_commit_with_yes(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["--config", str(tmp_path / ".myagent.toml"), "--yes", "commit"],
+        ["--config", str(tmp_path / ".justagent.toml"), "--yes", "commit"],
     )
     assert result.exit_code == 0
     assert "Committed" in result.output
@@ -82,8 +82,8 @@ def test_upload_dry_run(tmp_path: Path) -> None:
 
 
 def test_init_uses_hardware_tier(tmp_path: Path) -> None:
-    config_path = tmp_path / ".myagent.toml"
-    with patch("myagent.cli.commands.init.detect_hardware") as mock_hw:
+    config_path = tmp_path / ".justagent.toml"
+    with patch("justagent.cli.commands.init.detect_hardware") as mock_hw:
         mock_hw.return_value.recommended_tier = 1
         result = runner.invoke(
             app,
@@ -95,7 +95,7 @@ def test_init_uses_hardware_tier(tmp_path: Path) -> None:
 
 
 def test_plugin_subcommand_list_empty() -> None:
-    with patch("myagent.cli.commands.plugin.PluginRegistry") as mock_cls:
+    with patch("justagent.cli.commands.plugin.PluginRegistry") as mock_cls:
         mock_cls.return_value.list.return_value = []
         result = runner.invoke(app, ["plugin", "list"])
     assert result.exit_code == 0

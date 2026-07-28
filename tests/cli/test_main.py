@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from myagent.cli import main
-from myagent.exceptions import ConfigError, ExitCode
+from justagent.cli import main
+from justagent.exceptions import ConfigError, ExitCode
 
 
 class FakeContext:
@@ -25,7 +25,7 @@ class FakeContext:
 
 def test_main_callback_loads_config(tmp_path: Path) -> None:
     ctx = FakeContext()
-    config_path = tmp_path / "myagent.toml"
+    config_path = tmp_path / "justagent.toml"
     config_path.write_text("[model]\ndefault_tier = 1\n")
 
     main.main_callback(ctx, config_path=config_path)
@@ -46,7 +46,7 @@ def test_cli_entrypoint_handles_myagent_error() -> None:
     error = ConfigError("bad config")
     mock_app = MagicMock(side_effect=error)
     with (
-        patch.object(sys, "argv", ["myagent", "fix"]),
+        patch.object(sys, "argv", ["justagent", "fix"]),
         patch.object(main, "app", mock_app),
     ):
         exit_code = main.cli_entrypoint()
@@ -56,7 +56,7 @@ def test_cli_entrypoint_handles_myagent_error() -> None:
 def test_cli_entrypoint_handles_unexpected_error() -> None:
     mock_app = MagicMock(side_effect=RuntimeError("boom"))
     with (
-        patch.object(sys, "argv", ["myagent", "fix"]),
+        patch.object(sys, "argv", ["justagent", "fix"]),
         patch.object(main, "app", mock_app),
     ):
         exit_code = main.cli_entrypoint()
@@ -65,7 +65,7 @@ def test_cli_entrypoint_handles_unexpected_error() -> None:
 
 def test_cli_entrypoint_help_does_not_traceback(capsys) -> None:
     """--help must exit cleanly without an exception traceback."""
-    with patch.object(sys, "argv", ["myagent", "--help"]), pytest.raises(SystemExit) as exc_info:
+    with patch.object(sys, "argv", ["justagent", "--help"]), pytest.raises(SystemExit) as exc_info:
         main.cli_entrypoint()
     assert exc_info.value.code == 0
     captured = capsys.readouterr()
@@ -75,11 +75,11 @@ def test_cli_entrypoint_help_does_not_traceback(capsys) -> None:
 
 def test_cli_entrypoint_unknown_command_gives_friendly_message(capsys) -> None:
     """An unknown command must print a friendly hint instead of crashing."""
-    with patch.object(sys, "argv", ["myagent", "not-a-command"]):
+    with patch.object(sys, "argv", ["justagent", "not-a-command"]):
         exit_code = main.cli_entrypoint()
     # Unknown commands exit with CONFIG_ERROR (2) rather than
     # USAGE_ERROR (1) so shell scripts can distinguish "user misuse" from
-    # "myagent rejected the invocation".
+    # "justagent rejected the invocation".
     assert exit_code == ExitCode.CONFIG_ERROR
     captured = capsys.readouterr()
     assert "not-a-command" in captured.err
@@ -91,10 +91,10 @@ def test_cli_entrypoint_config_error_shows_next_step_suggestion(capsys) -> None:
     error = ConfigError("missing config")
     mock_app = MagicMock(side_effect=error)
     with (
-        patch.object(sys, "argv", ["myagent", "fix"]),
+        patch.object(sys, "argv", ["justagent", "fix"]),
         patch.object(main, "app", mock_app),
     ):
         exit_code = main.cli_entrypoint()
     assert exit_code == error.code
     captured = capsys.readouterr()
-    assert "myagent init" in captured.err
+    assert "justagent init" in captured.err

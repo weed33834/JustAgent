@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from myagent.core.language_rules import (
+from justagent.core.language_rules import (
     RULES,
     apply_artifact_removal,
     plan_artifact_removal,
@@ -20,7 +20,7 @@ def test_rules_table_covers_expected_languages() -> None:
 
 
 def test_rust_rule_does_not_remove_target_wholesale() -> None:
-    """Cargo uses target/ as a cache; MyAgent must not list it as artifact_dirs."""
+    """Cargo uses target/ as a cache; JustAgent must not list it as artifact_dirs."""
     assert "target" not in RULES["rust"].artifact_dirs
     assert "target/debug" not in RULES["rust"].artifact_dirs
     assert "target/release" not in RULES["rust"].artifact_dirs

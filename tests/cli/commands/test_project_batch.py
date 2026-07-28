@@ -1,4 +1,4 @@
-"""CLI tests for the ``myagent project scan`` and ``batch-*`` commands."""
+"""CLI tests for the ``justagent project scan`` and ``batch-*`` commands."""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from myagent.cli.main import app
-from myagent.core.project_store import ProjectStore
-from myagent.models.project import ManagedProject
+from justagent.cli.main import app
+from justagent.core.project_store import ProjectStore
+from justagent.models.project import ManagedProject
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path) -> Path:
-    """Write a minimal ``.myagent.toml`` rooted in ``tmp_path``."""
-    config_path = tmp_path / ".myagent.toml"
+    """Write a minimal ``.justagent.toml`` rooted in ``tmp_path``."""
+    config_path = tmp_path / ".justagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n'
         f'[audit]\nlog_dir = "{tmp_path / "audit"}"\n',
@@ -52,7 +52,7 @@ def test_scan_dry_run(tmp_path: Path) -> None:
     proj = _make_project(tmp_path, "myproj")
     (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app,
             ["--config", str(config_path), "project", "scan", str(tmp_path), "--dry-run"],
@@ -84,7 +84,7 @@ def test_scan_register(tmp_path: Path) -> None:
     proj = _make_project(tmp_path, "myproj")
     (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app,
             ["--config", str(config_path), "project", "scan", str(tmp_path)],
@@ -102,7 +102,7 @@ def test_scan_with_tag(tmp_path: Path) -> None:
     proj = _make_project(tmp_path, "myproj")
     (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app,
             [
@@ -149,9 +149,9 @@ def test_batch_status(tmp_path: Path) -> None:
     store.add(ManagedProject(name="proj", path=str(proj), added_at=1.0))
     config_path = _write_config(tmp_path)
     with (
-        patch("myagent.cli.commands.project.ProjectStore", return_value=store),
+        patch("justagent.cli.commands.project.ProjectStore", return_value=store),
         patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=_completed(0, "", ""),
         ),
     ):
@@ -166,7 +166,7 @@ def test_batch_status(tmp_path: Path) -> None:
 def test_batch_status_no_projects(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app, ["--config", str(config_path), "project", "batch-status"]
         )
@@ -184,7 +184,7 @@ def test_batch_run(tmp_path: Path) -> None:
     proj = _make_project(tmp_path, "proj")
     store.add(ManagedProject(name="proj", path=str(proj), added_at=1.0))
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app,
             ["--config", str(config_path), "project", "batch-run", "echo", "hello"],
@@ -197,7 +197,7 @@ def test_batch_run(tmp_path: Path) -> None:
 def test_batch_run_no_command(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app, ["--config", str(config_path), "project", "batch-run"]
         )
@@ -217,9 +217,9 @@ def test_batch_ship(tmp_path: Path) -> None:
     config_path = _write_config(tmp_path)
     fake_completed = MagicMock(returncode=0, stdout="", stderr="")
     with (
-        patch("myagent.cli.commands.project.ProjectStore", return_value=store),
+        patch("justagent.cli.commands.project.ProjectStore", return_value=store),
         patch(
-            "myagent.core.batch_ops.subprocess.run",
+            "justagent.core.batch_ops.subprocess.run",
             return_value=fake_completed,
         ) as mock_run,
     ):
@@ -235,13 +235,13 @@ def test_batch_ship(tmp_path: Path) -> None:
     assert "proj" in result.output
     assert "OK" in result.output
     args, _ = mock_run.call_args
-    assert args[0] == ["myagent", "clean"]
+    assert args[0] == ["justagent", "clean"]
 
 
 def test_batch_ship_invalid_stage(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
-    with patch("myagent.cli.commands.project.ProjectStore", return_value=store):
+    with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
         result = runner.invoke(
             app,
             ["--config", str(config_path), "project", "batch-ship", "--stages", "bogus"],

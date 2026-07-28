@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "myagent-go-ship"
+name = "justagent-go-ship"
 version = "0.1.0"
-description = "MyAgent-CLI language pack: Go build artifacts and verify hints"
+description = "JustAgent-CLI language pack: Go build artifacts and verify hints"
 requires-python = ">=3.10"
 dependencies = [
-    "myagent>=1.0.0",
-    "myagent-sdk>=1.0.0",
+    "justagent>=1.0.0",
+    "justagent-sdk>=1.0.0",
 ]
 
-[project.entry-points."myagent.plugins"]
+[project.entry-points."justagent.plugins"]
 go = "myagent_go_ship.plugin:register"

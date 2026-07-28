@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from myagent.core.context import CommandContext
-from myagent.models.config import AppConfig
+from justagent.core.context import CommandContext
+from justagent.models.config import AppConfig
 
 
 def test_command_context_defaults(app_config: AppConfig) -> None:

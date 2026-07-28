@@ -1,4 +1,4 @@
-"""Tests for ``myagent.agent.mcp_client`` (MCP client + JSON-RPC layer)."""
+"""Tests for ``justagent.agent.mcp_client`` (MCP client + JSON-RPC layer)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 import pytest
 
-from myagent.agent.mcp_client import (
+from justagent.agent.mcp_client import (
     JSONRPCError,
     MCPClient,
     MCPConnectionState,
@@ -26,7 +26,7 @@ from myagent.agent.mcp_client import (
     _jsonrpc_request,
     _jsonrpc_response,
 )
-from myagent.exceptions import MyAgentError
+from justagent.exceptions import MyAgentError
 
 # ---------------------------------------------------------------------------
 # Mock transport — records sent messages, returns canned responses
@@ -432,7 +432,7 @@ class TestMCPClientStdio:
         init_msg = transport.sent[0]
         params = init_msg["params"]
         assert params["protocolVersion"] == "2024-11-05"
-        assert params["clientInfo"]["name"] == "myagent"
+        assert params["clientInfo"]["name"] == "justagent"
         assert params["clientInfo"]["version"] == "2.0.0"
 
     @pytest.mark.asyncio
@@ -985,7 +985,7 @@ class TestOAuthProtocol:
     @pytest.mark.asyncio
     async def test_http_transport_injects_auth_header(self) -> None:
         """The HTTP transport adds an Authorization header from the token."""
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         token = MCPOAuthToken(access_token="secret-token", token_type="Bearer")
         provider = StaticTokenProvider(token)
@@ -1015,7 +1015,7 @@ class TestHTTPTransportMocked:
         """Test _HTTPTransport send/receive using a mocked httpx client."""
         from unittest.mock import AsyncMock, MagicMock
 
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         config = MCPServerConfig(
             name="t",
@@ -1043,7 +1043,7 @@ class TestHTTPTransportMocked:
     async def test_send_http_error_raises_mcp_error(self) -> None:
         from unittest.mock import AsyncMock, MagicMock
 
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         config = MCPServerConfig(
             name="t",
@@ -1060,7 +1060,7 @@ class TestHTTPTransportMocked:
 
     @pytest.mark.asyncio
     async def test_parse_sse(self) -> None:
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         sse_text = (
             "event: message\n"
@@ -1073,14 +1073,14 @@ class TestHTTPTransportMocked:
 
     @pytest.mark.asyncio
     async def test_parse_sse_no_data_raises(self) -> None:
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         with pytest.raises(MCPError, match="No data"):
             _HTTPTransport._parse_sse("event: ping\n\n")
 
     @pytest.mark.asyncio
     async def test_start_requires_url(self) -> None:
-        from myagent.agent.mcp_client import _HTTPTransport
+        from justagent.agent.mcp_client import _HTTPTransport
 
         config = MCPServerConfig(
             name="t",
@@ -1100,7 +1100,7 @@ class TestHTTPTransportMocked:
 class TestStdioTransportValidation:
     @pytest.mark.asyncio
     async def test_start_requires_command(self) -> None:
-        from myagent.agent.mcp_client import _StdioTransport
+        from justagent.agent.mcp_client import _StdioTransport
 
         config = MCPServerConfig(
             name="t",
@@ -1113,7 +1113,7 @@ class TestStdioTransportValidation:
 
     @pytest.mark.asyncio
     async def test_send_before_start_raises(self) -> None:
-        from myagent.agent.mcp_client import _StdioTransport
+        from justagent.agent.mcp_client import _StdioTransport
 
         config = MCPServerConfig(
             name="t",
@@ -1126,7 +1126,7 @@ class TestStdioTransportValidation:
 
     @pytest.mark.asyncio
     async def test_close_when_not_started_is_noop(self) -> None:
-        from myagent.agent.mcp_client import _StdioTransport
+        from justagent.agent.mcp_client import _StdioTransport
 
         config = MCPServerConfig(
             name="t",

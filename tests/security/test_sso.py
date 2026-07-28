@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from myagent.security.sso import (
+from justagent.security.sso import (
     SSOConfig,
     SSOError,
     SSOManager,
@@ -68,7 +68,7 @@ class TestSSOManager:
         token = TokenPayload(
             subject="user-123",
             issuer="https://test.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() + 3600,
             issued_at=time.time(),
             claims={"username": "alice", "email": "alice@example.com", "department": "eng"},
@@ -83,7 +83,7 @@ class TestSSOManager:
         token = TokenPayload(
             subject="user-123",
             issuer="https://test.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() + 3600,
             issued_at=time.time(),
         )
@@ -102,7 +102,7 @@ class TestSSOManager:
         token = TokenPayload(
             subject="user-123",
             issuer="https://disabled.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() + 3600,
             issued_at=time.time(),
         )
@@ -120,7 +120,7 @@ class TestSSOManager:
         token = TokenPayload(
             subject="user-123",
             issuer="https://test.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() - 100,  # expired
             issued_at=time.time() - 200,
         )
@@ -138,7 +138,7 @@ class TestSSOManager:
         token = TokenPayload(
             subject="user-123",
             issuer="https://wrong.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() + 3600,
             issued_at=time.time(),
         )
@@ -176,7 +176,7 @@ class TestSSOManager:
         payload = TokenPayload(
             subject="user-1",
             issuer="https://idp.example.com",
-            audience="omniagent",
+            audience="justagent",
             expires_at=time.time() + 3600,
             issued_at=time.time(),
             claims={"role": "admin"},

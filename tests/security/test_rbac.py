@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from myagent.security.rbac import (
+from justagent.security.rbac import (
     AccessDecision,
     Permission,
     RBACEngine,

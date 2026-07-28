@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from myagent.context import InstructionConfig, InstructionDiscovery
+from justagent.context import InstructionConfig, InstructionDiscovery
 
 
 def test_discover_finds_agents_md_in_cwd(tmp_path: Path) -> None:

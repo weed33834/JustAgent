@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.agent.change_tracker`."""
+"""Tests for :mod:`justagent.agent.change_tracker`."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from myagent.agent.change_tracker import (
+from justagent.agent.change_tracker import (
     ChangeTracker,
     FileChange,
     _compute_line_delta,

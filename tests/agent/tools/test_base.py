@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from pydantic import BaseModel
 
-from myagent.agent.tools.base import (
+from justagent.agent.tools.base import (
     Attachment,
     InvalidArgumentsError,
     PermissionDeniedError,

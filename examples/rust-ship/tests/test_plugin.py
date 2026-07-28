@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 from myagent_rust_ship.plugin import RustShipPlugin
 
-from myagent.core.context import CommandContext
+from justagent.core.context import CommandContext
 
 
 @pytest.fixture

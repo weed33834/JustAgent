@@ -1,6 +1,6 @@
-# myagent-go-ship
+# justagent-go-ship
 
-A language-aware MyAgent-CLI plugin pack for Go projects. It hooks into the
+A language-aware JustAgent-CLI plugin pack for Go projects. It hooks into the
 `clean` and `verify` lifecycle to report Go-specific build artifacts and
 suggest the conventional Go test command.
 
@@ -21,7 +21,7 @@ your own cleanup workflow.
 ## Install
 
 ```bash
-pipx install myagent-go-ship
+pipx install justagent-go-ship
 ```
 
 Or, for local development:
@@ -31,16 +31,16 @@ cd examples/go-ship
 pip install -e .
 ```
 
-The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."justagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
 
-Add `go` to the verify allowlist so `myagent verify "go test ./..."` is
+Add `go` to the verify allowlist so `justagent verify "go test ./..."` is
 permitted (the default allowlist is Python-centric):
 
 ```toml
-# .myagent.toml
+# .justagent.toml
 [verify]
 allowed_commands = ["pytest", "go"]
 ```

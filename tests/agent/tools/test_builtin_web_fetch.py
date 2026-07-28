@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
-from myagent.agent.tools.builtin.web_fetch import (
+from justagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from justagent.agent.tools.builtin.web_fetch import (
     DEFAULT_TIMEOUT_MS,
     WebFetchInput,
     make_web_fetch_tool,

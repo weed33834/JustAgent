@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from myagent.core.package_verifier import (
+from justagent.core.package_verifier import (
     PackageVerificationError,
     compute_sha256,
     verify_package,
@@ -108,7 +108,7 @@ def test_verify_package_requires_sha256_when_signature_present(tmp_path: Path) -
 
 
 def test_download_package_returns_path_and_clears_directory(tmp_path: Path) -> None:
-    from myagent.core.package_verifier import download_package
+    from justagent.core.package_verifier import download_package
 
     pkg = tmp_path / "pkg.whl"
     pkg.write_bytes(b"pkg")
@@ -118,9 +118,9 @@ def test_download_package_returns_path_and_clears_directory(tmp_path: Path) -> N
         return type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
     with (
-        patch("myagent.core.package_verifier.subprocess.run", side_effect=_fake_run),
+        patch("justagent.core.package_verifier.subprocess.run", side_effect=_fake_run),
         patch(
-            "myagent.utils.hashing.pip_cmd",
+            "justagent.utils.hashing.pip_cmd",
             return_value=["pip"],
         ),
     ):
@@ -143,7 +143,7 @@ def _fake_completed_process(returncode: int, stdout: str = "", stderr: str = "")
 
 def test_download_package_raises_on_subprocess_exception(tmp_path: Path) -> None:
     """If subprocess.run raises, download_package raises PackageDownloadError."""
-    from myagent.core.package_verifier import PackageDownloadError, download_package
+    from justagent.core.package_verifier import PackageDownloadError, download_package
 
     out_dir = tmp_path / "download"
     out_dir.mkdir()
@@ -152,8 +152,8 @@ def test_download_package_raises_on_subprocess_exception(tmp_path: Path) -> None
         raise FileNotFoundError("pip not found")
 
     with (
-        patch("myagent.core.package_verifier.subprocess.run", side_effect=boom),
-        patch("myagent.utils.hashing.pip_cmd", return_value=["pip"]),
+        patch("justagent.core.package_verifier.subprocess.run", side_effect=boom),
+        patch("justagent.utils.hashing.pip_cmd", return_value=["pip"]),
         pytest.raises(PackageDownloadError),
     ):
         download_package("pkg==1.0.0", out_dir)
@@ -161,15 +161,15 @@ def test_download_package_raises_on_subprocess_exception(tmp_path: Path) -> None
 
 def test_download_package_raises_on_nonzero_returncode(tmp_path: Path) -> None:
     """A non-zero returncode from pip raises PackageDownloadError."""
-    from myagent.core.package_verifier import PackageDownloadError, download_package
+    from justagent.core.package_verifier import PackageDownloadError, download_package
 
     out_dir = tmp_path / "download"
     out_dir.mkdir()
     fake_result = _fake_completed_process(1, stderr="package not found")
 
     with (
-        patch("myagent.core.package_verifier.subprocess.run", return_value=fake_result),
-        patch("myagent.utils.hashing.pip_cmd", return_value=["pip"]),
+        patch("justagent.core.package_verifier.subprocess.run", return_value=fake_result),
+        patch("justagent.utils.hashing.pip_cmd", return_value=["pip"]),
         pytest.raises(PackageDownloadError),
     ):
         download_package("pkg==1.0.0", out_dir)
@@ -177,7 +177,7 @@ def test_download_package_raises_on_nonzero_returncode(tmp_path: Path) -> None:
 
 def test_download_package_raises_when_multiple_files(tmp_path: Path) -> None:
     """If the download directory ends up with != 1 file, raise PackageDownloadError."""
-    from myagent.core.package_verifier import PackageDownloadError, download_package
+    from justagent.core.package_verifier import PackageDownloadError, download_package
 
     out_dir = tmp_path / "download"
     out_dir.mkdir()
@@ -187,8 +187,8 @@ def test_download_package_raises_when_multiple_files(tmp_path: Path) -> None:
     fake_result = _fake_completed_process(0)
 
     with (
-        patch("myagent.core.package_verifier.subprocess.run", return_value=fake_result),
-        patch("myagent.utils.hashing.pip_cmd", return_value=["pip"]),
+        patch("justagent.core.package_verifier.subprocess.run", return_value=fake_result),
+        patch("justagent.utils.hashing.pip_cmd", return_value=["pip"]),
         pytest.raises(PackageDownloadError),
     ):
         download_package("pkg==1.0.0", out_dir)
@@ -196,15 +196,15 @@ def test_download_package_raises_when_multiple_files(tmp_path: Path) -> None:
 
 def test_download_package_raises_when_no_files(tmp_path: Path) -> None:
     """If no file is produced in the output dir, raise PackageDownloadError."""
-    from myagent.core.package_verifier import PackageDownloadError, download_package
+    from justagent.core.package_verifier import PackageDownloadError, download_package
 
     out_dir = tmp_path / "download"
     out_dir.mkdir()
     fake_result = _fake_completed_process(0)
 
     with (
-        patch("myagent.core.package_verifier.subprocess.run", return_value=fake_result),
-        patch("myagent.utils.hashing.pip_cmd", return_value=["pip"]),
+        patch("justagent.core.package_verifier.subprocess.run", return_value=fake_result),
+        patch("justagent.utils.hashing.pip_cmd", return_value=["pip"]),
         pytest.raises(PackageDownloadError),
     ):
         download_package("pkg==1.0.0", out_dir)
@@ -214,7 +214,7 @@ def test_download_and_verify_returns_moved_file(tmp_path: Path) -> None:
     """download_and_verify downloads, verifies, and moves the file out of temp."""
     import shutil
 
-    from myagent.core.package_verifier import download_and_verify
+    from justagent.core.package_verifier import download_and_verify
 
     def fake_download(source: str, output_dir: Path) -> Path:
         pkg = output_dir / "pkg-1.0.whl"
@@ -222,8 +222,8 @@ def test_download_and_verify_returns_moved_file(tmp_path: Path) -> None:
         return pkg
 
     with (
-        patch("myagent.core.package_verifier.download_package", side_effect=fake_download),
-        patch("myagent.core.package_verifier.verify_package"),
+        patch("justagent.core.package_verifier.download_package", side_effect=fake_download),
+        patch("justagent.core.package_verifier.verify_package"),
     ):
         result = download_and_verify(
             "pkg==1.0.0",
@@ -250,7 +250,7 @@ def test_download_and_verify_with_dest_dir_does_not_register_atexit(tmp_path: Pa
     """
     import atexit
 
-    from myagent.core.package_verifier import download_and_verify
+    from justagent.core.package_verifier import download_and_verify
 
     def fake_download(source: str, output_dir: Path) -> Path:
         pkg = output_dir / "pkg-2.0.whl"
@@ -269,9 +269,9 @@ def test_download_and_verify_with_dest_dir_does_not_register_atexit(tmp_path: Pa
         return real_register(func, *args, **kwargs)
 
     with (
-        patch("myagent.core.package_verifier.download_package", side_effect=fake_download),
-        patch("myagent.core.package_verifier.verify_package"),
-        patch("myagent.core.package_verifier.atexit.register", side_effect=_tracking_register),
+        patch("justagent.core.package_verifier.download_package", side_effect=fake_download),
+        patch("justagent.core.package_verifier.verify_package"),
+        patch("justagent.core.package_verifier.atexit.register", side_effect=_tracking_register),
     ):
         result = download_and_verify(
             "pkg==2.0.0",

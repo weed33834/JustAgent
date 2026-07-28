@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from myagent.agent.mistake_tracker import (
+from justagent.agent.mistake_tracker import (
     AppendRecoveryNotice,
     ConsecutiveMistakeLimitContext,
     ConsecutiveMistakeLimitDecision,

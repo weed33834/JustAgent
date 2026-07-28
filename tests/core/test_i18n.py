@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.i18n import I18n, _detect_locale, get_i18n
+from justagent.core.i18n import I18n, _detect_locale, get_i18n
 
 
 def test_i18n_returns_translation() -> None:
@@ -20,7 +20,7 @@ def test_i18n_returns_translation() -> None:
 def test_i18n_formats_arguments() -> None:
     i18n = get_i18n("en")
     assert i18n._("clean.complete") == "Clean complete."
-    assert i18n._("init.created", output=".myagent.toml") == "Created .myagent.toml"
+    assert i18n._("init.created", output=".justagent.toml") == "Created .justagent.toml"
 
 
 def test_i18n_falls_back_to_key() -> None:
@@ -31,7 +31,7 @@ def test_i18n_falls_back_to_key() -> None:
 def test_i18n_chinese_catalog() -> None:
     i18n = get_i18n("zh")
     assert i18n._("clean.noop") == "已经是干净的。"
-    assert i18n._("doctor.title") == "MyAgent 环境诊断"
+    assert i18n._("doctor.title") == "JustAgent 环境诊断"
 
 
 def test_i18n_unknown_language_falls_back_to_english() -> None:
@@ -64,7 +64,7 @@ def test_get_i18n_uses_environment_when_no_arg(monkeypatch: pytest.MonkeyPatch) 
 
 
 def test_locale_files_are_shiped() -> None:
-    locales_dir = Path(__file__).resolve().parents[2] / "src" / "myagent" / "locales"
+    locales_dir = Path(__file__).resolve().parents[2] / "src" / "justagent" / "locales"
     assert (locales_dir / "en.json").exists()
     assert (locales_dir / "zh.json").exists()
     assert (locales_dir / "ja.json").exists()
@@ -72,7 +72,7 @@ def test_locale_files_are_shiped() -> None:
 
 def test_locale_files_have_no_duplicate_keys() -> None:
     """Each locale file must not declare the same key twice (JSON silently keeps the last)."""
-    locales_dir = Path(__file__).resolve().parents[2] / "src" / "myagent" / "locales"
+    locales_dir = Path(__file__).resolve().parents[2] / "src" / "justagent" / "locales"
     for name in ("en.json", "zh.json", "ja.json"):
         text = (locales_dir / name).read_text(encoding="utf-8")
         # Count key occurrences by scanning the raw text for top-level ``"key":`` lines.
@@ -85,7 +85,7 @@ def test_locale_files_share_identical_key_sets() -> None:
     """zh / en / ja locales must expose the same set of translation keys."""
     import json
 
-    locales_dir = Path(__file__).resolve().parents[2] / "src" / "myagent" / "locales"
+    locales_dir = Path(__file__).resolve().parents[2] / "src" / "justagent" / "locales"
     keys: dict[str, set[str]] = {}
     for name in ("en.json", "zh.json", "ja.json"):
         data = json.loads((locales_dir / name).read_text(encoding="utf-8"))

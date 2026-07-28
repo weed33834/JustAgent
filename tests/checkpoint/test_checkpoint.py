@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from myagent.checkpoint import (
+from justagent.checkpoint import (
     Checkpoint,
     CheckpointConfig,
     CheckpointError,
@@ -91,10 +91,10 @@ class TestCheckpointConfig:
     def test_defaults(self) -> None:
         cfg = CheckpointConfig()
         assert cfg.enabled is True
-        assert cfg.checkpoint_dir == ".myagent/checkpoints"
+        assert cfg.checkpoint_dir == ".justagent/checkpoints"
         assert cfg.max_checkpoints == 100
         assert ".git/" in cfg.exclude_patterns
-        assert ".myagent/" in cfg.exclude_patterns
+        assert ".justagent/" in cfg.exclude_patterns
 
     def test_custom_config(self) -> None:
         cfg = CheckpointConfig(
@@ -119,7 +119,7 @@ class TestInitialize:
         mgr = CheckpointManager(project_dir)
         mgr.initialize()
         assert mgr.is_initialized is True
-        shadow = project_dir / ".myagent" / "checkpoints"
+        shadow = project_dir / ".justagent" / "checkpoints"
         assert shadow.exists()
         assert (shadow / ".git").exists()
 
@@ -128,12 +128,12 @@ class TestInitialize:
         mgr.initialize()
         # Excludes are written to .git/info/exclude in the shadow repo.
         exclude_file = (
-            project_dir / ".myagent" / "checkpoints" / ".git" / "info" / "exclude"
+            project_dir / ".justagent" / "checkpoints" / ".git" / "info" / "exclude"
         )
         assert exclude_file.exists()
         content = exclude_file.read_text(encoding="utf-8")
         assert ".git/" in content
-        assert ".myagent/" in content
+        assert ".justagent/" in content
 
     def test_initialize_is_idempotent(self, project_dir: Path) -> None:
         mgr = CheckpointManager(project_dir)
@@ -147,7 +147,7 @@ class TestInitialize:
         )
         mgr.initialize()
         assert mgr.is_initialized is False
-        assert not (project_dir / ".myagent").exists()
+        assert not (project_dir / ".justagent").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -276,10 +276,10 @@ class TestRestore:
     ) -> None:
         cp = manager.snapshot(iteration=0, message="initial")
         assert cp is not None
-        # The .myagent dir (shadow repo) must survive restore.
+        # The .justagent dir (shadow repo) must survive restore.
         manager.restore(cp.id)
-        assert (project_dir / ".myagent").exists()
-        assert (project_dir / ".myagent" / "checkpoints").exists()
+        assert (project_dir / ".justagent").exists()
+        assert (project_dir / ".justagent" / "checkpoints").exists()
 
     def test_restore_unknown_checkpoint_raises(
         self, manager: CheckpointManager
@@ -432,7 +432,7 @@ class TestProperties:
 
     def test_shadow_repo_path(self, project_dir: Path) -> None:
         mgr = CheckpointManager(project_dir)
-        assert mgr.shadow_repo_path == project_dir / ".myagent" / "checkpoints"
+        assert mgr.shadow_repo_path == project_dir / ".justagent" / "checkpoints"
 
     def test_is_enabled_true_by_default(self, project_dir: Path) -> None:
         mgr = CheckpointManager(project_dir)
@@ -470,7 +470,7 @@ class TestExcludePatterns:
         (project_dir / "keep.txt").write_text("keep me", encoding="utf-8")
         mgr = CheckpointManager(
             project_dir,
-            CheckpointConfig(exclude_patterns=["*.env", ".git/", ".myagent/"]),
+            CheckpointConfig(exclude_patterns=["*.env", ".git/", ".justagent/"]),
         )
         mgr.initialize()
         cp = mgr.snapshot(iteration=0, message="initial")

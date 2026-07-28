@@ -14,9 +14,9 @@ import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from myagent.core.registry_client import RegistryClient
-from myagent.exceptions import RegistryError
-from myagent.models.config import RegistryConfig
+from justagent.core.registry_client import RegistryClient
+from justagent.exceptions import RegistryError
+from justagent.models.config import RegistryConfig
 
 
 def _canonical_payload(data: dict[str, Any]) -> bytes:
@@ -47,7 +47,7 @@ def test_fetches_remote_and_caches(tmp_path: Path) -> None:
     cache = tmp_path / "registry.json"
     remote_data = {"version": 2, "plugins": [{"name": "remote"}]}
 
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(cache_file=cache)
@@ -65,7 +65,7 @@ def test_falls_back_to_stale_cache_on_remote_failure(tmp_path: Path) -> None:
 
     config = RegistryConfig(cache_enabled=True, cache_ttl_seconds=0)
     with patch(
-        "myagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
+        "justagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
     ):
         client = RegistryClient(config=config, cache_file=cache)
         result = client.get()
@@ -80,7 +80,7 @@ def test_no_cache_option_bypasses_cache(tmp_path: Path) -> None:
     cache.write_text(json.dumps(cached_data), encoding="utf-8")
 
     config = RegistryConfig(cache_enabled=True, cache_ttl_seconds=3600)
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -105,7 +105,7 @@ def test_valid_signed_index_is_cached(tmp_path: Path) -> None:
     remote_data["signature"] = base64.b64encode(signature).decode("ascii")
 
     config = RegistryConfig(public_key=base64.b64encode(public_key).decode("ascii"))
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -127,7 +127,7 @@ def test_tampered_signature_raises_and_does_not_cache(tmp_path: Path) -> None:
     remote_data["plugins"][0]["name"] = "evil"
 
     config = RegistryConfig(public_key=base64.b64encode(public_key).decode("ascii"))
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -153,7 +153,7 @@ def test_tampered_cache_is_rejected(tmp_path: Path) -> None:
     config = RegistryConfig(
         public_key=base64.b64encode(public_key).decode("ascii"), cache_ttl_seconds=3600
     )
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -168,7 +168,7 @@ def test_missing_signature_with_public_key_raises(tmp_path: Path) -> None:
     public_key, _signature = _sign_index(remote_data)
 
     config = RegistryConfig(public_key=base64.b64encode(public_key).decode("ascii"))
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -184,7 +184,7 @@ def test_invalid_sha256_raises(tmp_path: Path) -> None:
     remote_data["signature"] = base64.b64encode(signature).decode("ascii")
 
     config = RegistryConfig(public_key=base64.b64encode(public_key).decode("ascii"))
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -197,7 +197,7 @@ def test_registry_cache_has_restrictive_permissions(tmp_path: Path) -> None:
     cache = tmp_path / "registry.json"
     remote_data = {"version": 2, "plugins": [{"name": "remote"}]}
 
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(cache_file=cache)
@@ -217,7 +217,7 @@ def test_cache_disabled_treats_existing_cache_as_stale(tmp_path: Path) -> None:
     remote_data = {"version": 2, "plugins": [{"name": "remote"}]}
 
     config = RegistryConfig(cache_enabled=False)
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -237,7 +237,7 @@ def test_cache_stat_oserror_treated_as_not_fresh(tmp_path: Path) -> None:
     client = RegistryClient(cache_file=cache)
     with (
         patch.object(Path, "stat", side_effect=OSError("stat denied")),
-        patch("myagent.core.registry_client.httpx.get") as mock_get,
+        patch("justagent.core.registry_client.httpx.get") as mock_get,
     ):
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
@@ -253,7 +253,7 @@ def test_corrupt_cache_is_ignored_and_refetches(tmp_path: Path) -> None:
     remote_data = {"version": 2, "plugins": [{"name": "remote"}]}
 
     config = RegistryConfig(cache_enabled=True, cache_ttl_seconds=3600)
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -268,9 +268,9 @@ def test_write_cache_oserror_is_swallowed(tmp_path: Path) -> None:
     remote_data = {"version": 2, "plugins": [{"name": "remote"}]}
 
     with (
-        patch("myagent.core.registry_client.httpx.get") as mock_get,
+        patch("justagent.core.registry_client.httpx.get") as mock_get,
         patch(
-            "myagent.utils.json_io.ensure_file_permissions",
+            "justagent.utils.json_io.ensure_file_permissions",
             side_effect=OSError("disk full"),
         ),
     ):
@@ -295,7 +295,7 @@ def test_invalid_public_key_value_raises_registry_error(tmp_path: Path) -> None:
     }
 
     config = RegistryConfig(public_key="@@@ not base64 @@@")
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(config=config, cache_file=cache)
@@ -307,14 +307,14 @@ def test_bundled_index_returned_when_no_cache_and_no_remote(tmp_path: Path) -> N
     """With no cache and an unreachable remote, the bundled index is the final fallback."""
     cache = tmp_path / "registry.json"
     with patch(
-        "myagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
+        "justagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
     ):
         client = RegistryClient(cache_file=cache)
         result = client.get()
 
     bundled = json.loads(
         (
-            Path(__file__).resolve().parents[2] / "src" / "myagent" / "registry" / "plugins.json"
+            Path(__file__).resolve().parents[2] / "src" / "justagent" / "registry" / "plugins.json"
         ).read_text(encoding="utf-8")
     )
     assert result["plugins"] == bundled["plugins"]
@@ -324,7 +324,7 @@ def test_bundled_index_returns_empty_when_bundled_missing(tmp_path: Path) -> Non
     """If the bundled index file is absent, an empty index is returned."""
     cache = tmp_path / "registry.json"
     with patch(
-        "myagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
+        "justagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
     ):
         client = RegistryClient(cache_file=cache)
         with patch.object(Path, "exists", return_value=False):
@@ -348,7 +348,7 @@ def test_fetch_index_force_clears_cache_first(tmp_path: Path) -> None:
     cache.write_text(json.dumps({"version": 2, "plugins": [{"name": "stale"}]}), encoding="utf-8")
     remote_data = {"version": 2, "plugins": [{"name": "fresh"}]}
 
-    with patch("myagent.core.registry_client.httpx.get") as mock_get:
+    with patch("justagent.core.registry_client.httpx.get") as mock_get:
         mock_get.return_value.json.return_value = remote_data
         mock_get.return_value.raise_for_status = lambda: None
         client = RegistryClient(cache_file=cache)
@@ -361,7 +361,7 @@ def test_fetch_index_returns_none_on_remote_failure(tmp_path: Path) -> None:
     """When the remote is unreachable, fetch_index returns None (no fallback)."""
     cache = tmp_path / "registry.json"
     with patch(
-        "myagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
+        "justagent.core.registry_client.httpx.get", side_effect=httpx.ConnectError("offline")
     ):
         client = RegistryClient(cache_file=cache)
         assert client.fetch_index() is None
@@ -369,8 +369,8 @@ def test_fetch_index_returns_none_on_remote_failure(tmp_path: Path) -> None:
 
 def test_get_registry_client_factory() -> None:
     """get_registry_client builds a client from an AppConfig or a default RegistryConfig."""
-    from myagent.core.registry_client import get_registry_client
-    from myagent.models.config import AppConfig
+    from justagent.core.registry_client import get_registry_client
+    from justagent.models.config import AppConfig
 
     default_client = get_registry_client()
     assert default_client.config.url == RegistryConfig().url

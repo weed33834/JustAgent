@@ -1,4 +1,4 @@
-"""Tests for ``myagent.agent.session`` (session persistence)."""
+"""Tests for ``justagent.agent.session`` (session persistence)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-from myagent.agent.runtime import Message, ToolCall, ToolResultPart
-from myagent.agent.session import (
+from justagent.agent.runtime import Message, ToolCall, ToolResultPart
+from justagent.agent.session import (
     Session,
     SessionError,
     SessionMetadata,
@@ -256,7 +256,7 @@ class TestSessionStore:
     def test_default_store_dir(self) -> None:
         d = default_store_dir()
         assert d.name == "sessions"
-        assert d.parent.name == ".myagent"
+        assert d.parent.name == ".justagent"
 
     def test_create_session(self, tmp_path: Path) -> None:
         store = SessionStore(tmp_path / "sessions")

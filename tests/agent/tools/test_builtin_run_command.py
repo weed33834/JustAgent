@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from myagent.agent.tools.base import (
+from justagent.agent.tools.base import (
     InvalidArgumentsError,
     ToolAbortedError,
     ToolContext,
 )
-from myagent.agent.tools.builtin.run_command import (
+from justagent.agent.tools.builtin.run_command import (
     DEFAULT_TIMEOUT_MS,
     RunCommandInput,
     make_run_command_tool,

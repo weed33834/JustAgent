@@ -13,22 +13,22 @@ import pytest
 
 def test_main_module_imports() -> None:
     """Verify __main__.py can be imported."""
-    import myagent.__main__ as m
+    import justagent.__main__ as m
 
     assert m is not None
 
 
 def test_main_entry_point_is_cli_entrypoint() -> None:
     """__main__.py re-exports cli_entrypoint from cli.main."""
-    from myagent.__main__ import cli_entrypoint as main_entry
-    from myagent.cli.main import cli_entrypoint
+    from justagent.__main__ import cli_entrypoint as main_entry
+    from justagent.cli.main import cli_entrypoint
 
     assert main_entry is cli_entrypoint
 
 
 def test_main_module_has_name_guard() -> None:
     """__main__.py contains the __name__ == '__main__' guard."""
-    import myagent.__main__ as main_module
+    import justagent.__main__ as main_module
 
     source_path = Path(main_module.__file__)
     source = source_path.read_text()
@@ -38,8 +38,8 @@ def test_main_module_has_name_guard() -> None:
 
 def test_main_module_enter_guard_block() -> None:
     """Execute __main__.py as __main__ to cover the guard block (line 6)."""
-    main_path = Path(__file__).resolve().parent.parent / "src" / "myagent" / "__main__.py"
-    with patch("myagent.cli.main.cli_entrypoint", return_value=0):
+    main_path = Path(__file__).resolve().parent.parent / "src" / "justagent" / "__main__.py"
+    with patch("justagent.cli.main.cli_entrypoint", return_value=0):
         with pytest.raises(SystemExit) as exc_info:
             runpy.run_path(str(main_path), run_name="__main__")
         assert exc_info.value.code == 0
@@ -48,7 +48,7 @@ def test_main_module_enter_guard_block() -> None:
 def test_main_module_raises_systemexit() -> None:
     """When executed via python -m, the module raises SystemExit."""
     result = subprocess.run(
-        [sys.executable, "-m", "myagent", "--help"],
+        [sys.executable, "-m", "justagent", "--help"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -60,7 +60,7 @@ def test_main_module_raises_systemexit() -> None:
 def test_main_module_run_in_subprocess() -> None:
     """Verify the module can be executed and produces expected output."""
     result = subprocess.run(
-        [sys.executable, "-c", "import myagent.__main__"],
+        [sys.executable, "-c", "import justagent.__main__"],
         capture_output=True,
         text=True,
         timeout=30,

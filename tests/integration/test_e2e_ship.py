@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
-from myagent.cli.main import app
+from justagent.cli.main import app
 
 runner = CliRunner()
 
@@ -22,7 +22,7 @@ def _conventional_commit_pattern() -> re.Pattern[str]:
 
 
 def test_e2e_init_clean_verify_commit(tmp_path: Path, monkeypatch) -> None:
-    """Exercise the full MyAgent main flow in a mocked temporary project."""
+    """Exercise the full JustAgent main flow in a mocked temporary project."""
     project = tmp_path / "project"
     project.mkdir()
     monkeypatch.chdir(project)
@@ -36,7 +36,7 @@ def test_e2e_init_clean_verify_commit(tmp_path: Path, monkeypatch) -> None:
     original_content = "import os\nimport sys\n\nx=1+2\n"
     py_file.write_text(original_content, encoding="utf-8")
 
-    config_path = project / ".myagent.toml"
+    config_path = project / ".justagent.toml"
     expected_message = "feat(src): format hello module"
 
     hardware_mock = MagicMock()
@@ -48,12 +48,12 @@ def test_e2e_init_clean_verify_commit(tmp_path: Path, monkeypatch) -> None:
         py_file.write_text(content.replace("x=1+2", "x = 1 + 2"), encoding="utf-8")
 
     with (
-        patch("myagent.cli.commands.init.detect_hardware", return_value=hardware_mock),
-        patch("myagent.cli.commands.clean.ToolChain") as mock_toolchain_cls,
-        patch("myagent.cli.commands.verify.shutil.which", return_value="/bin/echo"),
-        patch("myagent.cli.commands.verify.subprocess.run") as mock_verify_run,
-        patch("myagent.cli.commands.commit.ModelRouter") as mock_router_cls,
-        patch("myagent.cli.commands.commit.GitAdapter") as mock_git_cls,
+        patch("justagent.cli.commands.init.detect_hardware", return_value=hardware_mock),
+        patch("justagent.cli.commands.clean.ToolChain") as mock_toolchain_cls,
+        patch("justagent.cli.commands.verify.shutil.which", return_value="/bin/echo"),
+        patch("justagent.cli.commands.verify.subprocess.run") as mock_verify_run,
+        patch("justagent.cli.commands.commit.ModelRouter") as mock_router_cls,
+        patch("justagent.cli.commands.commit.GitAdapter") as mock_git_cls,
     ):
         toolchain_instance = mock_toolchain_cls.return_value
         toolchain_instance.preview.return_value = "--- diff ---"
@@ -72,7 +72,7 @@ def test_e2e_init_clean_verify_commit(tmp_path: Path, monkeypatch) -> None:
         git_instance.diff.return_value = "diff"
         git_instance.stats.return_value = "stats"
 
-        # 1. init: generate the MyAgent configuration file.
+        # 1. init: generate the JustAgent configuration file.
         init_result = runner.invoke(
             app,
             ["--yes", "init", "--output", str(config_path)],

@@ -1,6 +1,6 @@
-# myagent-node-ship
+# justagent-node-ship
 
-A language-aware MyAgent-CLI plugin pack for Node projects. It hooks into
+A language-aware JustAgent-CLI plugin pack for Node projects. It hooks into
 the `clean` and `verify` lifecycle to report Node-specific build artifacts
 and suggest the conventional test command for the package manager in use.
 
@@ -30,7 +30,7 @@ observes and reports artifacts, it does not delete them.
 ## Install
 
 ```bash
-pipx install myagent-node-ship
+pipx install justagent-node-ship
 ```
 
 Or, for local development:
@@ -40,7 +40,7 @@ cd examples/node-ship
 pip install -e .
 ```
 
-The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."justagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
@@ -50,7 +50,7 @@ extra configuration is required. If you lock the allowlist down, make sure to
 keep your package manager on it:
 
 ```toml
-# .myagent.toml
+# .justagent.toml
 [verify]
 allowed_commands = ["pytest", "npm", "pnpm", "yarn"]
 ```

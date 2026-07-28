@@ -1,6 +1,6 @@
-# myagent-rust-ship
+# justagent-rust-ship
 
-A language-aware MyAgent-CLI plugin pack for Rust projects. It hooks into
+A language-aware JustAgent-CLI plugin pack for Rust projects. It hooks into
 the `clean` and `verify` lifecycle to report Rust-specific build artifacts
 and suggest the conventional `cargo test` command.
 
@@ -27,7 +27,7 @@ matches the per-profile output directories (`target/debug`,
 ## Install
 
 ```bash
-pipx install myagent-rust-ship
+pipx install justagent-rust-ship
 ```
 
 Or, for local development:
@@ -37,16 +37,16 @@ cd examples/rust-ship
 pip install -e .
 ```
 
-The `[project.entry-points."myagent.plugins"]` table in `pyproject.toml`
+The `[project.entry-points."justagent.plugins"]` table in `pyproject.toml`
 registers the plugin automatically; no manual wiring is required.
 
 ## Config snippet
 
-Add `cargo` to the verify allowlist so `myagent verify "cargo test"` is
+Add `cargo` to the verify allowlist so `justagent verify "cargo test"` is
 permitted (the default allowlist is Python-centric):
 
 ```toml
-# .myagent.toml
+# .justagent.toml
 [verify]
 allowed_commands = ["pytest", "cargo"]
 ```

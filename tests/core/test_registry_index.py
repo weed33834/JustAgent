@@ -6,21 +6,21 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.registry_index import RegistryIndex
+from justagent.core.registry_index import RegistryIndex
 
 SAMPLE_REGISTRY = {
     "version": 1,
     "plugins": [
         {
             "name": "security-scan",
-            "package": "myagent",
+            "package": "justagent",
             "version": "0.2.0",
             "description": "Security scanning plugin.",
             "trust_level": "builtin",
         },
         {
             "name": "docker-ship",
-            "package": "myagent",
+            "package": "justagent",
             "version": "0.2.0",
             "description": "Docker build and push plugin.",
             "trust_level": "builtin",
@@ -38,7 +38,7 @@ def _clear_process_cache() -> None:
 
 
 def test_registry_index_loads_plugins() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         index = RegistryIndex()
         plugins = index.list_plugins()
@@ -46,7 +46,7 @@ def test_registry_index_loads_plugins() -> None:
 
 
 def test_registry_index_search_by_name() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         index = RegistryIndex()
         results = index.search("docker")
@@ -55,7 +55,7 @@ def test_registry_index_search_by_name() -> None:
 
 
 def test_registry_index_search_by_description() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         index = RegistryIndex()
         results = index.search("scanning")
@@ -64,23 +64,23 @@ def test_registry_index_search_by_description() -> None:
 
 
 def test_registry_index_get_by_name() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         index = RegistryIndex()
         plugin = index.get("security-scan")
     assert plugin is not None
-    assert plugin["package"] == "myagent"
+    assert plugin["package"] == "justagent"
 
 
 def test_registry_index_get_missing() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         index = RegistryIndex()
     assert index.get("not-found") is None
 
 
 def test_registry_index_empty() -> None:
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = {"version": 1, "plugins": []}
         index = RegistryIndex()
         plugins = index.list_plugins()
@@ -89,7 +89,7 @@ def test_registry_index_empty() -> None:
 
 def test_process_cache_shares_data_across_instances() -> None:
     """A second RegistryIndex instance should reuse cached data without re-fetching."""
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         mock_client.return_value.config.url = "https://example.com/registry.json"
         mock_client.return_value.config.cache_ttl_seconds = 300
@@ -106,7 +106,7 @@ def test_process_cache_shares_data_across_instances() -> None:
 
 def test_no_cache_bypasses_process_cache() -> None:
     """no_cache=True should bypass the process cache and re-fetch."""
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         mock_client.return_value.config.url = "https://example.com/registry.json"
         mock_client.return_value.config.cache_ttl_seconds = 300
@@ -122,7 +122,7 @@ def test_no_cache_bypasses_process_cache() -> None:
 
 def test_invalidate_process_cache_forces_refetch() -> None:
     """invalidate_process_cache() should force the next load to re-fetch."""
-    with patch("myagent.core.registry_index.RegistryClient") as mock_client:
+    with patch("justagent.core.registry_index.RegistryClient") as mock_client:
         mock_client.return_value.get.return_value = SAMPLE_REGISTRY
         mock_client.return_value.config.url = "https://example.com/registry.json"
         mock_client.return_value.config.cache_ttl_seconds = 300

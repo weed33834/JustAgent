@@ -10,12 +10,12 @@ Thanks for considering a contribution. Here is how things work.
 ## Setup
 
 ```bash
-git clone https://gitcode.com/badhope/myagent.git
-cd myagent
+git clone https://gitcode.com/badhope/justagent.git
+cd justagent
 uv sync --extra dev
 ```
 
-This installs MyAgent in editable mode with all dev dependencies — Ruff, mypy, Pyright, pytest, and tooling.
+This installs JustAgent in editable mode with all dev dependencies — Ruff, mypy, Pyright, pytest, and tooling.
 
 ## Making changes
 
@@ -48,7 +48,7 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore
 
 - Unit tests go in `tests/unit/`.
 - Integration tests go in `tests/integration/` and are marked with `@pytest.mark.integration`.
-- Coverage must stay at or above 85%. Check with `uv run pytest --cov=myagent`.
+- Coverage must stay at or above 85%. Check with `uv run pytest --cov=justagent`.
 
 ## License
 

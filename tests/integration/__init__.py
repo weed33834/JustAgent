@@ -1,1 +1,1 @@
-"""Integration tests for MyAgent."""
+"""Integration tests for JustAgent."""

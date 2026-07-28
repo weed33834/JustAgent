@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core import sandbox as sandbox_module
-from myagent.core.sandbox import SandboxError, SandboxRunner, _decode_stream
+from justagent.core import sandbox as sandbox_module
+from justagent.core.sandbox import SandboxError, SandboxRunner, _decode_stream
 
 
 @pytest.fixture(autouse=True)

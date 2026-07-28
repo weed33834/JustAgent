@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from myagent.agent.tools.base import InvalidArgumentsError, ToolContext
-from myagent.agent.tools.builtin.apply_patch import (
+from justagent.agent.tools.base import InvalidArgumentsError, ToolContext
+from justagent.agent.tools.builtin.apply_patch import (
     ApplyPatchInput,
     make_apply_patch_tool,
 )

@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 import pytest
 from myagent_custom_plugin.plugin import ProjectGuardPlugin
 
-from myagent.core.context import CommandContext
-from myagent.exceptions import VerifyError
+from justagent.core.context import CommandContext
+from justagent.exceptions import VerifyError
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def test_on_error_returns_suggestion_when_fix_enabled(
     context.extras = {"fix": True}
     suggestion = plugin.on_error(context, VerifyError("failed"))
     assert suggestion is not None
-    assert "myagent clean" in suggestion.description
+    assert "justagent clean" in suggestion.description
 
 
 def test_on_error_returns_none_when_fix_disabled(

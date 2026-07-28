@@ -14,11 +14,11 @@ from typing import Any
 
 import pytest
 
-from myagent.agent.tools.base import ToolContext
-from myagent.agent.tools.builtin.apply_patch import make_apply_patch_tool
-from myagent.agent.tools.builtin.edit import make_replace_in_file_tool
-from myagent.agent.tools.builtin.run_command import make_run_command_tool
-from myagent.agent.tools.builtin.write import make_write_to_file_tool
+from justagent.agent.tools.base import ToolContext
+from justagent.agent.tools.builtin.apply_patch import make_apply_patch_tool
+from justagent.agent.tools.builtin.edit import make_replace_in_file_tool
+from justagent.agent.tools.builtin.run_command import make_run_command_tool
+from justagent.agent.tools.builtin.write import make_write_to_file_tool
 
 # ---------------------------------------------------------------------------
 # Mock ask callbacks

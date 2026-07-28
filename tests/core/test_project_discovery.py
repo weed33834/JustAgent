@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.core.project_discovery`."""
+"""Tests for :mod:`justagent.core.project_discovery`."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from myagent.core.project_discovery import (
+from justagent.core.project_discovery import (
     DiscoveredProject,
     DiscoveryConfig,
     ProjectDiscovery,
     ProjectDiscoveryError,
     ProjectType,
 )
-from myagent.core.project_store import ProjectStore
-from myagent.models.project import ManagedProject
+from justagent.core.project_store import ProjectStore
+from justagent.models.project import ManagedProject
 
 # ---------------------------------------------------------------------------
 # TestProjectType

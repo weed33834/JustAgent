@@ -1,4 +1,4 @@
-"""Tests for the ``myagent ui`` command (textual dashboard wrapper).
+"""Tests for the ``justagent ui`` command (textual dashboard wrapper).
 
 The textual TUI itself is never started — ``_build_app`` is exercised to
 construct the dashboard, and the ``action_run_*`` handlers are driven with
@@ -19,22 +19,22 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from myagent.cli.commands import ui as ui_module
-from myagent.cli.commands.ui import (
+from justagent.cli.commands import ui as ui_module
+from justagent.cli.commands.ui import (
     _build_app,
     _check_textual_available,
     _project_summary,
     _tail_audit,
 )
-from myagent.cli.main import app
-from myagent.core.audit_logger import AuditLogger
-from myagent.models.config import AppConfig
+from justagent.cli.main import app
+from justagent.core.audit_logger import AuditLogger
+from justagent.models.config import AppConfig
 
 runner = CliRunner()
 
 
 def _write_config(tmp_path: Path, log_dir: Path) -> Path:
-    config_path = tmp_path / ".myagent.toml"
+    config_path = tmp_path / ".justagent.toml"
     config_path.write_text(
         f'schema_version = 1\nproject_root = "{tmp_path}"\n\n[audit]\nlog_dir = "{log_dir}"\n',
         encoding="utf-8",
@@ -241,11 +241,11 @@ def test_build_app_returns_dashboard_with_bindings(tmp_path: Path) -> None:
 
 
 _ACTION_COMMANDS = [
-    ("action_run_clean", [sys.executable, "-m", "myagent", "clean", "--yes"]),
-    ("action_run_verify", [sys.executable, "-m", "myagent", "verify", "pytest"]),
-    ("action_run_commit", [sys.executable, "-m", "myagent", "commit"]),
-    ("action_run_upload", [sys.executable, "-m", "myagent", "upload", "--dry-run"]),
-    ("action_run_doctor", [sys.executable, "-m", "myagent", "doctor"]),
+    ("action_run_clean", [sys.executable, "-m", "justagent", "clean", "--yes"]),
+    ("action_run_verify", [sys.executable, "-m", "justagent", "verify", "pytest"]),
+    ("action_run_commit", [sys.executable, "-m", "justagent", "commit"]),
+    ("action_run_upload", [sys.executable, "-m", "justagent", "upload", "--dry-run"]),
+    ("action_run_doctor", [sys.executable, "-m", "justagent", "doctor"]),
 ]
 
 
@@ -291,7 +291,7 @@ def test_run_command_no_output_fallback(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(subprocess, "run", fake_run)
     right = _wire_dashboard(dashboard, mount=AsyncMock())
 
-    asyncio.run(dashboard._run_command([sys.executable, "-m", "myagent", "doctor"]))  # type: ignore[attr-defined]
+    asyncio.run(dashboard._run_command([sys.executable, "-m", "justagent", "doctor"]))  # type: ignore[attr-defined]
 
     # The "(no output, exit=...)" fallback is mounted into the right pane.
     assert right.mount.await_count >= 1
@@ -310,7 +310,7 @@ def test_run_command_handles_subprocess_error(
     # _flash calls mount synchronously (no await), so mount is a plain Mock.
     right = _wire_dashboard(dashboard, mount=MagicMock())
 
-    asyncio.run(dashboard._run_command([sys.executable, "-m", "myagent", "doctor"]))  # type: ignore[attr-defined]
+    asyncio.run(dashboard._run_command([sys.executable, "-m", "justagent", "doctor"]))  # type: ignore[attr-defined]
 
     # The error path surfaces a red error line in the right pane.
     right.mount.assert_called_once()

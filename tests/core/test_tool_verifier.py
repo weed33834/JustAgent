@@ -9,9 +9,9 @@ from unittest.mock import patch
 
 import pytest
 
-from myagent.core.tool_verifier import ToolVerifier
-from myagent.exceptions import ConfigError
-from myagent.models.config import ToolConfig, ToolsConfig
+from justagent.core.tool_verifier import ToolVerifier
+from justagent.exceptions import ConfigError
+from justagent.models.config import ToolConfig, ToolsConfig
 
 
 def _sha256(path: Path) -> str:

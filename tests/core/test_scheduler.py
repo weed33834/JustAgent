@@ -1,4 +1,4 @@
-"""Tests for :mod:`myagent.core.scheduler`."""
+"""Tests for :mod:`justagent.core.scheduler`."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from unittest.mock import patch
 import pytest
 from freezegun import freeze_time
 
-from myagent.core.project_store import ProjectStore
-from myagent.core.scheduler import (
+from justagent.core.project_store import ProjectStore
+from justagent.core.scheduler import (
     ScheduledTask,
     ScheduleParser,
     Scheduler,
@@ -24,7 +24,7 @@ from myagent.core.scheduler import (
     TaskRunResult,
     _cron_field_matches,
 )
-from myagent.models.project import ManagedProject
+from justagent.models.project import ManagedProject
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -260,7 +260,7 @@ class TestScheduleStore:
         path = tmp_path / "schedules.json"
         store = ScheduleStore(store_path=path)
         with patch(
-            "myagent.core.scheduler.atomic_write_text"
+            "justagent.core.scheduler.atomic_write_text"
         ) as mock_write:
             store.add(_make_task(name="alpha"))
         mock_write.assert_called_once()
@@ -508,7 +508,7 @@ class TestScheduler:
             )
         )
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "hi\n", ""),
         ):
             results = scheduler.run_due()
@@ -524,7 +524,7 @@ class TestScheduler:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="echo hi")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "hi\n", ""),
         ) as mock_run:
             result = scheduler.run_task("alpha")
@@ -545,7 +545,7 @@ class TestScheduler:
         assert original is not None
         original_next = original.next_run
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "", ""),
         ):
             scheduler.run_task("alpha")
@@ -565,7 +565,7 @@ class TestSchedulerExecution:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="echo hi")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "hi", ""),
         ) as mock_run:
             scheduler.run_task("alpha")
@@ -588,7 +588,7 @@ class TestSchedulerExecution:
             name="alpha", schedule="30m", command="pwd", project="myproj"
         )
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, str(project_dir), ""),
         ) as mock_run:
             scheduler.run_task("alpha")
@@ -599,7 +599,7 @@ class TestSchedulerExecution:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="echo hi")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(2, "out", "err"),
         ):
             result = scheduler.run_task("alpha")
@@ -617,7 +617,7 @@ class TestSchedulerExecution:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="echo hi")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "ok", ""),
         ):
             scheduler.run_task("alpha")
@@ -630,7 +630,7 @@ class TestSchedulerExecution:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="bad-cmd")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             side_effect=FileNotFoundError("no such binary"),
         ):
             result = scheduler.run_task("alpha")
@@ -669,7 +669,7 @@ class TestEdgeCases:
             )
         )
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             results = scheduler.run_due()
@@ -709,7 +709,7 @@ class TestEdgeCases:
         scheduler = Scheduler(store=ScheduleStore(tmp_path / "s.json"))
         scheduler.add_task(name="alpha", schedule="30m", command="")
         with patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "", ""),
         ) as mock_run:
             result = scheduler.run_task("alpha")
@@ -730,10 +730,10 @@ class TestEdgeCases:
 
         with (
             patch(
-                "myagent.core.scheduler.subprocess.run",
+                "justagent.core.scheduler.subprocess.run",
                 return_value=_completed(0, "", ""),
             ),
-            patch("myagent.core.scheduler.time.sleep", side_effect=fake_sleep),
+            patch("justagent.core.scheduler.time.sleep", side_effect=fake_sleep),
         ):
             scheduler.run_daemon(check_interval=0.01)
         # Daemon ran at least 3 cycles before being interrupted.
@@ -781,10 +781,10 @@ def test_run_daemon_with_mock_subprocess(tmp_path: Path) -> None:
 
     with (
         patch(
-            "myagent.core.scheduler.subprocess.run",
+            "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, "", ""),
         ),
-        patch("myagent.core.scheduler.time.sleep", side_effect=fake_sleep),
+        patch("justagent.core.scheduler.time.sleep", side_effect=fake_sleep),
     ):
         scheduler.run_daemon(check_interval=0.0)
     assert sleep_calls["n"] >= 2
@@ -792,7 +792,7 @@ def test_run_daemon_with_mock_subprocess(tmp_path: Path) -> None:
 
 def test_module_exports() -> None:
     """Sanity check: public symbols are importable from the module."""
-    from myagent.core import scheduler as module
+    from justagent.core import scheduler as module
 
     for name in (
         "Scheduler",
