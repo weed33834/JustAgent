@@ -1,18 +1,55 @@
-# JustAgent
+# JustAgent：司法インテリジェンスエージェントプラットフォーム
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-ローカルファーストの AI コーディングエージェント。ターミナルで動作し、コードの読み取り・書き込み・編集、コマンド実行、ウェブ検索を行います。すべての操作に権限管理があり、すべての会話を保存・再開できます。
+> **Intelligence for Justice —— 司法を知的にエンパワーする**
+
+JustAgent は司法機関および政府部門を支援する司法インテリジェンスエージェントプラットフォームです。司法職務を補助・自動化し、司法プロセスをインテリジェント化します。複数エージェントの連携ループにより、事件資料の整理、証拠審査、法的文書生成を実行します — すべての操作に権限管理があり、すべての会話を監査可能に保存・再開できます。
 
 ## 概要
 
-JustAgent はローカルファーストの AI コーディングエージェントで、単一の CLI ツールとして提供され、Cline / Aider / OpenCode / Continue.dev と同等の位置づけにあります。反復的なツール呼び出しループを実行し、LLM がコードベースを読み、変更を提案し、ツールで実行し、結果を検証します。すべての破壊的操作は権限エンジンを経由し、すべての会話は保存・再開できます。
+JustAgent は司法機関・政府部門向けの司法インテリジェンスエージェントプラットフォームで、単一の CLI ツールとして提供されます。反復的なツール呼び出しループを実行し、LLM が事件資料を読み、アクションを提案し、ツールで実行し、結果を検証します。すべての破壊的操作は権限エンジンを経由し、すべての会話は保存・再開できます — 司法プロセスを監査可能かつ制御可能に保ちます。
 
 3つのモードを提供します：
 
-1. **Agent モード** — インタラクティブ REPL またはワンショットタスク。まず計画（読み取り専用）、次に実行（権限プロンプト付き）、または Yolo モードでツール呼び出しを自動承認。複数ターンの会話はセッション間で永続化されます。
-2. **Pipeline モード** — オプションの `clean → verify → commit → upload` ショートカット。リリースフロー用。
-3. **Project モード** — 複数のローカルプロジェクトを管理、クロスプロジェクト操作を実行。
+1. **Agent モード** — インタラクティブ REPL またはワンショットタスク。まず計画（事件記録の読み取り専用分析）、次に実行（権限プロンプト付き）、または Yolo モードでツール呼び出しを自動承認。複数ターンの会話はセッション間で永続化されます。
+2. **Pipeline モード** — オプションの `clean → verify → commit → upload` ショートカット。司法文書の公開フロー用。
+3. **Project モード** — 複数の事件プロジェクトを管理、クロスプロジェクト操作を実行。
+
+## コア機能
+
+| 機能 | 説明 |
+|------|------|
+| **事件資料の整理** | 事件ファイル（卷宗、調書、証拠リスト）を取り込み、分類・要約。エンティティ、時系列、関係を抽出し、構造化された事件地図として整理し迅速な検討を支援。 |
+| **証拠審査** | 証拠の整合性、完全性、証拠能力を交差検証。矛盾、欠落、証拠連鎖の問題をフラグ付け、出典資料に追溯到。 |
+| **法的文書生成** | 事件コンテキストから起訴状、判決書、決定書などの法定文書を起草。標準化テンプレートを適用し、管轄対応のフォーマットと条項ライブラリをサポート。 |
+| **司法ワークフロー自動化** | 複数ステップの司法手続き（受付 → 審査 → 審理 → 裁判）を編成。オーケストレーション層で専門エージェントを連携させ、完全な監査ログを記録。 |
+
+## アーキテクチャ設計（マルチエージェント連携）
+
+JustAgent はオーケストレーション層で専門エージェントを連携させ、下層に共有ナレッジベースと統一権限エンジンを置きます：
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                  オーケストレータ / 調整器               │
+│        （ワークフロー編成 · 意思決定ルーティング · メッシュ）│
+└───────────┬───────────────┬───────────────┬───────────────┘
+            │               │               │
+            ▼               ▼               ▼
+   ┌────────────────┐ ┌──────────────┐ ┌────────────────┐
+   │  事件資料整理   │ │  証拠審査    │ │  法的文書生成   │
+   │   エージェント  │ │   エージェント│ │   エージェント  │
+   └────────┬────────┘ └──────┬───────┘ └───────┬────────┘
+            │                 │                 │
+            ▼                 ▼                 ▼
+   ┌──────────────────────────────────────────────────────┐
+   │  ナレッジ層（RAG / ベクトル / ナレッジグラフ / 文書）   │
+   │  セキュリティ層（RBAC / SSO / 暗号化 / 監査）         │
+   │  権限エンジン · チェックポイント · 監査ログ            │
+   └──────────────────────────────────────────────────────┘
+```
+
+各専門エージェントは共通のナレッジ層（法令コーパス、事件リポジトリ、証拠ストア）を共有し、統一された権限エンジンの下で動作します。すべてのエージェントアクションは完全な監査ログとともに記録され、チェックポイント化・復元可能で、司法プロセスを透明かつ防御可能に保ちます。
 
 ## インストール
 
@@ -20,7 +57,7 @@ JustAgent はローカルファーストの AI コーディングエージェン
 pip install justagent
 ```
 
-AI コミット、セキュリティスキャン、agent モードにはオプション依存関係が必要：
+AI 文書生成、証拠分析、agent モードにはオプション依存関係が必要：
 
 ```bash
 pip install "justagent[ai,security]"
@@ -33,9 +70,9 @@ Python 3.11 以降。Git 2.30+ 推奨。
 ### Agent モード
 
 ```bash
-cd your-project
+cd your-case-project
 justagent agent                    # インタラクティブ REPL（複数ターン会話）
-justagent agent "refactor utils"   # ワンショットタスク
+justagent agent "事件 A001 の証拠を審査"   # ワンショットタスク
 justagent agent --plan "..."       # まず計画（読み取り専用、編集なし）
 justagent agent --yolo "..."       # すべてのツール呼び出しを自動承認
 justagent agent -i --resume <id>   # 保存されたセッションを再開
@@ -45,7 +82,7 @@ justagent agent --json "..."       # NDJSON イベントストリーム（自動
 ### Pipeline モード（オプション）
 
 ```bash
-cd your-project
+cd your-case-project
 justagent init
 justagent ship                     # clean → verify → commit → upload
 ```
@@ -62,9 +99,9 @@ justagent upload
 ### Project モード
 
 ```bash
-justagent project list             # 管理プロジェクト一覧
-justagent project add ./my-app
-justagent project run my-app ship  # プロジェクト内でコマンド実行
+justagent project list             # 管理事件プロジェクト一覧
+justagent project add ./case-2026-001
+justagent project run case-2026-001 ship  # プロジェクト内でコマンド実行
 ```
 
 ## 設定
@@ -92,11 +129,11 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-設定値内の環境変数（`${VAR}`）は実行時に展開されます。全オプションは `.justagent.toml.example` を参照。
+設定値内の環境変数（`${VAR}`）は実行時に展開されます。全オプション（司法シナリオ例を含む）は `.justagent.toml.example` を参照。
 
 ## AI バックエンド
 
-JustAgent は [LiteLLM](https://github.com/BerriAI/litellm) 経由で LLM 呼び出しをルーティングします。LiteLLM が対応するすべてのプロバイダーを追加設定なしで利用できます——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp など 100 社以上。
+JustAgent は [LiteLLM](https://github.com/BerriAI/litellm) 経由で LLM 呼び出しをルーティングします。LiteLLM が対応するすべてのプロバイダーを追加設定なしで利用できます——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp など 100 社以上。機密性の高い司法データには、セルフホストバックエンド（Ollama、vLLM、llama.cpp）でデータを域内に留めることができます。
 
 `.justagent.toml` で1つ以上のバックエンドを設定：
 
@@ -114,11 +151,11 @@ model = "anthropic/claude-sonnet-4"
 
 ゲートウェイはリトライ、レート制限、プロバイダー間の自動フェイルオーバーを処理します。
 
-## Agent 機能
+## 機能モジュール
 
 Agent モードは安全制御付きの反復ツール呼び出しループに基づいています：
 
-| 機能 | 説明 |
+| モジュール | 説明 |
 |------|------|
 | **Plan/Act モード** | Plan モードは読み取り専用分析、Act モードは権限プロンプト付きで変更を実行。`--plan` / `--yolo` または REPL で `/mode` で切り替え。 |
 | **ツール呼び出し** | 組み込みツール：`read_file`、`write_to_file`、`replace_in_file`、`apply_patch`、`run_command`、`search`、`web_fetch`、`ask_question`。MCP ツールも利用可能。 |
@@ -133,6 +170,9 @@ Agent モードは安全制御付きの反復ツール呼び出しループに�
 | **Skills** | `.justagent/skills/` から `SKILL.md` をロード、段階的開示。 |
 | **サブエージェント** | 読み取り専用の並列研究サブエージェントを生成、コンテキストを分離。 |
 | **MCP** | Model Context Protocol サーバー（stdio / SSE / HTTP）に接続、OAuth サポート。 |
+| **ナレッジ層** | 文書処理、ETL、ナレッジグラフ、RAG、ベクトルストレージ。事件コーパスと法令参照用。 |
+| **オーケストレーション層** | 調整器、意思決定ルーティング、エージェントメッシュ、ワークフローエンジン。マルチエージェント連携を支える。 |
+| **セキュリティ・コンプライアンス** | RBAC、SSO、暗号化、データ保護、コンプライアンスチェック。司法・政府ユースに最適化。 |
 
 ### Slash コマンド（インタラクティブ REPL 内）
 
@@ -156,14 +196,14 @@ Agent モードは安全制御付きの反復ツール呼び出しループに�
 |---------|------|
 | `justagent agent` | インタラクティブ AI エージェント（REPL またはワンショット） |
 | `justagent session` | 保存されたセッションを管理（list / show / resume / delete） |
-| `justagent project` | 複数のローカルプロジェクトを管理 |
+| `justagent project` | 複数の事件プロジェクトを管理 |
 | `justagent init` | 現在のディレクトリで初期化 |
 | `justagent clean` | ソースファイルをフォーマット・リント |
 | `justagent verify` | テストスイートとチェックを実行 |
 | `justagent commit` | コミットを生成・作成 |
 | `justagent upload` | ビルドしてアーティファクトを公開 |
 | `justagent ship` | clean、verify、commit、upload を順番に実行 |
-| `justagent fix` | AI 駆動のコード修正提案 |
+| `justagent fix` | AI 駆動の修正提案 |
 | `justagent config` | 設定の表示・管理 |
 | `justagent doctor` | 環境と依存関係を診断 |
 | `justagent plugin` | プラグインを管理 |
@@ -196,6 +236,8 @@ uv run mypy src/
 | プラグインシステム | Pluggy |
 | AI ゲートウェイ | LiteLLM |
 | Agent ループ | 自作（ツール呼び出し反復 + 安全制御） |
+| マルチエージェントオーケストレーション | Coordinator / mesh / workflow / decision |
+| ナレッジ層 | RAG · ベクトル · ナレッジグラフ · 文書 ETL |
 | 設定 / schema | Pydantic v2 + pydantic-settings |
 | ターミナル出力 | Rich |
 | ログ | Structlog（Rich コンソール + JSON ファイル） |
@@ -205,6 +247,7 @@ uv run mypy src/
 | HTTP クライアント | httpx |
 | リント / フォーマット | Ruff |
 | セキュリティスキャン | Semgrep |
+| セキュリティ・コンプライアンス | RBAC · SSO · 暗号化 · データ保護 |
 | MCP | 公式 `mcp` Python SDK |
 
 ## アーキテクチャ
@@ -235,6 +278,29 @@ src/justagent/
 ├── context/             # コンテキストエンジニアリング
 │   ├── skill.py         # SKILL.md ローダー
 │   └── repo_map.py      # 正規表現ベースの repo シンボルマップ
+├── orchestration/       # マルチエージェント連携
+│   ├── coordinator.py   # エージェント調整
+│   ├── decision.py      # 意思決定ルーティング
+│   ├── mesh.py          # エージェントメッシュ
+│   └── workflow.py      # 司法ワークフロー編成
+├── knowledge/           # 司法ナレッジ層
+│   ├── rag.py           # 検索拡張生成
+│   ├── vector.py        # ベクトルストレージ
+│   ├── graph.py         # ナレッジグラフ
+│   ├── document.py      # 文書処理
+│   └── etl.py           # 抽出 / 変換 / ロード
+├── communication/       # エージェント間・チーム通信
+│   ├── audit.py         # 監査トレイル
+│   ├── broadcast.py     # ブロードキャスト
+│   ├── meeting.py       # 会議 / 審理調整
+│   ├── messaging.py     # メッセージング
+│   └── notification.py  # 通知
+├── security/            # 司法グレードのセキュリティ
+│   ├── rbac.py          # ロールベースアクセス制御
+│   ├── sso.py           # シングルサインオン
+│   ├── encryption.py    # 暗号化
+│   ├── data_protection.py # データ保護
+│   └── compliance.py    # コンプライアンスチェック
 ├── permissions/         # ツール権限エンジン（allow / deny / ask ルール）
 ├── adapters/            # 外部統合
 │   ├── providers/       # LLM プロバイダー（統合ゲートウェイ）

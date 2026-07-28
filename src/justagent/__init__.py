@@ -1,21 +1,22 @@
-"""JustAgent — enterprise local-first AI agent platform.
+"""JustAgent — judicial AI agent platform.
 
-JustAgent extends JustAgent into a full enterprise platform covering:
-  - Knowledge management (RAG, vector search, knowledge graph)
-  - Internal communication & collaboration
-  - Hardware resource orchestration
-  - Decision execution engine
-  - Enterprise-grade security & encryption
-  - Agent Mesh networking
-  - Enterprise permission engine (data-level & resource-level RBAC)
+JustAgent is an intelligent platform for judicial services, providing:
+  - Case material organization (案件材料梳理)
+  - Evidence review & chain analysis (证据审查)
+  - Legal document generation (法律文书生成)
+  - Judicial workflow automation (司法流程自动化)
+  - Legal knowledge base (法条库, 类案库)
+  - Enterprise-grade security & compliance (加密, RBAC, DLP, 审计)
+  - Multi-agent orchestration (多智能体协作)
 
-One Agent. Entire Enterprise.
+Intelligence for Justice.
 """
 
 __version__ = "3.0.0"
 
-# Enterprise module version markers for programmatic detection.
-ENTERPRISE_MODULES = [
+# Judicial and enterprise module version markers.
+JUDICIAL_MODULES = [
+    "judicial",
     "knowledge",
     "communication",
     "resources",

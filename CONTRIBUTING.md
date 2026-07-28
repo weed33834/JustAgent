@@ -1,6 +1,10 @@
 # Contributing
 
-Thanks for considering a contribution. Here is how things work.
+Thanks for considering a contribution to JustAgent — the judicial AI agent platform. Here is how things work.
+
+## About the project
+
+JustAgent is a judicial AI agent platform that assists judicial authorities and government departments by automating judicial workflows: case material organization, evidence review, and legal document generation. When contributing, keep in mind the platform's judicial positioning and the strict requirements for auditability, permission control, and data protection.
 
 ## Before you start
 

@@ -1,18 +1,56 @@
-# JustAgent
+# JustAgent: Judicial AI Agent Platform
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-A local-first AI coding agent that runs in the terminal. It reads, writes, and edits code, runs commands, and searches the web, with permission controls on every action and persistence for every conversation.
+> **Intelligence for Justice** — empowering judicial authorities with intelligent, auditable automation.
+
+JustAgent is a judicial AI agent platform that assists judicial organs and government departments by automating judicial workflows. It organizes case materials, reviews evidence, and generates legal documents through a multi-agent collaboration loop — with permission controls on every action and full audit persistence for every conversation.
 
 ## What it does
 
-JustAgent is a local-first AI coding agent packaged as a single CLI tool, comparable to Cline, Aider, OpenCode, and Continue.dev. It runs an iterative tool-calling loop: the LLM reads the codebase, proposes changes, executes them through tools, and verifies the results. Every destructive action passes through a permission engine, and every conversation can be saved and resumed.
+JustAgent is a judicial AI agent platform packaged as a single CLI tool. Built for judicial authorities and government departments, it runs an iterative tool-calling loop: the LLM reads case materials, proposes actions, executes them through tools, and verifies the results. Every destructive action passes through a permission engine, and every conversation can be saved and resumed — keeping the judicial process auditable and controllable.
 
 Three modes are available:
 
-1. **Agent mode** — interactive REPL or one-shot task. Plan first (read-only), then act (with permission prompts), or enable Yolo mode to auto-approve tool calls. Multi-turn conversations persist across sessions.
-2. **Pipeline mode** — an optional `clean → verify → commit → upload` shortcut for release workflows.
-3. **Project mode** — manage multiple local projects and run cross-project operations.
+1. **Agent mode** — interactive REPL or one-shot task. Plan first (read-only analysis of case files), then act (with permission prompts), or enable Yolo mode to auto-approve tool calls. Multi-turn conversations persist across sessions.
+2. **Pipeline mode** — an optional `clean → verify → commit → upload` shortcut for judicial document release workflows.
+3. **Project mode** — manage multiple case projects and run cross-project operations.
+
+## Core features
+
+| Feature | Description |
+|---------|-------------|
+| **Case Material Organization** | Ingest, classify, and summarize case files (dossiers, statements, exhibits). Extract entities, timelines, and relationships into a structured case map for rapid review. |
+| **Evidence Review** | Cross-check evidence for consistency, completeness, and admissibility. Flag contradictions, gaps, and chain-of-custody issues with citations back to source material. |
+| **Legal Document Generation** | Draft indictments, judgments, rulings, and other legal instruments from case context. Apply standardized templates with jurisdiction-aware formatting and clause libraries. |
+| **Judicial Workflow Automation** | Orchestrate multi-step judicial procedures (filing → review → hearing → ruling). Coordinate specialized agents through the orchestration layer with full audit logging. |
+
+## Architecture overview (multi-agent collaboration)
+
+JustAgent coordinates specialized agents through an orchestration layer built on top of a shared knowledge base and a unified permission engine:
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                Orchestrator / Coordinator                 │
+│        (workflow orchestration · decision routing · mesh)  │
+└───────────┬───────────────┬───────────────┬───────────────┘
+            │               │               │
+            ▼               ▼               ▼
+   ┌────────────────┐ ┌──────────────┐ ┌────────────────┐
+   │   Case Material │ │   Evidence   │ │    Legal Doc   │
+   │  Organization   │ │    Review    │ │  Generation    │
+   │     Agent       │ │    Agent     │ │     Agent      │
+   └────────┬────────┘ └──────┬───────┘ └───────┬────────┘
+            │                 │                 │
+            ▼                 ▼                 ▼
+   ┌──────────────────────────────────────────────────────┐
+   │  Knowledge Layer (RAG / vector / graph / document)   │
+   │  Security Layer (RBAC / SSO / encryption / audit)    │
+   │  Permission Engine · Checkpoints · Audit Log         │
+   └──────────────────────────────────────────────────────┘
+```
+
+Specialized agents share a common knowledge layer (legal corpus, case repository, evidence store) and operate under a unified permission engine with full audit logging. Every agent action is checkpointed and reversible, so the judicial process stays transparent and defensible.
 
 ## Install
 
@@ -20,7 +58,7 @@ Three modes are available:
 pip install justagent
 ```
 
-AI-powered commits, security scanning, and agent mode require the optional extras:
+AI-powered document generation, evidence analysis, and agent mode require the optional extras:
 
 ```bash
 pip install "justagent[ai,security]"
@@ -33,9 +71,9 @@ Python 3.11 or later. Git 2.30+ recommended.
 ### Agent mode
 
 ```bash
-cd your-project
+cd your-case-project
 justagent agent                    # interactive REPL (multi-turn chat)
-justagent agent "refactor utils"   # one-shot task
+justagent agent "review case A001 evidence"   # one-shot task
 justagent agent --plan "..."       # plan first (read-only, no edits)
 justagent agent --yolo "..."       # auto-approve all tool calls
 justagent agent -i --resume <id>   # resume a saved session
@@ -45,7 +83,7 @@ justagent agent --json "..."       # NDJSON event stream for automation
 ### Pipeline mode (optional)
 
 ```bash
-cd your-project
+cd your-case-project
 justagent init
 justagent ship                     # clean → verify → commit → upload
 ```
@@ -62,9 +100,9 @@ justagent upload
 ### Project mode
 
 ```bash
-justagent project list             # list managed projects
-justagent project add ./my-app
-justagent project run my-app ship  # run a command in a managed project
+justagent project list             # list managed case projects
+justagent project add ./case-2026-001
+justagent project run case-2026-001 ship  # run a command in a managed project
 ```
 
 ## Configuration
@@ -92,11 +130,11 @@ tools = ["semgrep"]
 threshold = "medium"
 ```
 
-Environment variables in config values (`${VAR}`) are expanded at runtime. See `.justagent.toml.example` for the full set of options.
+Environment variables in config values (`${VAR}`) are expanded at runtime. See `.justagent.toml.example` for the full set of options, including judicial scenario examples.
 
 ## AI backends
 
-JustAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), so any provider LiteLLM supports is available without additional configuration — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and more than a hundred others.
+JustAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), so any provider LiteLLM supports is available without additional configuration — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and more than a hundred others. For sensitive judicial data, self-hosted backends (Ollama, vLLM, llama.cpp) keep data on-premises.
 
 Configure one or more backends in `.justagent.toml`:
 
@@ -114,11 +152,11 @@ model = "anthropic/claude-sonnet-4"
 
 The gateway handles retry, rate limiting, and automatic failover across providers.
 
-## Agent capabilities
+## Feature modules
 
 Agent mode is built on an iterative tool-calling loop with safety controls:
 
-| Capability | Description |
+| Module | Description |
 |---|---|
 | **Plan/Act modes** | Plan mode is read-only analysis; Act mode executes changes with permission prompts. Switch with `--plan` / `--yolo` or `/mode` in the REPL. |
 | **Tool calling** | Built-in tools: `read_file`, `write_to_file`, `replace_in_file`, `apply_patch`, `run_command`, `search`, `web_fetch`, `ask_question`. Plus MCP tools. |
@@ -133,6 +171,9 @@ Agent mode is built on an iterative tool-calling loop with safety controls:
 | **Skills** | Load `SKILL.md` files from `.justagent/skills/` with progressive disclosure. |
 | **Subagents** | Spawn read-only parallel research subagents with isolated context. |
 | **MCP** | Connect Model Context Protocol servers (stdio / SSE / HTTP) with OAuth support. |
+| **Knowledge layer** | Document processing, ETL, knowledge graph, RAG, and vector storage for case corpora and legal references. |
+| **Orchestration** | Coordinator, decision routing, agent mesh, and workflow engine for multi-agent collaboration. |
+| **Security & compliance** | RBAC, SSO, encryption, data protection, and compliance checks tailored for judicial and government use. |
 
 ### Slash commands (in interactive REPL)
 
@@ -156,7 +197,7 @@ Agent mode is built on an iterative tool-calling loop with safety controls:
 |---------|-------------|
 | `justagent agent` | Interactive AI agent (REPL or one-shot) |
 | `justagent session` | Manage saved sessions (list / show / resume / delete) |
-| `justagent project` | Manage multiple local projects |
+| `justagent project` | Manage multiple local case projects |
 | `justagent init` | Initialize in the current directory |
 | `justagent clean` | Format and lint source files |
 | `justagent verify` | Run test suite and checks |
@@ -196,6 +237,8 @@ uv run mypy src/
 | Plugin system | Pluggy |
 | AI gateway | LiteLLM |
 | Agent loop | Custom (tool-calling iteration with safety controls) |
+| Multi-agent orchestration | Coordinator / mesh / workflow / decision |
+| Knowledge layer | RAG · vector · knowledge graph · document ETL |
 | Config / schema | Pydantic v2 + pydantic-settings |
 | Terminal output | Rich |
 | Logging | Structlog (Rich console + JSON file) |
@@ -205,6 +248,7 @@ uv run mypy src/
 | HTTP client | httpx |
 | Lint / format | Ruff |
 | Security scan | Semgrep |
+| Security & compliance | RBAC · SSO · encryption · data protection |
 | MCP | Official `mcp` Python SDK |
 
 ## Architecture
@@ -235,6 +279,29 @@ src/justagent/
 ├── context/             # Context engineering
 │   ├── skill.py         # SKILL.md loader
 │   └── repo_map.py      # Regex-based repo symbol map
+├── orchestration/       # Multi-agent collaboration
+│   ├── coordinator.py   # Agent coordination
+│   ├── decision.py      # Decision routing
+│   ├── mesh.py         # Agent mesh
+│   └── workflow.py     # Judicial workflow orchestration
+├── knowledge/           # Judicial knowledge layer
+│   ├── rag.py          # Retrieval-augmented generation
+│   ├── vector.py       # Vector storage
+│   ├── graph.py        # Knowledge graph
+│   ├── document.py     # Document processing
+│   └── etl.py          # Extract / transform / load
+├── communication/      # Inter-agent & team communication
+│   ├── audit.py        # Audit trail
+│   ├── broadcast.py    # Broadcast
+│   ├── meeting.py      # Meeting / hearing coordination
+│   ├── messaging.py    # Messaging
+│   └── notification.py # Notifications
+├── security/           # Judicial-grade security
+│   ├── rbac.py         # Role-based access control
+│   ├── sso.py          # Single sign-on
+│   ├── encryption.py   # Encryption
+│   ├── data_protection.py # Data protection
+│   └── compliance.py   # Compliance checks
 ├── permissions/         # Tool permission engine (allow / deny / ask rules)
 ├── adapters/            # External integrations
 │   ├── providers/       # LLM providers via unified gateway

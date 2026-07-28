@@ -63,6 +63,10 @@ class Permission(str, Enum):  # noqa: UP042 - match existing codebase style
         DELEGATE: Grant a subset of one's own permissions to others.
         SHARE: Share a resource with other users.
         EXPORT: Export / download a resource outside the platform.
+        REVIEW: Review / examine a resource (judicial context: 审查).
+        SEAL: Affix an official seal (judicial context: 盖章).
+        ARCHIVE: File a resource into archival storage (judicial context: 归档).
+        SERVE: Serve / deliver a legal document (judicial context: 送达).
     """
 
     READ = "read"
@@ -73,6 +77,10 @@ class Permission(str, Enum):  # noqa: UP042 - match existing codebase style
     DELEGATE = "delegate"
     SHARE = "share"
     EXPORT = "export"
+    REVIEW = "review"
+    SEAL = "seal"
+    ARCHIVE = "archive"
+    SERVE = "serve"
 
 
 class ResourceType(str, Enum):  # noqa: UP042
@@ -89,6 +97,11 @@ class ResourceType(str, Enum):  # noqa: UP042
         CONFIG: System and project configuration.
         USER: User accounts and profiles.
         REPORT: Generated reports and analytics.
+        CASE_FILE: Judicial case files (案卷).
+        EVIDENCE: Evidence materials (证据).
+        LEGAL_DOCUMENT: Legal documents / instruments (法律文书).
+        COURT_RECORD: Court trial transcripts (庭审笔录).
+        JUDGGMENT: Judgment / adjudication documents (裁判文书).
     """
 
     DOCUMENT = "document"
@@ -101,6 +114,11 @@ class ResourceType(str, Enum):  # noqa: UP042
     CONFIG = "config"
     USER = "user"
     REPORT = "report"
+    CASE_FILE = "case_file"
+    EVIDENCE = "evidence"
+    LEGAL_DOCUMENT = "legal_document"
+    COURT_RECORD = "court_record"
+    JUDGGMENT = "judggment"
 
 
 class UserStatus(str, Enum):  # noqa: UP042

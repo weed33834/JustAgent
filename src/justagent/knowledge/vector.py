@@ -20,17 +20,35 @@ Design:
   pure-Python fallback when numpy is absent.
 * :class:`FileVectorStore` — persists the in-memory store to disk as
   JSON for local-first deployments.
+
+Optional real embedding backends are available when their dependencies
+are installed. All external libraries are imported lazily so the module
+remains importable (and fully functional via :class:`HashingEmbedder`)
+when they are absent:
+
+* :class:`SentenceTransformersEmbedder` — local sentence-transformers
+  model (BGE / M3E etc.), well suited to Chinese legal text.
+* :class:`OpenAIEmbedder` — OpenAI embeddings API accessed via
+  ``litellm`` (supports ``text-embedding-3-small`` and friends).
+* :class:`HuggingFaceEmbedder` — Hugging Face Inference API.
+* :class:`EmbedderConfig` / :func:`create_embedder` — Pydantic config
+  and a factory that auto-selects a backend by priority.
+* :class:`ChromaVectorStore` — ChromaDB-backed persistent vector store
+  implementing the same :class:`VectorStore` interface.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import logging
 import math
+import os
 import re
 import uuid
 from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -261,6 +279,460 @@ def create_default_embedder(dim: int = 256) -> EmbeddingProvider:
     if _HAS_NUMPY:
         return NumpyHashingEmbedder(dim=dim)
     return HashingEmbedder(dim=dim)
+
+
+# ---------------------------------------------------------------------------
+# Real embedding backends (all dependencies imported lazily)
+# ---------------------------------------------------------------------------
+
+
+def _can_import(module_name: str) -> bool:
+    """Return ``True`` if *module_name* can be imported without errors."""
+
+    return importlib.util.find_spec(module_name) is not None
+
+
+def _flatten_embedding(vec: Any) -> list[float]:
+    """Flatten a possibly nested embedding into a 1-D list of floats.
+
+    Remote inference APIs occasionally return ``(1, D)`` shaped arrays
+    (or numpy arrays) rather than a plain list of floats. This helper
+    normalises any of those shapes to a flat ``list[float]``.
+    """
+
+    if hasattr(vec, "tolist"):
+        vec = vec.tolist()
+    if isinstance(vec, list):
+        if not vec:
+            return []
+        if isinstance(vec[0], (int, float)):
+            return [float(x) for x in vec]
+        flat: list[float] = []
+        for sub in vec:
+            flat.extend(_flatten_embedding(sub))
+        return flat
+    if isinstance(vec, (int, float)):
+        return [float(vec)]
+    return []
+
+
+class EmbedderProvider(str, Enum):  # noqa: UP042 - match existing codebase style
+    """Selects which embedding backend :func:`create_embedder` builds.
+
+    Attributes:
+        AUTO: Choose automatically by priority — sentence-transformers,
+            then OpenAI, then the hashing fallback.
+        HASHING: Force the zero-dependency :class:`HashingEmbedder`.
+        SENTENCE_TRANSFORMERS: Force a local sentence-transformers model.
+        OPENAI: Force the OpenAI embeddings API (via ``litellm``).
+        HUGGINGFACE: Force the Hugging Face Inference API.
+    """
+
+    AUTO = "auto"
+    HASHING = "hashing"
+    SENTENCE_TRANSFORMERS = "sentence_transformers"
+    OPENAI = "openai"
+    HUGGINGFACE = "huggingface"
+
+
+class EmbedderConfig(BaseModel):
+    """Pydantic configuration model for :func:`create_embedder`.
+
+    Attributes:
+        provider: Which backend to build (:attr:`EmbedderProvider.AUTO`
+            selects by priority).
+        model_name: Model identifier — a sentence-transformers model id
+            (e.g. ``BAAI/bge-small-zh-v1.5``), an OpenAI model name
+            (e.g. ``text-embedding-3-small``) or a Hugging Face model id.
+        api_key: API key for remote backends. When empty, OpenAI reads
+            ``OPENAI_API_KEY`` and Hugging Face reads ``HF_TOKEN`` /
+            ``HUGGINGFACEHUB_API_TOKEN`` from the environment.
+        api_base: Optional override of the API base URL.
+        dimension: For OpenAI v3 models, the truncated output dimension.
+            For Hugging Face, an explicit dimension to avoid a probe
+            call. Ignored by sentence-transformers (auto-detected).
+        device: Device for sentence-transformers (e.g. ``"cpu"``,
+            ``"cuda"``). Empty string lets the library choose.
+        normalize_embeddings: L2-normalise embeddings (recommended).
+        batch_size: Number of texts per API / encode call.
+        hashing_dim: Dimension used by the hashing fallback.
+        extra: Escape hatch for backend-specific keyword arguments.
+    """
+
+    provider: EmbedderProvider = EmbedderProvider.AUTO
+    model_name: str = ""
+    api_key: str = ""
+    api_base: str = ""
+    dimension: int | None = None
+    device: str = ""
+    normalize_embeddings: bool = True
+    batch_size: int = 32
+    hashing_dim: int = 256
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+
+class SentenceTransformersEmbedder(EmbeddingProvider):
+    """Embedder backed by a local sentence-transformers model.
+
+    Loads a model such as ``BAAI/bge-small-zh-v1.5`` or
+    ``moka-ai/m3e-base`` (well suited to Chinese legal text) into memory
+    and produces semantically meaningful embeddings. The
+    ``sentence-transformers`` package is imported lazily so the module
+    remains importable when it is not installed.
+
+    Example::
+
+        >>> embedder = SentenceTransformersEmbedder("BAAI/bge-small-zh-v1.5")
+        >>> vec = embedder.embed("合同纠纷")
+    """
+
+    def __init__(
+        self,
+        model_name: str = "BAAI/bge-small-zh-v1.5",
+        *,
+        device: str = "",
+        normalize_embeddings: bool = True,
+        batch_size: int = 32,
+    ) -> None:
+        if not model_name:
+            raise ValueError("model_name must be a non-empty string")
+        self._model_name = model_name
+        self._device = device or None
+        self._normalize = normalize_embeddings
+        self._batch_size = max(1, batch_size)
+        self._model: Any = None
+        self._dim: int | None = None
+
+    # ------------------------------------------------------------------
+    # Lazy model loading
+    # ------------------------------------------------------------------
+
+    def _ensure_model(self) -> Any:
+        """Lazily load and cache the sentence-transformers model."""
+
+        if self._model is not None:
+            return self._model
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:  # pragma: no cover - depends on env
+            raise ImportError(
+                "sentence-transformers is not installed. "
+                "Install it with: pip install sentence-transformers"
+            ) from exc
+        logger.info("Loading sentence-transformers model: %s", self._model_name)
+        self._model = SentenceTransformer(self._model_name, device=self._device)
+        self._dim = int(self._model.get_sentence_embedding_dimension())
+        return self._model
+
+    @property
+    def dimension(self) -> int:
+        if self._dim is None:
+            self._ensure_model()
+        assert self._dim is not None  # noqa: S101 - invariant after load
+        return self._dim
+
+    def embed(self, text: str) -> list[float]:
+        """Generate an embedding for ``text`` using the local model."""
+        model = self._ensure_model()
+        vec = model.encode(
+            text,
+            normalize_embeddings=self._normalize,
+            convert_to_numpy=True,
+        )
+        return _flatten_embedding(vec)
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a batch of texts in fixed-size chunks."""
+        if not texts:
+            return []
+        model = self._ensure_model()
+        results: list[list[float]] = []
+        for i in range(0, len(texts), self._batch_size):
+            batch = texts[i : i + self._batch_size]
+            vecs = model.encode(
+                batch,
+                normalize_embeddings=self._normalize,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            )
+            results.extend(_flatten_embedding(v) for v in vecs)
+        return results
+
+
+class OpenAIEmbedder(EmbeddingProvider):
+    """Embedder backed by the OpenAI embeddings API via ``litellm``.
+
+    Supports models such as ``text-embedding-3-small`` and
+    ``text-embedding-3-large``. ``litellm`` is imported lazily so the
+    module degrades gracefully when it (or network access) is absent.
+
+    The API key may be supplied explicitly or read from the
+    ``OPENAI_API_KEY`` environment variable by ``litellm``.
+    """
+
+    #: Known output dimensions for common OpenAI embedding models,
+    #: used to avoid a probe API call in :attr:`dimension`.
+    _KNOWN_DIMENSIONS: dict[str, int] = {
+        "text-embedding-3-small": 1536,
+        "text-embedding-3-large": 3072,
+        "text-embedding-ada-002": 1536,
+    }
+
+    def __init__(
+        self,
+        model: str = "text-embedding-3-small",
+        *,
+        api_key: str = "",
+        api_base: str = "",
+        dimensions: int | None = None,
+        batch_size: int = 100,
+    ) -> None:
+        if not model:
+            raise ValueError("model must be a non-empty string")
+        self._model = model
+        self._api_key = api_key or None
+        self._api_base = api_base or None
+        self._dimensions = dimensions
+        self._batch_size = max(1, batch_size)
+        self._dim: int | None = None
+
+    # ------------------------------------------------------------------
+    # API access
+    # ------------------------------------------------------------------
+
+    def _ensure_litellm(self) -> Any:
+        """Lazily import and return the ``litellm`` module."""
+
+        try:
+            import litellm
+        except ImportError as exc:  # pragma: no cover - depends on env
+            raise ImportError(
+                "litellm is not installed. "
+                "Install it with: pip install litellm"
+            ) from exc
+        return litellm
+
+    def _call_api(self, inputs: list[str]) -> list[list[float]]:
+        """Call the embeddings API and return embeddings in input order."""
+
+        litellm = self._ensure_litellm()
+        kwargs: dict[str, Any] = {
+            "model": self._model,
+            "input": inputs,
+        }
+        if self._api_key:
+            kwargs["api_key"] = self._api_key
+        if self._api_base:
+            kwargs["api_base"] = self._api_base
+        if self._dimensions is not None:
+            kwargs["dimensions"] = self._dimensions
+
+        response = litellm.embedding(**kwargs)
+        data = getattr(response, "data", None)
+        if data is None and isinstance(response, dict):
+            data = response.get("data", [])
+
+        pairs: list[tuple[int, list[float]]] = []
+        for item in data:
+            emb = getattr(item, "embedding", None)
+            if emb is None and isinstance(item, dict):
+                emb = item.get("embedding")
+            idx = getattr(item, "index", None)
+            if idx is None:
+                idx = item.get("index", 0) if isinstance(item, dict) else 0
+            pairs.append((int(idx), _flatten_embedding(emb)))
+        pairs.sort(key=lambda pair: pair[0])
+        return [emb for _, emb in pairs]
+
+    @property
+    def dimension(self) -> int:
+        if self._dim is not None:
+            return self._dim
+        # An explicit ``dimensions`` param truncates the OpenAI v3 output.
+        if self._dimensions is not None:
+            self._dim = self._dimensions
+            return self._dim
+        known = self._KNOWN_DIMENSIONS.get(self._model)
+        if known is not None:
+            self._dim = known
+            return self._dim
+        # Last resort: probe the API with a minimal input.
+        self._dim = len(self._call_api(["probe"])[0])
+        return self._dim
+
+    def embed(self, text: str) -> list[float]:
+        """Generate an embedding for ``text`` via the OpenAI API."""
+        return self._call_api([text])[0]
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a batch of texts in fixed-size chunks."""
+        if not texts:
+            return []
+        results: list[list[float]] = []
+        for i in range(0, len(texts), self._batch_size):
+            batch = texts[i : i + self._batch_size]
+            results.extend(self._call_api(batch))
+        return results
+
+
+class HuggingFaceEmbedder(EmbeddingProvider):
+    """Embedder backed by the Hugging Face Inference API.
+
+    Uses ``huggingface_hub.InferenceClient.feature_extraction`` to
+    generate embeddings for any model hosted on the Hub (e.g.
+    ``BAAI/bge-large-zh-v1.5``). The ``huggingface-hub`` package is
+    imported lazily.
+
+    The API token may be supplied explicitly or read from the
+    ``HF_TOKEN`` / ``HUGGINGFACEHUB_API_TOKEN`` environment variable.
+    """
+
+    def __init__(
+        self,
+        model: str = "BAAI/bge-small-zh-v1.5",
+        *,
+        api_key: str = "",
+        dimension: int | None = None,
+        batch_size: int = 32,
+    ) -> None:
+        if not model:
+            raise ValueError("model must be a non-empty string")
+        self._model = model
+        self._api_key = api_key or None
+        self._batch_size = max(1, batch_size)
+        self._dim = dimension
+        self._client: Any = None
+
+    # ------------------------------------------------------------------
+    # Client access
+    # ------------------------------------------------------------------
+
+    def _ensure_client(self) -> Any:
+        """Lazily create and cache the Hugging Face inference client."""
+
+        if self._client is not None:
+            return self._client
+        try:
+            from huggingface_hub import InferenceClient
+        except ImportError as exc:  # pragma: no cover - depends on env
+            raise ImportError(
+                "huggingface-hub is not installed. "
+                "Install it with: pip install huggingface-hub"
+            ) from exc
+        self._client = InferenceClient(model=self._model, token=self._api_key)
+        return self._client
+
+    @property
+    def dimension(self) -> int:
+        if self._dim is None:
+            # Probe the API to detect the model's embedding dimension.
+            self._dim = len(self.embed("dimension probe"))
+        return self._dim
+
+    def embed(self, text: str) -> list[float]:
+        """Generate an embedding for ``text`` via the Hugging Face API."""
+        client = self._ensure_client()
+        result = client.feature_extraction(text)
+        return _flatten_embedding(result)
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings for a batch of texts.
+
+        The Hugging Face Inference API does not support batched input, so
+        each text is embedded individually.
+        """
+        if not texts:
+            return []
+        return [self.embed(t) for t in texts]
+
+
+def create_embedder(
+    config: EmbedderConfig | None = None,
+    **overrides: Any,
+) -> EmbeddingProvider:
+    """Create an embedding provider from an :class:`EmbedderConfig`.
+
+    Selection priority when ``provider`` is :attr:`EmbedderProvider.AUTO`:
+
+    1. :class:`SentenceTransformersEmbedder` — when ``sentence-transformers``
+       is importable **and** a ``model_name`` is configured.
+    2. :class:`OpenAIEmbedder` — when an API key is available (from
+       ``config.api_key`` or the ``OPENAI_API_KEY`` environment variable)
+       and ``litellm`` is importable.
+    3. :class:`HashingEmbedder` — the always-available zero-dependency
+       fallback (via :func:`create_default_embedder`).
+
+    Args:
+        config: An :class:`EmbedderConfig`. ``None`` uses defaults.
+        **overrides: Field overrides merged into *config* before use.
+
+    Returns:
+        A ready-to-use :class:`EmbeddingProvider`.
+
+    Raises:
+        ImportError: If a forced backend's dependency is not installed.
+    """
+    cfg = config or EmbedderConfig()
+    if overrides:
+        cfg = cfg.model_copy(update=overrides)
+
+    provider = cfg.provider
+
+    if provider is EmbedderProvider.HASHING:
+        return create_default_embedder(dim=cfg.hashing_dim)
+
+    if provider is EmbedderProvider.SENTENCE_TRANSFORMERS:
+        return SentenceTransformersEmbedder(
+            cfg.model_name or "BAAI/bge-small-zh-v1.5",
+            device=cfg.device,
+            normalize_embeddings=cfg.normalize_embeddings,
+            batch_size=cfg.batch_size,
+        )
+
+    if provider is EmbedderProvider.OPENAI:
+        return OpenAIEmbedder(
+            cfg.model_name or "text-embedding-3-small",
+            api_key=cfg.api_key,
+            api_base=cfg.api_base,
+            dimensions=cfg.dimension,
+            batch_size=cfg.batch_size,
+        )
+
+    if provider is EmbedderProvider.HUGGINGFACE:
+        return HuggingFaceEmbedder(
+            cfg.model_name or "BAAI/bge-small-zh-v1.5",
+            api_key=cfg.api_key,
+            dimension=cfg.dimension,
+            batch_size=cfg.batch_size,
+        )
+
+    # ------------------------------------------------------------------
+    # AUTO: try backends in priority order.
+    # ------------------------------------------------------------------
+    if _can_import("sentence_transformers") and cfg.model_name:
+        logger.info("Auto-selected sentence-transformers embedder (%s)", cfg.model_name)
+        return SentenceTransformersEmbedder(
+            cfg.model_name,
+            device=cfg.device,
+            normalize_embeddings=cfg.normalize_embeddings,
+            batch_size=cfg.batch_size,
+        )
+
+    api_key = cfg.api_key or os.environ.get("OPENAI_API_KEY", "")
+    if api_key and _can_import("litellm"):
+        logger.info("Auto-selected OpenAI embedder (%s)", cfg.model_name or "text-embedding-3-small")
+        return OpenAIEmbedder(
+            cfg.model_name or "text-embedding-3-small",
+            api_key=api_key,
+            api_base=cfg.api_base,
+            dimensions=cfg.dimension,
+            batch_size=cfg.batch_size,
+        )
+
+    logger.info(
+        "No real embedding backend available; falling back to HashingEmbedder"
+    )
+    return create_default_embedder(dim=cfg.hashing_dim)
 
 
 # ---------------------------------------------------------------------------
@@ -625,6 +1097,324 @@ class FileVectorStore(InMemoryVectorStore):
 
 
 # ---------------------------------------------------------------------------
+# ChromaDB-backed vector store
+# ---------------------------------------------------------------------------
+
+
+class ChromaVectorStore(VectorStore):
+    """Vector store backed by ChromaDB.
+
+    Uses ChromaDB as the storage and similarity-search backend. The
+    client may be in-memory, persistent (local disk) or remote (HTTP).
+    The ``chromadb`` package is imported lazily so the module remains
+    importable without it.
+
+    Each :class:`VectorRecord` is stored with the chunk content as the
+    Chroma document and a JSON-serialised :class:`Chunk` plus
+    ``document_id`` / ``document_title`` / ``created_at`` in metadata,
+    enabling full round-trip reconstruction and ``document_ids`` filtering
+    via Chroma's ``where`` clause. The collection uses cosine distance.
+
+    Example::
+
+        >>> store = ChromaVectorStore(persist_directory="./chroma")
+        >>> store.add(record)
+        >>> results = store.search(query_vec, top_k=5)
+    """
+
+    _CHUNK_KEY = "_chunk_json"
+    _DOC_ID_KEY = "document_id"
+    _DOC_TITLE_KEY = "document_title"
+    _CREATED_AT_KEY = "created_at"
+
+    def __init__(
+        self,
+        *,
+        collection_name: str = "justagent",
+        persist_directory: Path | str | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        embedding_function: Any = None,
+    ) -> None:
+        self._collection_name = collection_name
+        self._persist_directory = (
+            str(persist_directory) if persist_directory is not None else None
+        )
+        self._host = host
+        self._port = port
+        self._embedding_function = embedding_function
+        self._client: Any = None
+        self._collection: Any = None
+
+    # ------------------------------------------------------------------
+    # Lazy client / collection
+    # ------------------------------------------------------------------
+
+    def _ensure_client(self) -> Any:
+        """Lazily create the ChromaDB client and collection."""
+
+        if self._collection is not None:
+            return self._collection
+        try:
+            import chromadb
+        except ImportError as exc:  # pragma: no cover - depends on env
+            raise ImportError(
+                "chromadb is not installed. "
+                "Install it with: pip install chromadb"
+            ) from exc
+
+        if self._host is not None:
+            self._client = chromadb.HttpClient(
+                host=self._host, port=self._port
+            )
+        elif self._persist_directory is not None:
+            self._client = chromadb.PersistentClient(path=self._persist_directory)
+        else:
+            self._client = chromadb.Client()
+
+        self._collection = self._client.get_or_create_collection(
+            name=self._collection_name,
+            embedding_function=self._embedding_function,
+            metadata={"hnsw:space": "cosine"},
+        )
+        logger.debug(
+            "Initialised ChromaDB collection %r (persist=%s, http=%s)",
+            self._collection_name,
+            self._persist_directory is not None,
+            self._host is not None,
+        )
+        return self._collection
+
+    def _recreate_collection(self) -> Any:
+        """Drop and recreate the collection (used by :meth:`clear`)."""
+
+        assert self._client is not None  # noqa: S101 - invariant after _ensure
+        self._client.delete_collection(name=self._collection_name)
+        self._collection = self._client.get_or_create_collection(
+            name=self._collection_name,
+            embedding_function=self._embedding_function,
+            metadata={"hnsw:space": "cosine"},
+        )
+        return self._collection
+
+    # ------------------------------------------------------------------
+    # Record <-> Chroma mapping
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _record_to_metadata(cls, record: VectorRecord) -> dict[str, Any]:
+        """Build the Chroma metadata dict for *record*."""
+
+        return {
+            cls._DOC_ID_KEY: record.document_id,
+            cls._DOC_TITLE_KEY: record.document_title,
+            cls._CREATED_AT_KEY: record.created_at,
+            cls._CHUNK_KEY: record.chunk.model_dump_json(),
+        }
+
+    @classmethod
+    def _chroma_to_record(
+        cls,
+        record_id: str,
+        metadata: dict[str, Any] | None,
+    ) -> VectorRecord | None:
+        """Reconstruct a :class:`VectorRecord` from ChromaDB metadata."""
+
+        if not metadata:
+            return None
+        chunk_json = metadata.get(cls._CHUNK_KEY)
+        if not chunk_json:
+            return None
+        try:
+            chunk = Chunk.model_validate_json(chunk_json)
+        except Exception as exc:  # noqa: BLE001 - best-effort decode
+            logger.warning("Failed to decode chunk from ChromaDB: %s", exc)
+            return None
+        return VectorRecord(
+            id=record_id,
+            chunk=chunk,
+            embedding=[],
+            document_id=metadata.get(cls._DOC_ID_KEY, ""),
+            document_title=metadata.get(cls._DOC_TITLE_KEY, ""),
+            created_at=float(metadata.get(cls._CREATED_AT_KEY, 0.0)),
+        )
+
+    # ------------------------------------------------------------------
+    # VectorStore interface
+    # ------------------------------------------------------------------
+
+    def add(self, record: VectorRecord) -> None:
+        """Add or replace a single vector record."""
+        collection = self._ensure_client()
+        collection.upsert(
+            ids=[record.id],
+            embeddings=[record.embedding] if record.embedding else None,
+            documents=[record.chunk.content],
+            metadatas=[self._record_to_metadata(record)],
+        )
+
+    def add_batch(self, records: list[VectorRecord]) -> None:
+        """Add or replace multiple vector records."""
+        if not records:
+            return
+        collection = self._ensure_client()
+        has_embeddings = bool(records[0].embedding)
+        collection.upsert(
+            ids=[r.id for r in records],
+            embeddings=[r.embedding for r in records] if has_embeddings else None,
+            documents=[r.chunk.content for r in records],
+            metadatas=[self._record_to_metadata(r) for r in records],
+        )
+
+    def get(self, record_id: str) -> VectorRecord | None:
+        """Return a record by ID, or None if not found."""
+        collection = self._ensure_client()
+        result = collection.get(
+            ids=[record_id],
+            include=["metadatas", "documents", "embeddings"],
+        )
+        ids = result.get("ids", []) if isinstance(result, dict) else []
+        if not ids:
+            return None
+        metas = result.get("metadatas", []) if isinstance(result, dict) else []
+        embs = result.get("embeddings", []) if isinstance(result, dict) else []
+        record = self._chroma_to_record(
+            ids[0], metas[0] if metas else None
+        )
+        if record is None:
+            return None
+        if embs:
+            record.embedding = list(embs[0])
+        return record
+
+    def remove(self, record_id: str) -> bool:
+        """Remove a record by ID. Returns True if removed."""
+        collection = self._ensure_client()
+        existing = collection.get(ids=[record_id])
+        existing_ids = (
+            existing.get("ids", []) if isinstance(existing, dict) else []
+        )
+        if not existing_ids:
+            return False
+        collection.delete(ids=[record_id])
+        return True
+
+    def remove_by_document(self, document_id: str) -> int:
+        """Remove all records belonging to ``document_id``."""
+        collection = self._ensure_client()
+        existing = collection.get(
+            where={self._DOC_ID_KEY: document_id},
+        )
+        ids = existing.get("ids", []) if isinstance(existing, dict) else []
+        if not ids:
+            return 0
+        collection.delete(ids=list(ids))
+        return len(ids)
+
+    def count(self) -> int:
+        """Return the total number of stored records."""
+        collection = self._ensure_client()
+        return int(collection.count())
+
+    def clear(self) -> None:
+        """Remove all records."""
+        self._ensure_client()
+        self._recreate_collection()
+
+    def list_records(self) -> list[VectorRecord]:
+        """Return all stored records (for inspection / export)."""
+        collection = self._ensure_client()
+        result = collection.get(
+            include=["metadatas", "documents", "embeddings"]
+        )
+        if not isinstance(result, dict):
+            return []
+        ids = result.get("ids", [])
+        metas = result.get("metadatas", [])
+        embs = result.get("embeddings", [])
+        records: list[VectorRecord] = []
+        for idx, rid in enumerate(ids):
+            meta = metas[idx] if idx < len(metas) else None
+            record = self._chroma_to_record(rid, meta)
+            if record is None:
+                continue
+            if embs and idx < len(embs):
+                record.embedding = list(embs[idx])
+            records.append(record)
+        return records
+
+    def search(
+        self,
+        query_embedding: list[float],
+        top_k: int = 5,
+        *,
+        document_ids: list[str] | None = None,
+        min_score: float = 0.0,
+    ) -> list[SearchResult]:
+        """Search for the top-k most similar records.
+
+        Args:
+            query_embedding: The query vector.
+            top_k: Maximum number of results to return.
+            document_ids: Optional filter — only search within these
+                document IDs (mapped to a Chroma ``where`` clause).
+            min_score: Minimum cosine similarity score for inclusion.
+
+        Returns:
+            List of :class:`SearchResult` sorted by descending score.
+        """
+        if top_k <= 0:
+            return []
+        collection = self._ensure_client()
+        where: dict[str, Any] | None = None
+        if document_ids is not None:
+            where = {self._DOC_ID_KEY: {"$in": list(document_ids)}}
+
+        result = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k,
+            where=where,
+            include=["metadatas", "documents", "distances"],
+        )
+        if not isinstance(result, dict):
+            return []
+
+        ids_batch = result.get("ids", [[]])
+        metas_batch = result.get("metadatas", [[]])
+        dists_batch = result.get("distances", [[]])
+        if not ids_batch:
+            return []
+
+        ids = ids_batch[0]
+        metas = metas_batch[0] if metas_batch else []
+        dists = dists_batch[0] if dists_batch else []
+
+        results: list[SearchResult] = []
+        rank = 0
+        for idx, rid in enumerate(ids):
+            # ChromaDB cosine distance == 1 - cosine_similarity.
+            dist = float(dists[idx]) if idx < len(dists) else 1.0
+            score = 1.0 - dist
+            if score < min_score:
+                continue
+            meta = metas[idx] if idx < len(metas) else None
+            record = self._chroma_to_record(rid, meta)
+            if record is None:
+                continue
+            rank += 1
+            results.append(
+                SearchResult(
+                    chunk=record.chunk,
+                    document_id=record.document_id,
+                    document_title=record.document_title,
+                    score=score,
+                    rank=rank,
+                )
+            )
+        return results
+
+
+# ---------------------------------------------------------------------------
 # Convenience: index a document's chunks
 # ---------------------------------------------------------------------------
 
@@ -669,16 +1459,23 @@ def index_document_chunks(
 
 
 __all__ = [
+    "ChromaVectorStore",
+    "EmbedderConfig",
+    "EmbedderProvider",
     "EmbeddingProvider",
     "FileVectorStore",
     "HashingEmbedder",
+    "HuggingFaceEmbedder",
     "InMemoryVectorStore",
     "NumpyHashingEmbedder",
+    "OpenAIEmbedder",
     "SearchResult",
+    "SentenceTransformersEmbedder",
     "VectorRecord",
     "VectorStore",
     "batch_cosine_similarity",
     "cosine_similarity",
     "create_default_embedder",
+    "create_embedder",
     "index_document_chunks",
 ]

@@ -1,10 +1,15 @@
-# JustAgent 示例配置
-# 将此文件复制到项目根目录并命名为 .justagent.toml，然后按需调整。
+# JustAgent 示例配置 —— 司法场景
+# JustAgent: Intelligence for Justice
+# 将此文件复制到案件项目根目录并命名为 .justagent.toml，然后按需调整。
+# 司法数据敏感，建议优先使用自托管后端（Ollama / vLLM / llama.cpp）保证数据不出域。
 
+# ─────────────────────────────────────────────────────────────
+# 文档清理与校验（用于法律文书工程化流程）
+# ─────────────────────────────────────────────────────────────
 [clean]
 enabled = true
 tools = ["ruff"]
-exclude = ["migrations", ".venv", "__pycache__"]
+exclude = ["migrations", ".venv", "__pycache__", "cases/raw"]
 
 [verify]
 enabled = true
@@ -15,11 +20,20 @@ enabled = true
 conventional_commits = true
 auto_push = false
 
+# ─────────────────────────────────────────────────────────────
+# 安全与合规 —— 司法场景下的数据保护
+# ─────────────────────────────────────────────────────────────
 [security]
 enabled = true
 tools = ["semgrep"]
 threshold = "medium"
 
+# 司法数据保护：敏感字段（当事人姓名、身份证号、案件编号等）写入审计日志前自动脱敏
+# 由 src/justagent/security/data_protection.py 与 src/justagent/utils/redaction.py 处理。
+
+# ─────────────────────────────────────────────────────────────
+# 生命周期钩子
+# ─────────────────────────────────────────────────────────────
 [hooks]
 enabled = false
 
@@ -28,33 +42,45 @@ command = "clean"
 include = ["src/**/*.py"]
 debounce_ms = 300
 
-# 模型配置 —— 配置一个或多个后端
+# ─────────────────────────────────────────────────────────────
+# 模型配置 —— 司法场景建议自托管，保障数据不出域
+# 配置一个或多个后端，default_tier 越小优先级越高（1 为首选）
+# ─────────────────────────────────────────────────────────────
 [model]
 default_tier = 1
 
+# 首选：自托管 Ollama（案件数据本地处理，不出域）
 [[model.backends]]
-provider = "openai"
-base_url = "https://api.openai.com/v1"
-api_key = "${OPENAI_API_KEY}"
-model = "gpt-4o-mini"
+provider = "ollama"
+base_url = "http://localhost:11434"
+api_key = ""
+model = "qwen2.5:32b"
+tier = 1
 
+# 备选：自托管 vLLM（大规模卷宗/证据批量处理）
 # [[model.backends]]
-# provider = "ollama"
-# base_url = "http://localhost:11434"
-# model = "llama3.2"
+# provider = "vllm"
+# base_url = "http://localhost:8000/v1"
+# model = "meta-llama/Meta-Llama-3-70B-Instruct"
+# tier = 2
 
+# 仅在允许出域的环境下使用云端模型（如非密案件的研究性检索）
 # [[model.backends]]
-# provider = "openrouter"
-# api_key = "${OPENROUTER_API_KEY}"
-# model = "anthropic/claude-sonnet-4"
+# provider = "openai"
+# base_url = "https://api.openai.com/v1"
+# api_key = "${OPENAI_API_KEY}"
+# model = "gpt-4o-mini"
+# tier = 3
 
 # [[model.backends]]
 # provider = "azure_openai"
 # base_url = "https://YOUR_RESOURCE.openai.azure.com"
 # api_key = "${AZURE_OPENAI_API_KEY}"
 # model = "gpt-4o-mini"
+# tier = 3
 
 # [[model.backends]]
-# provider = "vllm"
-# base_url = "http://localhost:8000/v1"
-# model = "meta-llama/Meta-Llama-3-8B-Instruct"
+# provider = "openrouter"
+# api_key = "${OPENROUTER_API_KEY}"
+# model = "anthropic/claude-sonnet-4"
+# tier = 4

@@ -83,6 +83,11 @@ class ComplianceFramework(str, Enum):  # noqa: UP042 - match existing codebase s
         ISO27001: ISO/IEC 27001 Information Security Management.
         PCI_DSS: Payment Card Industry Data Security Standard.
         CCPA: California Consumer Privacy Act.
+        DSL: PRC Data Security Law (数据安全法).
+        PIPL: PRC Personal Information Protection Law (个人信息保护法).
+        CSL: PRC Cybersecurity Law (网络安全法).
+        LAL: PRC Archives Law (档案法).
+        JSL: PRC People's Court Courtroom Rules (人民法院法庭规则).
         NONE: No framework (used for unconstrained operations).
     """
 
@@ -92,6 +97,11 @@ class ComplianceFramework(str, Enum):  # noqa: UP042 - match existing codebase s
     ISO27001 = "iso27001"
     PCI_DSS = "pci_dss"
     CCPA = "ccpa"
+    DSL = "dsl"
+    PIPL = "pipl"
+    CSL = "csl"
+    LAL = "lal"
+    JSL = "jsl"
     NONE = "none"
 
 
@@ -143,6 +153,12 @@ _DEFAULT_RETENTION_DAYS: dict[ComplianceFramework, int] = {
     ComplianceFramework.ISO27001: 1095,  # 3 years
     ComplianceFramework.PCI_DSS: 365,  # 1 year
     ComplianceFramework.CCPA: 730,  # 2 years
+    # PRC (China) regulatory frameworks
+    ComplianceFramework.DSL: 0,  # No general mandate; governed by data classification
+    ComplianceFramework.PIPL: 365,  # ~1 year; PIPL emphasises purpose limitation
+    ComplianceFramework.CSL: 180,  # Network logs >= 6 months (CSL Article 21)
+    ComplianceFramework.LAL: 10950,  # ~30 years for archival records
+    ComplianceFramework.JSL: 3650,  # ~10 years for court proceeding records
     ComplianceFramework.NONE: 0,  # no limit
 }
 

@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security issue in JustAgent CLI, report it privately to `team@justagent.dev`. Do not open a public issue.
+If you discover a security issue in JustAgent — the judicial AI agent platform — report it privately to `team@justagent.dev`. Do not open a public issue.
 
 You can expect:
 
@@ -20,6 +20,7 @@ The following fall within scope:
 - Unsafe handling of user-supplied TOML, JSON, or other structured inputs
 - Privilege escalation through the plugin system or LSP server
 - Supply chain issues in bundled dependencies
+- Leakage or mishandling of sensitive judicial data (case materials, evidence, legal instruments) — exposure in logs, caches, or artifacts
 
 Out of scope:
 
@@ -36,6 +37,6 @@ Out of scope:
 
 ## Dependencies
 
-JustAgent uses Semgrep for code security scanning, pip-audit for dependency auditing, and cryptographic primitives from the `cryptography` library. Dependencies are pinned with hashes in `uv.lock`.
+JustAgent uses Semgrep for code security scanning, pip-audit for dependency auditing, and cryptographic primitives from the `cryptography` library. For judicial and government deployments, the platform additionally ships RBAC, SSO, encryption, data-protection, and compliance modules in `src/justagent/security/`. Dependencies are pinned with hashes in `uv.lock`.
 
 If you notice a vulnerable dependency in `uv.lock`, include the CVE ID and affected version range in your report.

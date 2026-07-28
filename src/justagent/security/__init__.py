@@ -1,6 +1,6 @@
 """Enterprise security module for the JustAgent platform.
 
-This package provides five integrated security subsystems that together
+This package provides six integrated security subsystems that together
 deliver enterprise-grade protection for a local-first AI agent platform:
 
 * **Encryption** (:mod:`justagent.security.encryption`) — authenticated
@@ -31,6 +31,13 @@ deliver enterprise-grade protection for a local-first AI agent platform:
   append-only audit trail with SHA-256 hash chaining for tamper
   evidence.
 
+* **Judicial Security** (:mod:`justagent.security.judicial_security`)
+  — judicial-specific extensions for PRC (China) practice: case
+  classification (案件密级管理) with PUBLIC/INTERNAL/SECRET/CONFIDENTIAL
+  tiers, a judicial audit logger subclassing the compliance audit trail,
+  and a tamper-evident evidence chain (证据链完整性保护) with SHA-256
+  hash verification.
+
 All subsystems use Pydantic v2 for data models, are thread-safe
 (``threading.Lock`` / ``threading.RLock``), and follow the
 ``justagent.security.<submodule>`` logging namespace. Async I/O is used
@@ -56,6 +63,13 @@ Architecture overview::
     |              Compliance                    |
     |  (ComplianceChecker, AuditTrailManager)   |
     +-------------------------------------------+
+             |
+             v
+    +-------------------------------------------+
+    |           Judicial Security               |
+    |  (CaseSecurity, JudicialAuditLogger,      |
+    |   EvidenceChainSecurity)                  |
+    +-------------------------------------------+
 
 Quick start::
 
@@ -70,6 +84,8 @@ Quick start::
         DLPScanner, DataSanitizer, PIIType,
         # Compliance
         ComplianceChecker, AuditTrailManager, ComplianceFramework,
+        # Judicial Security
+        CaseSecurity, JudicialSecurityLevel, EvidenceChainSecurity,
     )
 
     # --- Encryption ---
@@ -105,6 +121,14 @@ Quick start::
         actor="alice", action="export", resource="records",
         result=AuditResult.SUCCESS,
     ))
+
+    # --- Judicial Security ---
+    cs = CaseSecurity()
+    cs.classify_case("case-001", JudicialSecurityLevel.SECRET,
+                     classified_by="judge_li")
+    ecs = EvidenceChainSecurity()
+    ecs.register_evidence("ev-1", "case-001", b"evidence",
+                          registered_by="officer_zhang")
 """
 
 from __future__ import annotations
@@ -141,6 +165,16 @@ from justagent.security.encryption import (
     KeyManagementError,
     KeyManager,
     SecurityError,
+)
+from justagent.security.judicial_security import (
+    CaseClassification,
+    CaseSecurity,
+    CustodyRecord,
+    EvidenceChainSecurity,
+    EvidenceItem,
+    JudicialAuditLogger,
+    JudicialSecurityError,
+    JudicialSecurityLevel,
 )
 from justagent.security.rbac import (
     AccessDecision,
@@ -208,4 +242,13 @@ __all__ = [
     "ComplianceRule",
     "PolicyDecision",
     "Severity",
+    # judicial security
+    "CaseClassification",
+    "CaseSecurity",
+    "CustodyRecord",
+    "EvidenceChainSecurity",
+    "EvidenceItem",
+    "JudicialAuditLogger",
+    "JudicialSecurityError",
+    "JudicialSecurityLevel",
 ]

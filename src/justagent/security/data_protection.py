@@ -72,6 +72,10 @@ class PIIType(str, Enum):  # noqa: UP042 - match existing codebase style
         ID_CARD: National ID / driver's license numbers.
         ADDRESS: Street addresses.
         NAME: Person names (conservative heuristic).
+        CHINESE_ID_CARD: PRC resident identity card numbers (18-digit).
+        UNIFIED_SOCIAL_CREDIT_CODE: PRC unified social credit codes.
+        CASE_NUMBER: PRC judicial case numbers (案号).
+        BUSINESS_LICENSE: PRC business licence numbers (营业执照号).
     """
 
     EMAIL = "email"
@@ -84,6 +88,10 @@ class PIIType(str, Enum):  # noqa: UP042 - match existing codebase style
     ID_CARD = "id_card"
     ADDRESS = "address"
     NAME = "name"
+    CHINESE_ID_CARD = "chinese_id_card"
+    UNIFIED_SOCIAL_CREDIT_CODE = "unified_social_credit_code"
+    CASE_NUMBER = "case_number"
+    BUSINESS_LICENSE = "business_license"
 
 
 class DataSensitivityLevel(str, Enum):  # noqa: UP042
@@ -138,6 +146,11 @@ _DEFAULT_SENSITIVITY: dict[PIIType, DataSensitivityLevel] = {
     PIIType.ID_CARD: DataSensitivityLevel.HIGH,
     PIIType.ADDRESS: DataSensitivityLevel.MEDIUM,
     PIIType.NAME: DataSensitivityLevel.LOW,
+    # PRC (China) specific PII types
+    PIIType.CHINESE_ID_CARD: DataSensitivityLevel.CRITICAL,
+    PIIType.UNIFIED_SOCIAL_CREDIT_CODE: DataSensitivityLevel.HIGH,
+    PIIType.CASE_NUMBER: DataSensitivityLevel.MEDIUM,
+    PIIType.BUSINESS_LICENSE: DataSensitivityLevel.MEDIUM,
 }
 
 
@@ -245,6 +258,64 @@ def _build_default_rules() -> list[DLPRule]:
             sensitivity=DataSensitivityLevel.MEDIUM,
             action=DLPAction.AUDIT,
             description="Detects US street addresses.",
+        ),
+        # ------------------------------------------------------------------
+        # PRC (China) specific PII patterns
+        # ------------------------------------------------------------------
+        DLPRule(
+            id="default_chinese_id_card",
+            name="PRC Resident Identity Card (18-digit)",
+            pattern=r"[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])"
+            r"(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx]",
+            pii_type=PIIType.CHINESE_ID_CARD,
+            sensitivity=DataSensitivityLevel.CRITICAL,
+            action=DLPAction.BLOCK,
+            description="Detects 18-digit PRC resident identity card numbers.",
+        ),
+        DLPRule(
+            id="default_unified_social_credit_code",
+            name="PRC Unified Social Credit Code",
+            pattern=r"[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}",
+            pii_type=PIIType.UNIFIED_SOCIAL_CREDIT_CODE,
+            sensitivity=DataSensitivityLevel.HIGH,
+            action=DLPAction.REDACT,
+            description="Detects 18-character PRC unified social credit codes.",
+        ),
+        DLPRule(
+            id="default_phone_cn",
+            name="PRC Mobile Phone Number",
+            pattern=r"(?<!\w)1[3-9]\d{9}\b",
+            pii_type=PIIType.PHONE,
+            sensitivity=DataSensitivityLevel.MEDIUM,
+            action=DLPAction.REDACT,
+            description="Detects PRC mobile phone numbers (11 digits starting with 1).",
+        ),
+        DLPRule(
+            id="default_chinese_bank_card",
+            name="PRC Bank Card Number",
+            pattern=r"\b[1-9]\d{14,18}\b",
+            pii_type=PIIType.BANK_ACCOUNT,
+            sensitivity=DataSensitivityLevel.CRITICAL,
+            action=DLPAction.BLOCK,
+            description="Detects PRC bank card numbers (15-19 digits, non-zero leading).",
+        ),
+        DLPRule(
+            id="default_case_number",
+            name="PRC Judicial Case Number",
+            pattern=r"\(\d{4}\)[^\s]+\d+号",
+            pii_type=PIIType.CASE_NUMBER,
+            sensitivity=DataSensitivityLevel.MEDIUM,
+            action=DLPAction.AUDIT,
+            description="Detects PRC judicial case numbers, e.g. (2024)京01民初1号.",
+        ),
+        DLPRule(
+            id="default_business_license",
+            name="PRC Business Licence Number",
+            pattern=r"\b\d{15}|\d{18}\b",
+            pii_type=PIIType.BUSINESS_LICENSE,
+            sensitivity=DataSensitivityLevel.MEDIUM,
+            action=DLPAction.AUDIT,
+            description="Detects PRC business licence numbers (15 or 18 digits).",
         ),
     ]
 
@@ -528,6 +599,11 @@ class DataSanitizer:
         PIIType.ID_CARD: "[REDACTED_ID]",
         PIIType.ADDRESS: "[REDACTED_ADDRESS]",
         PIIType.NAME: "[REDACTED_NAME]",
+        # PRC (China) specific PII types
+        PIIType.CHINESE_ID_CARD: "[REDACTED_CN_ID_CARD]",
+        PIIType.UNIFIED_SOCIAL_CREDIT_CODE: "[REDACTED_USCC]",
+        PIIType.CASE_NUMBER: "[REDACTED_CASE_NUMBER]",
+        PIIType.BUSINESS_LICENSE: "[REDACTED_BUSINESS_LICENSE]",
     }
 
     def __init__(self, scanner: DLPScanner | None = None) -> None:
@@ -594,11 +670,23 @@ class DataSanitizer:
                 return f"{local}***@{domain}"
             return f"{local[0]}{'*' * (len(local) - 1)}@{domain}"
 
-        if pii_type in (PIIType.SSN, PIIType.CREDIT_CARD, PIIType.BANK_ACCOUNT):
-            # Keep last 4 digits for financial identifiers.
+        if pii_type in (
+            PIIType.SSN,
+            PIIType.CREDIT_CARD,
+            PIIType.BANK_ACCOUNT,
+            PIIType.CHINESE_ID_CARD,
+            PIIType.BUSINESS_LICENSE,
+        ):
+            # Keep last 4 digits for financial / identity identifiers.
             if len(value) <= 4:
                 return "*" * len(value)
             return "*" * (len(value) - 4) + value[-4:]
+
+        if pii_type is PIIType.UNIFIED_SOCIAL_CREDIT_CODE:
+            # Keep first 4 (registration authority) and last 4 (check digit).
+            if len(value) <= 8:
+                return "*" * len(value)
+            return f"{value[:4]}{'*' * (len(value) - 8)}{value[-4:]}"
 
         if pii_type is PIIType.PHONE:
             # Keep last 4 digits.
@@ -613,7 +701,7 @@ class DataSanitizer:
                 return f"{parts[0]}.***"
             return "***"
 
-        # Generic masking for other types.
+        # Generic masking for other types (e.g. CASE_NUMBER, ADDRESS).
         if len(value) <= 2:
             return "*" * len(value)
         return f"{value[0]}{'*' * (len(value) - 2)}{value[-1]}"
