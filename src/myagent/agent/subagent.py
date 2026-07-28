@@ -3,8 +3,8 @@
 A subagent is a lightweight agent spawned by the main agent to
 investigate a research question. Subagents:
 
-* Run with **read-only tools** only (read_file, search_files, list_files,
-  web_fetch, ask_question). They cannot write, edit, or run commands.
+* Run with **read-only tools** only (read_file, search, web_fetch,
+  ask_question). They cannot write, edit, or run commands.
 * Have their own **isolated conversation context** — they don't see the
   parent's history, and the parent only sees the subagent's final summary.
 * Can run **in parallel** via asyncio.gather.
@@ -176,8 +176,8 @@ You are a read-only research subagent. Your job is to investigate a
 question and return a concise summary of your findings.
 
 Constraints:
-- You can ONLY use read-only tools: read_file, search_files, list_files,
-  web_fetch, ask_question. You cannot write, edit, or run commands.
+- You can ONLY use read-only tools: read_file, search, web_fetch,
+  ask_question. You cannot write, edit, or run commands.
 - You do NOT see the parent agent's conversation history. Work only from
   the prompt you are given.
 - When you have enough information, respond with a final text message

@@ -103,6 +103,7 @@
   "plugin.info.name": "Name",
   "plugin.info.version": "Version",
   "plugin.info.trust": "Trust",
+  "plugin.info.description": "Description",
   "plugin.info.publisher": "Publisher",
   "plugin.info.maintainer": "Maintainer",
   "plugin.info.license": "License",
@@ -167,6 +168,7 @@
   "doctor.plugin_missing": "Optional tools missing: {details}",
   "doctor.plugin_suggestion": "Install tools for the plugins you want to use; unrelated plugins will still work.",
   "doctor.plugin_ok": "Optional plugin tools available",
+  "doctor.plugin_desc": "{name} plugin",
   "doctor.dirs_bad": "Cannot access: {paths}",
   "doctor.dirs_suggestion": "Ensure HOME is set and writable.",
   "doctor.dirs_not_writable": "Directories not writable: {paths}",
@@ -328,5 +330,10 @@
   "sink.unreachable": "Could not connect to sink: {exc}",
   "sink.status_failed": "sink returned non-200 status: {code}",
   "sink.status_invalid": "sink returned a non-JSON response.",
-  "sink.status_header": "Sink status:"
+  "sink.status_header": "Sink status:",
+
+  "session.empty": "No saved sessions.",
+  "session.not_found": "Error: Session {session_id} not found",
+  "session.resume_ready": "Session {session_id} is ready. Resume with:",
+  "session.deleted": "Deleted session {session_id}."
 }

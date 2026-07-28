@@ -26,11 +26,10 @@ def test_doctor_json_output() -> None:
     assert '"summary"' in result.output
     assert '"python"' in result.output
     assert '"git"' in result.output
-    assert '"tools"' in result.output
-    assert '"model"' in result.output
-    assert '"dirs"' in result.output
+    assert '"clean-toolchain"' in result.output
+    assert '"model-backend"' in result.output
+    assert '"directories"' in result.output
     assert '"cache"' in result.output
-    assert '"observability"' in result.output
 
 
 def test_doctor_detects_missing_git() -> None:

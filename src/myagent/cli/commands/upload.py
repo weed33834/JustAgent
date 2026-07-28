@@ -10,6 +10,7 @@ import typer
 from myagent.adapters.upload import get_uploader
 from myagent.core.audit_logger import AuditLogger
 from myagent.core.context import CommandContext
+from myagent.core.i18n import I18n, get_i18n_from_ctx
 from myagent.exceptions import ConfigError, UploadError
 from myagent.plugin_manager import manager as plugin_manager
 
@@ -17,27 +18,28 @@ app = typer.Typer()
 
 
 def register(parent: typer.Typer) -> None:
-    parent.command(name="upload", help="将产物上传到已配置的目标。")(upload)
+    parent.command(name="upload", help="Upload artifacts to a configured target.")(upload)
 
 
 @app.command(name="upload")
 def upload(
     ctx: typer.Context,
-    target: str = typer.Option(..., "--target", help="上传目标，例如 pypi/docker/github"),
-    image: str | None = typer.Option(None, "--image", help="Docker 镜像名称"),
-    tag: str | None = typer.Option(None, "--tag", "-t", help="Docker 镜像标签或 GitHub 发布标签"),
-    artifacts: list[str] | None = typer.Option(None, "--artifact", help="要上传的产物"),
-    repository: str | None = typer.Option(None, "--repository", help="PyPI 仓库名称（默认：testpypi）"),
+    target: str = typer.Option(..., "--target", help="Upload target, e.g. pypi/docker/github"),
+    image: str | None = typer.Option(None, "--image", help="Docker image name"),
+    tag: str | None = typer.Option(None, "--tag", "-t", help="Docker image tag or GitHub release tag"),
+    artifacts: list[str] | None = typer.Option(None, "--artifact", help="Artifacts to upload"),
+    repository: str | None = typer.Option(None, "--repository", help="PyPI repository name (default: testpypi)"),
     repository_url: str | None = typer.Option(
-        None, "--repository-url", help="PyPI 仓库上传地址"
+        None, "--repository-url", help="PyPI repository upload URL"
     ),
-    registry: str | None = typer.Option(None, "--registry", help="Docker 仓库前缀（例如 localhost:5000）"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="仅显示将要上传的内容而不实际执行"),
+    registry: str | None = typer.Option(None, "--registry", help="Docker registry prefix (e.g. localhost:5000)"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be uploaded without uploading"),
 ) -> None:
-    """将产物上传到已配置的目标。"""
+    """Upload artifacts to a configured target."""
     from myagent.adapters.upload.pypi import PyPIUploader
 
     config = ctx.obj["config"]
+    i18n: I18n = get_i18n_from_ctx(ctx)
 
     audit: AuditLogger = ctx.obj["audit_logger"]
 
@@ -67,7 +69,7 @@ def upload(
         uploader_cfg["repository"] = repository
     if repository_url:
         if not PyPIUploader.is_safe_repository_url(repository_url):
-            raise UploadError("--repository-url 必须使用 HTTPS，或指向 localhost/127.0.0.1")
+            raise UploadError(i18n._("upload.repository_url_invalid"))
         uploader_cfg["repository_url"] = repository_url
     if registry:
         uploader_cfg["registry"] = registry
@@ -89,20 +91,20 @@ def upload(
         uploader = get_uploader(target, config.project_root, uploader_cfg, tools=config.tools)
     except ConfigError as exc:
         if dry_run:
-            typer.echo(f"[dry-run] 目标 '{target}' 尚未完整配置：{exc}")
+            typer.echo(i18n._("upload.dry_run_not_configured", target=target, reason=exc))
             audit.record("upload.dry_run_not_configured", {"target": target, "reason": str(exc)})
             return
         raise
 
-    if not dry_run and not yes and not typer.confirm(f"上传到 {target}？"):
-        typer.echo("已中止。")
+    if not dry_run and not yes and not typer.confirm(i18n._("upload.confirm", target=target)):
+        typer.echo(i18n._("upload.aborted"))
         audit.record("upload.aborted", {"reason": "user_declined"})
         raise typer.Exit(code=0)
 
     try:
         result = uploader.upload(dry_run=dry_run, verbose=verbose)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        error = UploadError(f"上传到 {target} 失败：{exc}")
+        error = UploadError(i18n._("upload.failed", target=target, exc=exc))
         audit.record(
             "upload.error",
             {"target": target, "error": str(exc)},
@@ -117,15 +119,15 @@ def upload(
         )
         plugin_manager.call("post_upload", context=context, fail_fast=False)
         details_str = _format_dry_run_details(result.details)
-        typer.echo(f"[dry-run] 将上传到 {target}：\n{details_str}")
+        typer.echo(i18n._("upload.dry_run", target=target, details=details_str))
         return
 
     audit.record("upload.done", {"target": target, "result": result.details})
     plugin_manager.call("post_upload", context=context, fail_fast=False)
     if result.url:
-        typer.echo(f"已上传到 {target}：{result.url}")
+        typer.echo(i18n._("upload.result_url", target=target, url=result.url))
     else:
-        typer.echo(f"已上传到 {target}")
+        typer.echo(i18n._("upload.result", target=target))
 
 
 def _format_dry_run_details(details: dict[str, Any] | None) -> str:

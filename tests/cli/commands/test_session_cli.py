@@ -46,7 +46,7 @@ class TestSessionList:
     def test_list_empty(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         result = _invoke(["list"], sessions_dir=tmp_path / "s", monkeypatch=monkeypatch)
         assert result.exit_code == 0
-        assert "没有保存的会话" in result.output
+        assert "没有保存的会话" in result.output or "No saved sessions" in result.output
 
     def test_list_with_sessions(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

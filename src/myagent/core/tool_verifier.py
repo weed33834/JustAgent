@@ -12,7 +12,6 @@ from pathlib import Path
 
 from myagent.exceptions import ConfigError
 from myagent.models.config import ToolsConfig
-from myagent.utils.hashing import compute_sha256
 
 
 class ToolVerifier:
@@ -53,6 +52,11 @@ class ToolVerifier:
         Raises:
             ConfigError: when the tool cannot be resolved or fails validation.
         """
+        # Imported lazily to break a circular import: ``utils.hashing``
+        # re-exports ``ToolVerifier`` from this module at module level, so this
+        # module must not import from ``utils.hashing`` at module level.
+        from myagent.utils.hashing import compute_sha256
+
         tool_config = self.config.get(name)
         resolved: Path | None = None
 

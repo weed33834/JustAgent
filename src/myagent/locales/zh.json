@@ -103,6 +103,7 @@
   "plugin.info.name": "名称",
   "plugin.info.version": "版本",
   "plugin.info.trust": "信任等级",
+  "plugin.info.description": "描述",
   "plugin.info.publisher": "发布者",
   "plugin.info.maintainer": "维护者",
   "plugin.info.license": "许可证",
@@ -167,6 +168,7 @@
   "doctor.plugin_missing": "缺少可选工具：{details}",
   "doctor.plugin_suggestion": "为你想使用的插件安装对应工具；其他插件仍可正常工作。",
   "doctor.plugin_ok": "可选插件工具可用",
+  "doctor.plugin_desc": "{name} 插件",
   "doctor.dirs_bad": "无法访问：{paths}",
   "doctor.dirs_suggestion": "确保 HOME 已设置且可写。",
   "doctor.dirs_not_writable": "目录不可写：{paths}",
@@ -328,5 +330,10 @@
   "sink.unreachable": "无法连接到 sink：{exc}",
   "sink.status_failed": "sink 返回非 200 状态码：{code}",
   "sink.status_invalid": "sink 返回的响应不是有效的 JSON。",
-  "sink.status_header": "Sink 状态："
+  "sink.status_header": "Sink 状态：",
+
+  "session.empty": "没有保存的会话。",
+  "session.not_found": "错误：找不到会话 {session_id}",
+  "session.resume_ready": "会话 {session_id} 已就绪。使用以下命令恢复：",
+  "session.deleted": "已删除会话 {session_id}。"
 }

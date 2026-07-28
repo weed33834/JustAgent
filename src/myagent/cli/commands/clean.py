@@ -11,6 +11,7 @@ import typer
 from myagent.adapters.tool_adapter import ToolChain
 from myagent.core.audit_logger import AuditLogger
 from myagent.core.context import CommandContext
+from myagent.core.i18n import I18n, get_i18n, get_i18n_from_ctx
 from myagent.exceptions import ToolChainError
 from myagent.models.config import AppConfig
 from myagent.plugin_manager import manager as plugin_manager
@@ -159,9 +160,11 @@ def _run_builtin_format_fallback(
     )
     non_python_files = [f for f in source_files if f.suffix not in _PYTHON_EXTENSIONS]
 
+    i18n: I18n = get_i18n()
+
     if fallback_due_to_missing:
         typer.echo(
-            f"使用内置格式化器（未找到外部工具：{', '.join(missing)}）",
+            i18n._("clean.builtin_fallback", tools=", ".join(missing)),
             err=True,
         )
         files_to_format: list[Path] = source_files
@@ -182,11 +185,11 @@ def _run_builtin_format_fallback(
                     typer.echo(f"Formatted: {f}")
         if changed:
             audit.record("clean.builtin", {"changed": changed})
-            typer.echo(f"内置格式化完成（{changed} 个文件已修改）。")
+            typer.echo(i18n._("clean.builtin_done", count=changed))
             plugin_manager.call("post_clean", context=context, fail_fast=False)
             return
 
-    typer.echo("已经是干净的。")
+    typer.echo(i18n._("clean.noop"))
     audit.record("clean.noop")
 
 
@@ -201,6 +204,7 @@ def clean(
     # RBAC gate: clean mutates source files.
 
     config = ctx.obj["config"]
+    i18n: I18n = get_i18n_from_ctx(ctx)
 
     audit: AuditLogger = ctx.obj["audit_logger"]
     dry_run: bool = ctx.obj.get("dry_run", False)
@@ -230,7 +234,7 @@ def clean(
     try:
         diff = toolchain.preview(paths)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        raise ToolChainError(f"预览清理更改失败：{exc}") from exc
+        raise ToolChainError(i18n._("clean.preview_failed", exc=exc)) from exc
 
     if not diff.strip():
         _run_builtin_format_fallback(
@@ -248,18 +252,18 @@ def clean(
         typer.echo(diff)
 
     if check:
-        raise ToolChainError("代码不干净；请运行 `myagent clean`。")
+        raise ToolChainError(i18n._("clean.not_clean"))
 
-    if not dry_run and not yes and not typer.confirm("应用格式化更改？"):
-        typer.echo("已中止。")
+    if not dry_run and not yes and not typer.confirm(i18n._("clean.confirm")):
+        typer.echo(i18n._("clean.aborted"))
         audit.record("clean.aborted", {"reason": "user_declined"})
         raise typer.Exit(code=0)
 
     try:
         toolchain.apply(paths)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        raise ToolChainError(f"应用清理更改失败：{exc}") from exc
+        raise ToolChainError(i18n._("clean.apply_failed", exc=exc)) from exc
 
     audit.record("clean.done", {"paths": [str(p) for p in paths]})
     plugin_manager.call("post_clean", context=context, fail_fast=False)
-    typer.echo("清理完成。")
+    typer.echo(i18n._("clean.complete"))

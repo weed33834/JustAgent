@@ -30,6 +30,7 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -132,6 +133,7 @@ class CheckpointManager:
             "GIT_COMMITTER_EMAIL": "checkpoint@myagent.local",
         }
         self._initialized = False
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # Properties
@@ -222,77 +224,78 @@ class CheckpointManager:
 
         if not self._config.enabled:
             return None
-        if not self._initialized:
-            self.initialize()
+        with self._lock:
             if not self._initialized:
-                return None
+                self.initialize()
+                if not self._initialized:
+                    return None
 
-        metadata = metadata or {}
-        timestamp = time.time()
-        commit_message = self._format_commit_message(
-            iteration=iteration,
-            tool_name=tool_name,
-            message=message,
-            timestamp=timestamp,
-            metadata=metadata,
-        )
-
-        # Stage all files from the project directory into the shadow
-        # repo's index, using --work-tree to point at the project.
-        # We use `git add -A` (NOT --force) so the .gitignore in the
-        # shadow repo excludes the patterns we don't want to track.
-        # However, GIT_WORK_TREE pointing at the project means git add
-        # will traverse the project dir; the .gitignore in the shadow
-        # repo root applies to relative paths.
-        with contextlib.suppress(CheckpointError):
-            self._run_git(
-                "add",
-                "-A",
-                cwd=self._shadow_repo,
-                env_extra={"GIT_WORK_TREE": str(self._project_root)},
+            metadata = metadata or {}
+            timestamp = time.time()
+            commit_message = self._format_commit_message(
+                iteration=iteration,
+                tool_name=tool_name,
+                message=message,
+                timestamp=timestamp,
+                metadata=metadata,
             )
 
-        # Commit. --allow-empty ensures we always get a checkpoint even
-        # if nothing changed (useful for marking iteration boundaries).
-        try:
-            self._run_git(
-                "commit",
-                "--quiet",
-                "--allow-empty",
-                "-m",
-                commit_message,
-                cwd=self._shadow_repo,
-                env_extra={"GIT_WORK_TREE": str(self._project_root)},
+            # Stage all files from the project directory into the shadow
+            # repo's index, using --work-tree to point at the project.
+            # We use `git add -A` (NOT --force) so the .gitignore in the
+            # shadow repo excludes the patterns we don't want to track.
+            # However, GIT_WORK_TREE pointing at the project means git add
+            # will traverse the project dir; the .gitignore in the shadow
+            # repo root applies to relative paths.
+            with contextlib.suppress(CheckpointError):
+                self._run_git(
+                    "add",
+                    "-A",
+                    cwd=self._shadow_repo,
+                    env_extra={"GIT_WORK_TREE": str(self._project_root)},
+                )
+
+            # Commit. --allow-empty ensures we always get a checkpoint even
+            # if nothing changed (useful for marking iteration boundaries).
+            try:
+                self._run_git(
+                    "commit",
+                    "--quiet",
+                    "--allow-empty",
+                    "-m",
+                    commit_message,
+                    cwd=self._shadow_repo,
+                    env_extra={"GIT_WORK_TREE": str(self._project_root)},
+                )
+            except CheckpointError as exc:
+                # A commit can fail if there's nothing to commit AND
+                # --allow-empty somehow doesn't apply. Fall back to reading
+                # the current HEAD.
+                if "nothing to commit" in str(exc).lower():
+                    pass
+                else:
+                    raise
+
+            # Get the commit hash.
+            result = self._run_git(
+                "rev-parse", "--short", "HEAD", cwd=self._shadow_repo
             )
-        except CheckpointError as exc:
-            # A commit can fail if there's nothing to commit AND
-            # --allow-empty somehow doesn't apply. Fall back to reading
-            # the current HEAD.
-            if "nothing to commit" in str(exc).lower():
-                pass
-            else:
-                raise
+            commit_id = result.stdout.strip()
 
-        # Get the commit hash.
-        result = self._run_git(
-            "rev-parse", "--short", "HEAD", cwd=self._shadow_repo
-        )
-        commit_id = result.stdout.strip()
+            cp = Checkpoint(
+                id=commit_id,
+                iteration=iteration,
+                tool_name=tool_name,
+                timestamp=timestamp,
+                message=message,
+                metadata=metadata,
+            )
 
-        cp = Checkpoint(
-            id=commit_id,
-            iteration=iteration,
-            tool_name=tool_name,
-            timestamp=timestamp,
-            message=message,
-            metadata=metadata,
-        )
+            # Prune old checkpoints if needed.
+            if self._config.max_checkpoints > 0:
+                self._prune_old_checkpoints()
 
-        # Prune old checkpoints if needed.
-        if self._config.max_checkpoints > 0:
-            self._prune_old_checkpoints()
-
-        return cp
+            return cp
 
     # ------------------------------------------------------------------
     # Restore
@@ -309,74 +312,82 @@ class CheckpointManager:
         Raises :class:`CheckpointError` if the checkpoint doesn't exist.
         """
 
-        if not self._config.enabled:
-            raise CheckpointError("Checkpoints are disabled")
-        if not self._initialized:
-            raise CheckpointError("Checkpoint manager not initialized")
+        with self._lock:
+            if not self._config.enabled:
+                raise CheckpointError("Checkpoints are disabled")
+            if not self._initialized:
+                raise CheckpointError("Checkpoint manager not initialized")
 
-        # Verify the checkpoint exists.
-        verify = self._run_git(
-            "cat-file", "-t", checkpoint_id, cwd=self._shadow_repo, check=False
-        )
-        if verify.returncode != 0 or verify.stdout.strip() != "commit":
-            raise CheckpointError(
-                f"Unknown checkpoint id: {checkpoint_id}",
-                details={"id": checkpoint_id},
+            # Verify the checkpoint exists.
+            verify = self._run_git(
+                "cat-file", "-t", checkpoint_id, cwd=self._shadow_repo, check=False
             )
+            if verify.returncode != 0 or verify.stdout.strip() != "commit":
+                raise CheckpointError(
+                    f"Unknown checkpoint id: {checkpoint_id}",
+                    details={"id": checkpoint_id},
+                )
 
-        # Get the list of files tracked at the checkpoint commit.
-        checkpoint_files = self._list_files_at_commit(checkpoint_id)
+            # Get the list of files tracked at the checkpoint commit.
+            checkpoint_files = self._list_files_at_commit(checkpoint_id)
 
-        # Strategy: for each file in the checkpoint, extract its content
-        # from the commit and write it to the project directory. This
-        # avoids index/worktree confusion that arises with
-        # `git checkout <id> -- .` when GIT_WORK_TREE points elsewhere.
-        protected = {".git", ".myagent"}
+            # Strategy: for each file in the checkpoint, extract its content
+            # from the commit and write it to the project directory. This
+            # avoids index/worktree confusion that arises with
+            # `git checkout <id> -- .` when GIT_WORK_TREE points elsewhere.
+            protected = {".git", ".myagent"}
 
-        # Step 1: Remove files in the project that are NOT in the
-        # checkpoint (they were added after the snapshot).
-        for item in self._project_root.iterdir():
-            if item.name in protected:
-                continue
-            rel = item.relative_to(self._project_root).as_posix()
-            if rel not in checkpoint_files:
-                if item.is_dir():
-                    shutil.rmtree(item, ignore_errors=True)
-                else:
-                    item.unlink(missing_ok=True)
+            # Step 1: Remove files in the project that are NOT in the
+            # checkpoint (they were added after the snapshot). Check for
+            # symlinks first so we never follow a symlink into an external
+            # directory with shutil.rmtree.
+            for item in self._project_root.iterdir():
+                if item.name in protected:
+                    continue
+                rel = item.relative_to(self._project_root).as_posix()
+                if rel not in checkpoint_files:
+                    if item.is_symlink():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink(missing_ok=True)
 
-        # Step 2: For each file in the checkpoint, extract its content
-        # from the commit tree and write it to the project.
-        for rel_path in checkpoint_files:
-            # Extract the file content from the commit.
-            result = self._run_git(
-                "show",
-                f"{checkpoint_id}:{rel_path}",
-                cwd=self._shadow_repo,
-                check=False,
-            )
-            if result.returncode != 0:
-                continue  # File may be binary or otherwise problematic.
-            target = self._project_root / rel_path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(result.stdout.encode("utf-8") if isinstance(result.stdout, str) else result.stdout)
+            # Step 2: For each file in the checkpoint, extract its content
+            # from the commit tree and write it to the project. We use the
+            # bytes-returning variant of _run_git so binary files (images,
+            # compiled artifacts, etc.) are restored verbatim without any
+            # text round-trip that would corrupt them.
+            for rel_path in checkpoint_files:
+                # Extract the file content from the commit.
+                result = self._run_git_bytes(
+                    "show",
+                    f"{checkpoint_id}:{rel_path}",
+                    cwd=self._shadow_repo,
+                    check=False,
+                )
+                if result.returncode != 0:
+                    continue  # File may be binary or otherwise problematic.
+                target = self._project_root / rel_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(result.stdout)
 
-        # Step 3: Remove any empty directories that were left behind
-        # (except protected ones).
-        for root, _dirs, _files in os.walk(self._project_root, topdown=False):
-            root_path = Path(root)
-            if root_path == self._project_root:
-                continue
-            # Skip protected directories.
-            try:
-                relative = root_path.relative_to(self._project_root)
-            except ValueError:
-                continue
-            relative_parts = relative.parts
-            if relative_parts and relative_parts[0] in protected:
-                continue
-            if not any(True for _ in root_path.iterdir()):
-                root_path.rmdir()
+            # Step 3: Remove any empty directories that were left behind
+            # (except protected ones).
+            for root, _dirs, _files in os.walk(self._project_root, topdown=False):
+                root_path = Path(root)
+                if root_path == self._project_root:
+                    continue
+                # Skip protected directories.
+                try:
+                    relative = root_path.relative_to(self._project_root)
+                except ValueError:
+                    continue
+                relative_parts = relative.parts
+                if relative_parts and relative_parts[0] in protected:
+                    continue
+                if not any(True for _ in root_path.iterdir()):
+                    root_path.rmdir()
 
     # ------------------------------------------------------------------
     # List / get
@@ -501,6 +512,47 @@ class CheckpointManager:
                 },
             ) from exc
 
+    def _run_git_bytes(
+        self,
+        *args: str,
+        cwd: Path,
+        check: bool = True,
+        env_extra: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[bytes]:
+        """Run a git command and return raw bytes output.
+
+        Like :meth:`_run_git` but uses ``text=False`` so stdout is
+        returned as raw bytes. Use this for commands whose output may
+        contain binary data (e.g. ``git show <id>:<path>`` to fetch a
+        file's content), so that binary files are not corrupted by a
+        text round-trip.
+        """
+
+        env = {**self._git_env}
+        if env_extra:
+            env.update(env_extra)
+        try:
+            return subprocess.run(
+                ["git", *args],
+                cwd=cwd,
+                check=check,
+                capture_output=True,
+                text=False,
+                env=env,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr_bytes = exc.stderr or b""
+            stderr = stderr_bytes.decode("utf-8", errors="replace")
+            raise CheckpointError(
+                f"Git command failed: git {' '.join(args)}",
+                details={
+                    "cmd": list(args),
+                    "returncode": exc.returncode,
+                    "stdout": exc.stdout,
+                    "stderr": stderr,
+                },
+            ) from exc
+
     def _format_commit_message(
         self,
         *,
@@ -581,6 +633,21 @@ class CheckpointManager:
         # drop everything before it. This is destructive but keeps the
         # shadow repo from growing unboundedly.
         cutoff = count - self._config.max_checkpoints
+
+        # Capture the current branch name *before* switching to the
+        # orphan branch, so we can delete it afterwards regardless of
+        # what the repo's default branch is called (main, master, init,
+        # trunk, develop, ...). Fall back to "main" if we're in detached
+        # HEAD or the command fails.
+        branch_result = self._run_git(
+            "branch", "--show-current", cwd=self._shadow_repo, check=False
+        )
+        current_branch = (
+            branch_result.stdout.strip()
+            if branch_result.returncode == 0 and branch_result.stdout.strip()
+            else "main"
+        )
+
         result = self._run_git(
             "rev-list",
             "--reverse",
@@ -605,14 +672,13 @@ class CheckpointManager:
                 "MYAGENT-CP: pruned history (root)",
                 cwd=self._shadow_repo,
             )
-            # Drop old branch and rename.
-            self._run_git(
-                "branch", "-D", "main", cwd=self._shadow_repo, check=False
-            )
+            # Drop the old branch (whatever it was actually called) so
+            # the pre-cutoff commits become unreachable, then rename the
+            # new orphan branch to "main".
             self._run_git(
                 "branch",
                 "-D",
-                "master",
+                current_branch,
                 cwd=self._shadow_repo,
                 check=False,
             )

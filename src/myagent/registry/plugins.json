@@ -1,4 +1,4 @@
-﻿{
+{
   "version": 2,
   "updated_at": "2026-06-22",
   "plugins": [
@@ -7,7 +7,7 @@
       "package": "myagent",
       "module": "myagent.plugins.security_scan",
       "version": "1.0.0",
-      "description": "提交前运行 bandit/gitleaks/osv-scanner 安全扫描。",
+      "description": "提交前运行 semgrep/gitleaks/osv-scanner 安全扫描。",
       "trust_level": "builtin",
       "entry_point": "myagent.plugins.security_scan",
       "hooks": ["pre_commit"],
@@ -61,37 +61,6 @@
       "downloads": 0,
       "rating": {"score": 0.0, "count": 0},
       "homepage": "https://myagent.dev/plugins/docker-ship",
-      "source_url": "https://gitcode.com/badhope/myagent",
-      "audit_status": "approved"
-    },
-    {
-      "name": "web-search",
-      "package": "myagent",
-      "module": "myagent.plugins.web_search",
-      "version": "1.0.0",
-      "description": "verify --fix 失败时联网搜索错误上下文并给出修复建议。",
-      "trust_level": "builtin",
-      "entry_point": "myagent.plugins.web_search",
-      "hooks": ["on_error"],
-      "publisher": {
-        "id": "myagent-team",
-        "verified": true,
-        "url": "https://myagent.dev"
-      },
-      "maintainer": "MyAgent Team",
-      "license": "CNCL-1.0",
-      "permissions": {
-        "filesystem": "read-only",
-        "network": true,
-        "shell": false,
-        "git": false,
-        "env": []
-      },
-      "categories": ["ai", "debug"],
-      "tags": ["search", "fix", "error"],
-      "downloads": 0,
-      "rating": {"score": 0.0, "count": 0},
-      "homepage": "https://myagent.dev/plugins/web-search",
       "source_url": "https://gitcode.com/badhope/myagent",
       "audit_status": "approved"
     },

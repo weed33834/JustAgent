@@ -56,7 +56,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ai = ["litellm>=1.60.0"]
 security = ["semgrep>=1.100.0", "pip-audit>=2.7.0"]
 tui = ["textual>=0.50.0"]
 mcp = ["mcp>=1.0.0"]

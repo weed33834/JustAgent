@@ -240,12 +240,14 @@ class AuditLogger:
         ensure_file_permissions(sha_path, 0o600)
 
         manifest = {
+            "schema": "myagent-audit-siem-bundle/v1",
             "generated_at": datetime.now(UTC).isoformat(),
             "record_count": record_count,
             "time_range": {
                 "start": time_min.isoformat() if time_min else None,
                 "end": time_max.isoformat() if time_max else None,
             },
+            "audit_jsonl_sha256": digest,
             "sha256": digest,
             "files": ["audit.jsonl", "audit.jsonl.sha256", "MANIFEST.json"],
         }

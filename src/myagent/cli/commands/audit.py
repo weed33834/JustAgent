@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from myagent.core.audit_logger import AuditLogger
+from myagent.core.i18n import I18n, get_i18n_from_ctx
 from myagent.models.config import AppConfig
 
 app = typer.Typer()
@@ -81,6 +82,7 @@ def export_logs(
     """
 
     audit_logger = get_audit_logger_from_ctx(ctx)
+    i18n: I18n = get_i18n_from_ctx(ctx)
     try:
         since_dt = _parse_since(since) if since else None
         fmt_norm = fmt.strip().lower()
@@ -90,7 +92,7 @@ def export_logs(
         if fmt_norm == "siem-bundle":
             if output is None:
                 typer.echo(
-                    "siem-bundle 格式需要 --output 指定输出目录。",
+                    i18n._("audit.export_siem_bundle_requires_output"),
                     err=True,
                 )
                 raise typer.Exit(code=1)
@@ -99,12 +101,12 @@ def export_logs(
             except RuntimeError as exc:
                 typer.echo(str(exc), err=True)
                 raise typer.Exit(code=1) from exc
-            typer.echo(f"SIEM 包已写入 {_bundle_dir}（audit.jsonl + MANIFEST.json + audit.jsonl.sha256）。")
+            typer.echo(i18n._("audit.export_siem_bundle_done", dir=_bundle_dir))
             return
 
         if fmt_norm != "jsonl":
             typer.echo(
-                f"未知导出格式：{fmt_norm}。可用：jsonl 或 siem-bundle。",
+                i18n._("audit.export_unknown_format", fmt=fmt_norm),
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -117,10 +119,10 @@ def export_logs(
         _count_lines = 0
         try:
             text = exported_path.read_text()
-            _count = len([line for line in text.splitlines() if line.strip()])
+            _count_lines = len([line for line in text.splitlines() if line.strip()])
         except OSError:
             pass
-        typer.echo(f"已导出 {_count_lines} 条记录到 {exported_path}")
+        typer.echo(i18n._("audit.export_done", count=_count_lines, path=exported_path))
     finally:
         # ``get_audit_logger_from_ctx`` may construct a fresh ``AuditLogger``
         # (with its own SIEM/sink HTTP clients) when ``ctx.obj`` has none.
@@ -142,15 +144,16 @@ def cleanup_logs(
     """Remove audit log files older than the retention period."""
 
     audit_logger = get_audit_logger_from_ctx(ctx)
+    i18n: I18n = get_i18n_from_ctx(ctx)
     try:
         # RBAC gate: cleanup destroys audit data; export is left open so
         # viewer-tier operators can still pull evidence.
 
         if dry_run:
-            typer.echo("[dry-run] 将删除过期审计日志文件")
+            typer.echo(i18n._("audit.cleanup_dry_run"))
             return
         _removed = audit_logger.cleanup(retention_days=retention_days)
-        typer.echo(f"已删除 {_removed} 个过期审计日志文件")
+        typer.echo(i18n._("audit.cleanup_done", removed=_removed))
     finally:
         # See ``export_logs``: a freshly-built logger must be closed, and
         # ``close()`` is idempotent for a shared one.

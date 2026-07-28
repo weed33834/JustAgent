@@ -12,10 +12,12 @@ import threading
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
-from myagent.core.telemetry import TelemetryCollector
 from myagent.utils.json_io import load_json, save_json
+
+if TYPE_CHECKING:
+    from myagent.core.telemetry import TelemetryCollector
 
 logger = logging.getLogger("myagent")
 

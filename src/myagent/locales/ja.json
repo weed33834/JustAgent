@@ -99,6 +99,7 @@
   "plugin.info.name": "名前",
   "plugin.info.version": "バージョン",
   "plugin.info.trust": "信頼",
+  "plugin.info.description": "説明",
   "plugin.info.publisher": "発行者",
   "plugin.info.maintainer": "メンテナ",
   "plugin.info.license": "ライセンス",
@@ -160,6 +161,7 @@
   "doctor.plugin_missing": "オプションのツールが不足しています：{details}",
   "doctor.plugin_suggestion": "使用したいプラグインのツールをインストールしてください。他のプラグインは引き続き動作します。",
   "doctor.plugin_ok": "オプションのプラグインツールが利用可能です",
+  "doctor.plugin_desc": "{name} プラグイン",
   "doctor.dirs_bad": "アクセスできません：{paths}",
   "doctor.dirs_suggestion": "HOME が設定されており書き込み可能であることを確認してください。",
   "doctor.dirs_not_writable": "書き込み不可のディレクトリ：{paths}",
@@ -311,5 +313,10 @@
   "sink.unreachable": "sink に接続できません: {exc}",
   "sink.status_failed": "sink が 200 以外のステータスを返しました: {code}",
   "sink.status_invalid": "sink の応答が有効な JSON ではありません。",
-  "sink.status_header": "Sink ステータス:"
+  "sink.status_header": "Sink ステータス:",
+
+  "session.empty": "保存されたセッションはありません。",
+  "session.not_found": "エラー：セッション {session_id} が見つかりません",
+  "session.resume_ready": "セッション {session_id} の準備ができました。以下のコマンドで復元：",
+  "session.deleted": "セッション {session_id} を削除しました。"
 }

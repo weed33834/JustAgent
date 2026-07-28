@@ -35,6 +35,7 @@ from enum import Enum
 from pathlib import Path
 
 from myagent.utils.atomic_write import atomic_write_text
+from myagent.utils.paths import PathResolutionError, resolve_path
 
 # ---------------------------------------------------------------------------
 # Markers & constants
@@ -650,18 +651,12 @@ def _normalize_patch_input(patch_text: str) -> list[str]:
 
 
 def _resolve_path(cwd: Path, input_path: str, restrict_to_cwd: bool) -> Path:
-    """Resolve ``input_path`` against ``cwd``, optionally enforcing cwd containment."""
+    """Resolve ``input_path`` against ``cwd``, raising :class:`DiffError`."""
 
-    is_absolute = Path(input_path).is_absolute()
-    resolved = Path(input_path) if is_absolute else (cwd / input_path)
-    resolved = resolved.resolve()
-    if not restrict_to_cwd or is_absolute:
-        return resolved
     try:
-        resolved.relative_to(cwd.resolve())
-    except ValueError as exc:
-        raise DiffError(f"Path must stay within cwd: {input_path}") from exc
-    return resolved
+        return resolve_path(cwd, input_path, restrict_to_cwd=restrict_to_cwd)
+    except PathResolutionError as exc:
+        raise DiffError(str(exc)) from exc
 
 
 def _extract_referenced_files(lines: list[str], markers: tuple[str, ...]) -> list[str]:

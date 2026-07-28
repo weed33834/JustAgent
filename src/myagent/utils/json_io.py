@@ -50,7 +50,7 @@ def load_json(path: Path, *, label: str, check_perms: bool = False) -> Any | Non
     if check_perms:
         warn_if_too_broad(path, 0o600)
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
         logger.warning("Failed to load %s: %s", label, exc)
         return None

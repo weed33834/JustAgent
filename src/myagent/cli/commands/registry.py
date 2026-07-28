@@ -112,11 +112,6 @@ def sync(
     i18n: I18n = get_i18n_from_ctx(ctx)
     dry_run = ctx.obj.get("dry_run", False) or dry_run
 
-    # RBAC gate.
-    from myagent.core.rbac import Permission, require_permission
-
-    require_permission(ctx, Permission.REGISTRY_SYNC)
-
     client = RegistryClient(config=config.registry)
     data = client.fetch_index(force=force)
     if data is None:

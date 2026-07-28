@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
@@ -91,7 +91,7 @@ class SecurityConfig(BaseModel):
     """Configuration for the security-scan plugin."""
 
     enabled: bool = True
-    tools: list[str] = ["semgrep"]
+    tools: list[str] = ["semgrep", "bandit"]
     threshold: SecurityThreshold = SecurityThreshold.MEDIUM
     fail_fast: bool = True
 
@@ -266,6 +266,17 @@ class HooksConfig(BaseModel):
     on_save: list[HookConfig] = Field(default_factory=list[HookConfig])
 
 
+class TelemetryConfig(BaseModel):
+    """Configuration for local telemetry collection.
+
+    Telemetry is disabled by default. The legacy top-level
+    ``telemetry_enabled`` boolean is migrated into this section by
+    :meth:`AppConfig._migrate_legacy_telemetry`.
+    """
+
+    enabled: bool = False
+
+
 class AppConfig(BaseModel):
     """Top-level application configuration."""
 
@@ -289,3 +300,21 @@ class AppConfig(BaseModel):
     hooks: HooksConfig = Field(default_factory=HooksConfig)
     web_search: WebSearchConfig = Field(default_factory=WebSearchConfig)
     registry: RegistryConfig = Field(default_factory=RegistryConfig)
+    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_telemetry(cls, data: Any) -> Any:
+        """Migrate the legacy ``telemetry_enabled`` boolean into ``[telemetry]``.
+
+        Older configurations stored telemetry as a top-level
+        ``telemetry_enabled = true/false`` key. This validator moves it into
+        the structured ``telemetry`` section so callers can always read
+        ``config.telemetry.enabled`` regardless of which form the config file
+        used.
+        """
+        if isinstance(data, dict):
+            legacy = data.pop("telemetry_enabled", None)
+            if legacy is not None and "telemetry" not in data:
+                data["telemetry"] = {"enabled": bool(legacy)}
+        return data

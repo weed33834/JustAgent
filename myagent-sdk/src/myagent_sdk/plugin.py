@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from myagent.core.context import CommandContext
-from myagent.core.fix import FixSuggestion
+from myagent.plugins.defaults import FixSuggestion
 from myagent.hookspec import hookimpl
 
 

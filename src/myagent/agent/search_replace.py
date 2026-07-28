@@ -43,6 +43,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 from myagent.utils.atomic_write import atomic_write_text
+from myagent.utils.paths import PathResolutionError, resolve_path
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -502,19 +503,12 @@ def _strip_quoted_wrapping(
 
 
 def _resolve_path(cwd: Path, input_path: str, restrict_to_cwd: bool) -> Path:
-    """Resolve ``input_path`` against ``cwd``, optionally enforcing containment."""
+    """Resolve ``input_path`` against ``cwd``, raising :class:`SearchReplaceError`."""
 
-    is_absolute = Path(input_path).is_absolute()
-    resolved = (Path(input_path) if is_absolute else (cwd / input_path)).resolve()
-    if not restrict_to_cwd or is_absolute:
-        return resolved
     try:
-        resolved.relative_to(cwd.resolve())
-    except ValueError as exc:
-        raise SearchReplaceError(
-            f"Path must stay within cwd: {input_path}"
-        ) from exc
-    return resolved
+        return resolve_path(cwd, input_path, restrict_to_cwd=restrict_to_cwd)
+    except PathResolutionError as exc:
+        raise SearchReplaceError(str(exc)) from exc
 
 
 def _do_replace(

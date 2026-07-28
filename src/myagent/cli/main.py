@@ -13,6 +13,7 @@ import typer
 from myagent.cli import commands
 from myagent.core.audit_logger import AuditLogger
 from myagent.core.config_center import load_config
+from myagent.core.i18n import get_i18n
 from myagent.core.logging_config import configure_structlog
 from myagent.exceptions import ConfigError, ExitCode, MyAgentError
 
@@ -83,6 +84,10 @@ def main_callback(
     ctx.obj["yes"] = yes
     ctx.obj["identity"] = identity
     ctx.obj["role"] = role
+    # When main_callback is called directly (e.g. in tests), typer leaves
+    # OptionInfo sentinel objects as default values instead of None.
+    lang_str = lang if isinstance(lang, str) else None
+    ctx.obj["i18n"] = get_i18n(lang_str)
 
 
 commands.register_all(app)

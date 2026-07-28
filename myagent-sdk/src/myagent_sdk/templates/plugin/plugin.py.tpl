@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from myagent.core.context import CommandContext
-from myagent.core.fix import FixSuggestion
+from myagent.plugins.defaults import FixSuggestion
 from myagent_sdk import Plugin, hook
 
 

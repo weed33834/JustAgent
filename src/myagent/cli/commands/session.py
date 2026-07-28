@@ -16,8 +16,9 @@ from myagent.agent.session import (
     SessionError,
     get_session_store,
 )
+from myagent.core.i18n import I18n, get_i18n_from_ctx
 
-app = typer.Typer(help="管理会话历史")
+app = typer.Typer(help="Manage session history")
 
 
 def register(parent: typer.Typer) -> None:
@@ -39,14 +40,15 @@ def _short(text: str, width: int) -> str:
     return text[: width - 1] + "…"
 
 
-@app.command("list", help="列出所有已保存的会话。")
-def list_sessions() -> None:
-    """列出所有已保存的会话（按更新时间倒序）。"""
+@app.command("list", help="List all saved sessions.")
+def list_sessions(ctx: typer.Context) -> None:
+    """List all saved sessions (sorted by update time, descending)."""
 
+    i18n: I18n = get_i18n_from_ctx(ctx)
     store = get_session_store()
     sessions = store.list_sessions()
     if not sessions:
-        typer.echo("没有保存的会话。")
+        typer.echo(i18n._("session.empty"))
         return
 
     typer.echo(
@@ -62,17 +64,19 @@ def list_sessions() -> None:
         )
 
 
-@app.command("show", help="显示指定会话的详细信息。")
+@app.command("show", help="Show details of a specific session.")
 def show_session(
-    session_id: str = typer.Argument(..., help="会话 ID"),
+    ctx: typer.Context,
+    session_id: str = typer.Argument(..., help="Session ID"),
 ) -> None:
-    """显示指定会话的元数据与消息统计。"""
+    """Show metadata and message stats for a specific session."""
 
+    i18n: I18n = get_i18n_from_ctx(ctx)
     store = get_session_store()
     try:
         session = store.load(session_id)
     except SessionError as exc:
-        typer.secho(f"错误：{exc}", fg=typer.colors.RED, err=True)
+        typer.secho(i18n._("error.prefix", exc=exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
 
     m = session.metadata
@@ -93,39 +97,47 @@ def show_session(
     typer.echo(f"Preview:      {m.prompt_preview}")
 
 
-@app.command("resume", help="恢复指定会话（启动交互模式）。")
+@app.command("resume", help="Resume a specific session (starts interactive mode).")
 def resume_session(
-    session_id: str = typer.Argument(..., help="会话 ID"),
+    ctx: typer.Context,
+    session_id: str = typer.Argument(..., help="Session ID"),
 ) -> None:
-    """恢复一个已保存的会话。
+    """Resume a saved session.
 
-    当前实现打印恢复指令；完整的内联恢复请使用：
-    ``myagent agent -i --resume <ID>``。
+    The current implementation prints resume instructions; for full
+    inline resume use: ``myagent agent -i --resume <ID>``.
     """
 
+    i18n: I18n = get_i18n_from_ctx(ctx)
     store = get_session_store()
     if not store.exists(session_id):
         typer.secho(
-            f"错误：找不到会话 {session_id}", fg=typer.colors.RED, err=True
+            i18n._("session.not_found", session_id=session_id),
+            fg=typer.colors.RED,
+            err=True,
         )
         raise typer.Exit(code=1)
-    typer.echo(f"会话 {session_id} 已就绪。使用以下命令恢复：")
+    typer.echo(i18n._("session.resume_ready", session_id=session_id))
     typer.echo(f"  myagent agent -i --resume {session_id}")
 
 
-@app.command("delete", help="删除指定会话。")
+@app.command("delete", help="Delete a specific session.")
 def delete_session(
-    session_id: str = typer.Argument(..., help="会话 ID"),
+    ctx: typer.Context,
+    session_id: str = typer.Argument(..., help="Session ID"),
 ) -> None:
-    """删除一个已保存的会话文件。"""
+    """Delete a saved session file."""
 
+    i18n: I18n = get_i18n_from_ctx(ctx)
     store = get_session_store()
     if not store.delete(session_id):
         typer.secho(
-            f"错误：找不到会话 {session_id}", fg=typer.colors.RED, err=True
+            i18n._("session.not_found", session_id=session_id),
+            fg=typer.colors.RED,
+            err=True,
         )
         raise typer.Exit(code=1)
-    typer.echo(f"已删除会话 {session_id}。")
+    typer.echo(i18n._("session.deleted", session_id=session_id))
 
 
 __all__ = ["app", "register"]

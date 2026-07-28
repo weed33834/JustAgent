@@ -21,7 +21,7 @@ are identical.
 
 from __future__ import annotations
 
-import fnmatch
+import re
 import subprocess
 import sys
 import time
@@ -39,9 +39,39 @@ if TYPE_CHECKING:
 logger = structlog.get_logger("myagent")
 
 
+def _glob_to_regex(pattern: str) -> re.Pattern[str]:
+    """Convert a glob pattern (with ** support) to a compiled regex."""
+    # Build regex char-by-char to handle ** correctly.
+    parts: list[str] = []
+    i = 0
+    while i < len(pattern):
+        if pattern[i : i + 3] == "**/":
+            # **/ matches zero or more leading path components
+            parts.append("(?:.*/)?")
+            i += 3
+        elif pattern[i : i + 2] == "**":
+            # ** matches anything (including /)
+            parts.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            parts.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            parts.append("[^/]")
+            i += 1
+        else:
+            parts.append(re.escape(pattern[i]))
+            i += 1
+    return re.compile("".join(parts))
+
+
 def _matches_any(path_str: str, patterns: Sequence[str]) -> bool:
-    """Return True if ``path_str`` matches any of the glob ``patterns``."""
-    return any(fnmatch.fnmatch(path_str, p) for p in patterns)
+    """Return True if ``path_str`` matches any of the glob ``patterns``.
+
+    Supports ``**`` for recursive path matching (unlike :func:`fnmatch.fnmatch`
+    which treats ``*`` as matching ``/``).
+    """
+    return any(_glob_to_regex(p).fullmatch(path_str) for p in patterns)
 
 
 @dataclass(frozen=True)

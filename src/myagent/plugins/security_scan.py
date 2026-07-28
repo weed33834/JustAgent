@@ -77,6 +77,8 @@ def _run_scanner(
 
     if tool == "semgrep":
         return _scan_semgrep(executable, project_root, threshold)
+    if tool == "bandit":
+        return _scan_bandit(executable, project_root)
     if tool == "gitleaks":
         return _scan_gitleaks(executable, project_root)
     if tool == "osv-scanner":
@@ -129,6 +131,35 @@ def _scan_semgrep(
                 "summary": extra.get("message", ""),
                 "filename": finding.get("path"),
                 "line": finding.get("start", {}).get("line"),
+            }
+        )
+    return findings
+
+
+def _scan_bandit(executable: str, project_root: Any) -> list[dict[str, Any]]:
+    """Run bandit and return normalized findings."""
+    result = subprocess.run(
+        [executable, "-r", ".", "-f", "json", "--quiet"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+    )
+
+    findings: list[dict[str, Any]] = []
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return findings
+
+    for issue in data.get("results", []):
+        findings.append(
+            {
+                "tool": "bandit",
+                "severity": issue.get("issue_severity", "LOW").upper(),
+                "confidence": issue.get("issue_confidence", "MEDIUM").upper(),
+                "summary": issue.get("issue_text", ""),
+                "filename": issue.get("filename"),
+                "line": issue.get("line_number"),
             }
         )
     return findings

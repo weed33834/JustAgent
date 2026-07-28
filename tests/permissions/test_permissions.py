@@ -288,7 +288,7 @@ class TestModeEngines:
     def test_act_mode_allows_read_tools(self) -> None:
         engine = create_act_mode_engine()
         assert engine.check("read_file", {"path": "/x"}).action is PermissionAction.ALLOW
-        assert engine.check("search_files", {"pattern": "x"}).action is PermissionAction.ALLOW
+        assert engine.check("search", {"pattern": "x"}).action is PermissionAction.ALLOW
         assert engine.check("web_fetch", {"url": "http://x"}).action is PermissionAction.ALLOW
         assert engine.check("ask_question", {"question": "x"}).action is PermissionAction.ALLOW
 
@@ -306,9 +306,11 @@ class TestModeEngines:
         assert engine.check("write_to_file", {"path": "/x"}).action is PermissionAction.DENY
         assert engine.check("apply_patch", {"patch": "x"}).action is PermissionAction.DENY
 
-    def test_plan_mode_allows_run_command(self) -> None:
+    def test_plan_mode_asks_for_run_command(self) -> None:
         engine = create_plan_mode_engine()
-        assert engine.check("run_command", {"command": "ls"}).action is PermissionAction.ALLOW
+        # Plan mode promises read-only behaviour: every command must ask
+        # the user rather than being auto-allowed at the engine level.
+        assert engine.check("run_command", {"command": "ls"}).action is PermissionAction.ASK
 
     def test_yolo_mode_allows_everything(self) -> None:
         engine = create_yolo_mode_engine()
@@ -322,7 +324,7 @@ class TestModeEngines:
 
     def test_act_mode_has_read_rules(self) -> None:
         engine = create_act_mode_engine()
-        assert len(engine.rules) >= 4  # read_file, search_files, web_fetch, ask_question
+        assert len(engine.rules) >= 4  # read_file, search, web_fetch, ask_question
 
     def test_plan_mode_has_read_and_command_rules(self) -> None:
         engine = create_plan_mode_engine()

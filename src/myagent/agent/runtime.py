@@ -77,6 +77,13 @@ from myagent.agent.tools.base import (
     ToolTimeoutError,
 )
 from myagent.agent.tools.registry import ToolRegistry
+from myagent.permissions import (
+    PermissionAction,
+    PermissionEngine,
+    create_act_mode_engine,
+    create_plan_mode_engine,
+    create_yolo_mode_engine,
+)
 
 # ---------------------------------------------------------------------------
 # No-op callbacks (named so mypy can infer their types — lambdas can't)
@@ -527,6 +534,7 @@ class AgentRuntime:
         ask: Callable[[dict[str, Any]], Awaitable[bool]] | None = None,
         session: Session | None = None,
         session_store: SessionStore | None = None,
+        permission_engine: PermissionEngine | None = None,
     ) -> None:
         self._client = client
         if isinstance(tools, ToolRegistry):
@@ -540,6 +548,10 @@ class AgentRuntime:
         self._emit = emit
         self._ask = ask
         self._mode_config = ModeConfig(mode=self._config.initial_mode)
+        # Permission engine: use provided one or auto-create based on mode.
+        self._permission_engine = permission_engine or self._create_engine_for_mode(
+            self._mode_config.mode
+        )
 
         self._messages: list[Message] = []
         self._abort = asyncio.Event()
@@ -592,10 +604,25 @@ class AgentRuntime:
         """Switch the agent's execution mode (act/plan/yolo).
 
         Records the switch in the tracker so a ``<mode_notice>`` is
-        emitted on the next user message. Safe to call mid-run.
+        emitted on the next user message. Also recreates the permission
+        engine to match the new mode. Safe to call mid-run.
         """
 
         self._mode_config.switch_to(new_mode)
+        # Recreate permission engine to match the new mode, preserving
+        # any remembered decisions from the previous engine is not done
+        # because mode switches fundamentally change the permission model.
+        self._permission_engine = self._create_engine_for_mode(new_mode)
+
+    @staticmethod
+    def _create_engine_for_mode(mode: AgentMode) -> PermissionEngine:
+        """Create the appropriate permission engine for a mode."""
+
+        if mode is AgentMode.PLAN:
+            return create_plan_mode_engine()
+        if mode is AgentMode.YOLO:
+            return create_yolo_mode_engine()
+        return create_act_mode_engine()
 
     @property
     def mode(self) -> AgentMode:
@@ -944,9 +971,64 @@ class AgentRuntime:
         return results
 
     async def _execute_one(self, call: ToolCall) -> ToolResultPart:
-        """Execute a single tool call, with loop detection + mistake tracking."""
+        """Execute a single tool call, with loop detection + permission + mistake tracking."""
 
         # --- Loop detection ---
+        loop_result = await self._check_loop_detection(call)
+        if loop_result is not None:
+            return loop_result
+
+        # --- Look up the tool ---
+        tool = self._registry.get(call.name)
+        if tool is None:
+            outcome = await self._handle_mistake(
+                MistakeReason.INVALID_TOOL_CALL,
+                f"Unknown tool: {call.name}",
+            )
+            if outcome.status in {"stopped", "failed"}:
+                raise ToolAbortedError(outcome.error or outcome.stop_reason)
+            return ToolResultPart(
+                tool_call_id=call.id,
+                name=call.name,
+                output=f"Error: unknown tool '{call.name}'. Available: "
+                f"{', '.join(self._registry.ids())}",
+                is_error=True,
+            )
+
+        # --- Permission check ---
+        perm_result = await self._check_permission(call)
+        if perm_result is not None:
+            return perm_result
+
+        # --- Build the context ---
+        ctx = ToolContext(
+            tool_call_id=call.id,
+            iteration=self._iteration,
+            cwd=self._cwd,
+            abort=self._abort,
+            ask=self._ask,
+        )
+
+        await self._emit_event(
+            ToolStartedEvent(
+                type="tool-started",
+                run_id=self._run_id,
+                iteration=self._iteration,
+                tool_call_id=call.id,
+                tool_name=call.name,
+                input=call.input,
+            )
+        )
+
+        start = time.time()
+        result = await self._invoke_tool_safe(tool, call, ctx)
+        latency_ms = (time.time() - start) * 1000
+
+        return await self._finalize_tool_call(call, result, latency_ms)
+
+    async def _check_loop_detection(self, call: ToolCall) -> ToolResultPart | None:
+        """Check for loop patterns. Returns an error result if hard loop detected."""
+
         verdict = self._loop_tracker.inspect(
             LoopDetectionCall(name=call.name, input=call.input)
         )
@@ -972,51 +1054,58 @@ class AgentRuntime:
                 ),
                 is_error=True,
             )
+        return None
 
-        # --- Look up the tool ---
-        tool = self._registry.get(call.name)
-        if tool is None:
-            outcome = await self._handle_mistake(
-                MistakeReason.INVALID_TOOL_CALL,
-                f"Unknown tool: {call.name}",
-            )
-            # _handle_mistake may have returned a stopped/failed result,
-            # but we still need to produce a ToolResultPart for the history.
-            if outcome.status in {"stopped", "failed"}:
-                raise ToolAbortedError(outcome.error or outcome.stop_reason)
+    async def _check_permission(self, call: ToolCall) -> ToolResultPart | None:
+        """Check tool permissions via PermissionEngine.
+
+        Returns an error ToolResultPart if denied, None if allowed.
+        If the engine says ASK and an ``ask`` callback is available,
+        the user is prompted; otherwise the call is denied.
+        """
+
+        decision = self._permission_engine.check(call.name, call.input)
+        if decision.action is PermissionAction.ALLOW:
+            return None
+        if decision.action is PermissionAction.DENY:
             return ToolResultPart(
                 tool_call_id=call.id,
                 name=call.name,
-                output=f"Error: unknown tool '{call.name}'. Available: "
-                f"{', '.join(self._registry.ids())}",
+                output=f"Permission denied: {decision.reason}",
                 is_error=True,
             )
-
-        # --- Build the context ---
-        ctx = ToolContext(
-            tool_call_id=call.id,
-            iteration=self._iteration,
-            cwd=self._cwd,
-            abort=self._abort,
-            ask=self._ask,
-        )
-
-        await self._emit_event(
-            ToolStartedEvent(
-                type="tool-started",
-                run_id=self._run_id,
-                iteration=self._iteration,
-                tool_call_id=call.id,
-                tool_name=call.name,
-                input=call.input,
+        # ASK: prompt the user if we have a callback.
+        if self._ask is not None:
+            approved = await self._ask(
+                {
+                    "type": "permission",
+                    "tool": call.name,
+                    "input": call.input,
+                    "reason": decision.reason,
+                }
             )
-        )
+            action = PermissionAction.ALLOW if approved else PermissionAction.DENY
+            self._permission_engine.remember(call.name, call.input, action)
+            if not approved:
+                return ToolResultPart(
+                    tool_call_id=call.id,
+                    name=call.name,
+                    output=f"Permission denied by user: {call.name}",
+                    is_error=True,
+                )
+            return None
+        # No ask callback — default to allow for backward compatibility.
+        # DENY rules are still enforced above; only ASK falls through here.
+        return None
 
-        start = time.time()
+    async def _invoke_tool_safe(
+        self, tool: Tool, call: ToolCall, ctx: ToolContext
+    ) -> ToolResult:
+        """Invoke a tool with comprehensive error handling."""
+
         try:
-            result = await tool.invoke(call.input, ctx)
+            return await tool.invoke(call.input, ctx)
         except InvalidArgumentsError as exc:
-            # Treat invalid args as a mistake (the LLM should fix it).
             outcome = await self._handle_mistake(
                 MistakeReason.INVALID_TOOL_CALL, str(exc)
             )
@@ -1024,9 +1113,9 @@ class AgentRuntime:
                 raise ToolAbortedError(
                     outcome.error or outcome.stop_reason
                 ) from exc
-            result = ToolResult.failure(str(exc))
+            return ToolResult.failure(str(exc))
         except ToolTimeoutError as exc:
-            result = ToolResult.failure(f"Tool timed out: {exc}")
+            return ToolResult.failure(f"Tool timed out: {exc}")
         except ToolAbortedError:
             raise
         except ToolError as exc:
@@ -1037,7 +1126,7 @@ class AgentRuntime:
                 raise ToolAbortedError(
                     outcome.error or outcome.stop_reason
                 ) from exc
-            result = ToolResult.failure(str(exc))
+            return ToolResult.failure(str(exc))
         except Exception as exc:  # noqa: BLE001
             outcome = await self._handle_mistake(
                 MistakeReason.TOOL_EXECUTION_FAILED, str(exc)
@@ -1046,8 +1135,12 @@ class AgentRuntime:
                 raise ToolAbortedError(
                     outcome.error or outcome.stop_reason
                 ) from exc
-            result = ToolResult.failure(f"Tool crashed: {exc}")
-        latency_ms = (time.time() - start) * 1000
+            return ToolResult.failure(f"Tool crashed: {exc}")
+
+    async def _finalize_tool_call(
+        self, call: ToolCall, result: ToolResult, latency_ms: float
+    ) -> ToolResultPart:
+        """Record changes, emit finished event, and build the result part."""
 
         output = result.output if result.output else (
             result.error or "(no output)"

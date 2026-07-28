@@ -24,9 +24,14 @@ Design:
 from __future__ import annotations
 
 import fnmatch
+import json
+import logging
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
+
+logger = logging.getLogger("myagent.permissions")
 
 
 class PermissionAction(str, Enum):  # noqa: UP042
@@ -91,10 +96,20 @@ def _stringify_input(tool_input: dict[str, Any]) -> str:
 
     For tools that operate on paths (write_to_file, read_file, etc.),
     we match against the ``path`` field. For run_command, we match
-    against the ``command`` field. For other tools, we match against
-    a JSON representation of the input.
+    against the ``command`` field. For tools whose input is a large blob
+    (``apply_patch`` carries ``patch``, ``replace_in_file`` carries
+    ``diff``), the full blob is a poor key for the remembered-decision
+    cache (it would make the cache balloon and every distinct patch would
+    re-prompt), so we collapse it to a short stable string. For other
+    tools, we match against a JSON representation of the input.
     """
 
+    # Tools whose input is a large blob — collapse to a short stable key
+    # so the remembered-decision cache does not bloat.
+    if "patch" in tool_input:
+        return "patch"
+    if "diff" in tool_input:
+        return "diff"
     # Common path-based tools.
     path = tool_input.get("path")
     if isinstance(path, str):
@@ -103,9 +118,64 @@ def _stringify_input(tool_input: dict[str, Any]) -> str:
     if isinstance(command, str):
         return command
     # Fall back to JSON for everything else.
-    import json
-
     return json.dumps(tool_input, sort_keys=True, default=str)
+
+
+# Compiled-glob cache for patterns that contain ``**``. Patterns without
+# ``**`` keep using ``fnmatch`` (which already caches internally).
+_REGEX_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _glob_to_regex(pattern: str) -> str:
+    """Translate a glob pattern into a regex.
+
+    Translation rules (used when the pattern contains ``**``):
+
+    * ``**`` -> ``.*``  (matches any character, including ``/`` — the
+      recursive glob that ``fnmatch`` does not provide).
+    * ``*``  -> ``[^/]*`` (matches a single path segment, no ``/``).
+    * ``?``  -> ``[^/]`` (matches a single character, no ``/``).
+    * every other character is regex-escaped.
+    """
+
+    out: list[str] = []
+    i = 0
+    n = len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == "*" and i + 1 < n and pattern[i + 1] == "*":
+            out.append(".*")
+            i += 2
+        elif c == "*":
+            out.append("[^/]*")
+            i += 1
+        elif c == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(c))
+            i += 1
+    return "".join(out)
+
+
+def _glob_match(pattern: str, text: str) -> bool:
+    """Glob-match ``text`` against ``pattern``.
+
+    Patterns containing ``**`` use a custom translator where ``**``
+    matches any character including ``/`` (so ``/tmp/**`` matches
+    ``/tmp/a/b/c``). Patterns without ``**`` keep ``fnmatch`` behaviour
+    for backward compatibility (``fnmatch``'s ``*`` already crosses ``/``,
+    which existing ``pattern="*"`` rules rely on). Compiled regexes are
+    cached for performance.
+    """
+
+    if "**" not in pattern:
+        return fnmatch.fnmatch(text, pattern)
+    regex = _REGEX_CACHE.get(pattern)
+    if regex is None:
+        regex = re.compile(_glob_to_regex(pattern))
+        _REGEX_CACHE[pattern] = regex
+    return regex.fullmatch(text) is not None
 
 
 class PermissionEngine:
@@ -184,37 +254,54 @@ class PermissionEngine:
         """
 
         input_str = _stringify_input(tool_input)
-
-        # Check remembered "always" decisions first.
         key = (tool, input_str)
+
+        decision: PermissionDecision
+        # Check remembered "always" decisions first.
         if key in self._remembered:
             action = self._remembered[key]
-            return PermissionDecision(
+            decision = PermissionDecision(
                 action=action,
                 matched_rule=None,
                 reason=f"Remembered {action.value} decision",
             )
-
-        # Evaluate rules in order.
-        for rule in self._rules:
-            if self._matches(rule, tool, input_str):
+        else:
+            # Evaluate rules in order; the first match wins.
+            matched_rule: PermissionRule | None = None
+            for rule in self._rules:
+                if self._matches(rule, tool, input_str):
+                    matched_rule = rule
+                    break
+            if matched_rule is not None:
                 if (
-                    rule.action in (PermissionAction.ALLOW, PermissionAction.DENY)
-                    and rule.scope is PermissionScope.ALWAYS
+                    matched_rule.action in (PermissionAction.ALLOW, PermissionAction.DENY)
+                    and matched_rule.scope is PermissionScope.ALWAYS
                 ):
-                    self._remembered[key] = rule.action
-                return PermissionDecision(
-                    action=rule.action,
-                    matched_rule=rule,
-                    reason=f"Matched rule: {rule.tool}:{rule.pattern} → {rule.action.value}",
+                    self._remembered[key] = matched_rule.action
+                decision = PermissionDecision(
+                    action=matched_rule.action,
+                    matched_rule=matched_rule,
+                    reason=(
+                        f"Matched rule: {matched_rule.tool}:{matched_rule.pattern} "
+                        f"→ {matched_rule.action.value}"
+                    ),
+                )
+            else:
+                # No rule matched → default.
+                decision = PermissionDecision(
+                    action=self._default_action,
+                    matched_rule=None,
+                    reason=f"No rule matched; default is {self._default_action.value}",
                 )
 
-        # No rule matched → default.
-        return PermissionDecision(
-            action=self._default_action,
-            matched_rule=None,
-            reason=f"No rule matched; default is {self._default_action.value}",
+        logger.debug(
+            "Permission check: tool=%s input=%s decision=%s reason=%s",
+            tool,
+            input_str,
+            decision.action,
+            decision.reason,
         )
+        return decision
 
     # ------------------------------------------------------------------
     # Remember
@@ -269,18 +356,15 @@ class PermissionEngine:
     # Internal
     # ------------------------------------------------------------------
 
-    def _matches(
-        self, rule: PermissionRule, tool: str, input_str: str
-    ) -> bool:
+    def _matches(self, rule: PermissionRule, tool: str, input_str: str) -> bool:
         """Check if a rule matches the given tool and input."""
 
         # Tool match: exact or wildcard.
         if rule.tool != "*" and rule.tool != tool:
             return False
-        # Pattern match: glob against the stringified input.
-        # Support ** as recursive glob (fnmatch treats ** same as *,
-        # but that's fine for our purposes).
-        return fnmatch.fnmatch(input_str, rule.pattern)
+        # Pattern match: glob against the stringified input. ``**`` is a
+        # recursive glob (matches ``/``); see :func:`_glob_match`.
+        return _glob_match(rule.pattern, input_str)
 
 
 # ---------------------------------------------------------------------------
@@ -296,8 +380,10 @@ def create_act_mode_engine() -> PermissionEngine:
     """
 
     engine = PermissionEngine(default_action=PermissionAction.ASK)
-    # Read-only tools are always allowed.
-    for tool in ("read_file", "search_files", "list_files", "web_fetch", "ask_question"):
+    # Read-only tools are always allowed. ``read_file`` doubles as the
+    # directory-listing tool (there is no separate ``list_files`` tool),
+    # and the built-in content-search tool is ``search``.
+    for tool in ("read_file", "search", "web_fetch", "ask_question"):
         engine.add_rule(
             PermissionRule(
                 tool=tool,
@@ -317,8 +403,10 @@ def create_plan_mode_engine() -> PermissionEngine:
     """
 
     engine = PermissionEngine(default_action=PermissionAction.DENY)
-    # Read-only tools are allowed.
-    for tool in ("read_file", "search_files", "list_files", "web_fetch", "ask_question"):
+    # Read-only tools are allowed. ``read_file`` doubles as the
+    # directory-listing tool (there is no separate ``list_files`` tool),
+    # and the built-in content-search tool is ``search``.
+    for tool in ("read_file", "search", "web_fetch", "ask_question"):
         engine.add_rule(
             PermissionRule(
                 tool=tool,
@@ -327,15 +415,16 @@ def create_plan_mode_engine() -> PermissionEngine:
                 description=f"Read-only tool {tool} allowed in plan mode",
             )
         )
-    # run_command is allowed but only for read-only commands (pattern
-    # would need to be more sophisticated in production; for now, allow
-    # all run_command in plan mode since the LLM is prompt-constrained).
+    # Plan mode promises read-only behaviour. Rather than blanket-allowing
+    # ``run_command`` (which would let destructive commands through at the
+    # engine level), every command asks the user so the read-only promise
+    # is enforced by the engine, not only by LLM prompt constraints.
     engine.add_rule(
         PermissionRule(
             tool="run_command",
             pattern="*",
-            action=PermissionAction.ALLOW,
-            description="run_command allowed in plan mode (prompt-constrained)",
+            action=PermissionAction.ASK,
+            description="run_command asks in plan mode (read-only guarantee)",
         )
     )
     return engine
