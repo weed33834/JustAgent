@@ -6,31 +6,36 @@ build-backend = "hatchling.build"
 packages = ["src/myagent"]
 
 [project]
-name = "myagent"
-version = "2.0.0"
-description = "MyAgent — a local-first AI coding agent with interactive REPL, tool calling, session persistence, and permission engine"
+name = "omniagent"
+version = "3.0.0"
+description = "Omniagent — enterprise local-first AI agent platform: knowledge management, internal communication, resource orchestration, and decision execution. One Agent. Entire Enterprise."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [
-    { name = "MyAgent Team", email = "team@myagent.dev" },
+    { name = "Omniagent Team", email = "team@omniagent.dev" },
 ]
 keywords = [
     "ai-agent",
-    "coding-agent",
+    "enterprise-ai",
+    "local-first",
     "llm",
     "cli",
-    "coding-assistant",
-    "developer-tools",
+    "knowledge-management",
+    "rag",
     "local-ai",
     "litellm",
     "mcp",
     "interactive-repl",
+    "enterprise-platform",
+    "data-encryption",
+    "agent-mesh",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -38,6 +43,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Code Generators",
+    "Topic :: Communications :: Chat",
+    "Topic :: Security :: Cryptography",
     "Topic :: Utilities",
 ]
 dependencies = [
@@ -59,6 +66,20 @@ dependencies = [
 security = ["semgrep>=1.100.0", "pip-audit>=2.7.0"]
 tui = ["textual>=0.50.0"]
 mcp = ["mcp>=1.0.0"]
+# Omniagent enterprise extensions
+knowledge = [
+    "numpy>=1.26.0",
+    "rank-bm25>=0.2.2",
+]
+rag = [
+    "numpy>=1.26.0",
+    "rank-bm25>=0.2.2",
+]
+web = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
+    "python-multipart>=0.0.20",
+]
 dev = [
     "ruff>=0.9.0",
     "pyright>=1.1.390",
@@ -83,10 +104,11 @@ dev = [
 
 [project.scripts]
 myagent = "myagent.cli.main:cli_entrypoint"
+omniagent = "myagent.cli.main:cli_entrypoint"
 
 [project.urls]
-Repository = "https://gitcode.com/badhope/myagent"
-Issues = "https://gitcode.com/badhope/myagent/issues"
+Repository = "https://gitcode.com/badhope/autoship"
+Issues = "https://gitcode.com/badhope/autoship/issues"
 
 [tool.ruff]
 target-version = "py311"

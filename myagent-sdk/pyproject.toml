@@ -8,16 +8,16 @@ include = ["src/myagent_sdk/templates/**/*"]
 
 [project]
 name = "myagent-sdk"
-version = "1.2.0"
-description = "MyAgent plugin development SDK"
+version = "3.0.0"
+description = "Omniagent plugin development SDK"
 readme = "README.md"
-license = { text = "CNCL-1.0" }
-requires-python = ">=3.10"
+license = { text = "MIT" }
+requires-python = ">=3.11"
 authors = [
-    { name = "MyAgent Team", email = "team@myagent.dev" },
+    { name = "Omniagent Team", email = "team@omniagent.dev" },
 ]
 dependencies = [
-    "myagent>=1.2.0",
+    "omniagent>=3.0.0",
 ]
 
 [project.urls]
@@ -60,4 +60,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-myagent = { workspace = true }
+omniagent = { workspace = true }
