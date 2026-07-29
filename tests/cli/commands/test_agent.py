@@ -373,7 +373,9 @@ class TestResolveLLM:
             base_url_override=None,
         )
         assert client._api_key is None
-        assert client._base_url == "http://127.0.0.1:11434/v1"
+        # Uses the canonical default from unified_gateway._PROVIDER_BASE_URLS
+        # (the gateway normalizes bare roots by appending /v1 at call time).
+        assert client._base_url == "http://localhost:11434"
 
     def test_backend_without_model_raises(self) -> None:
         import typer

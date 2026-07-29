@@ -661,7 +661,7 @@ class CheckpointManager:
             self._run_git(
                 "checkout",
                 "--orphan",
-                "_myagent_temp",
+                "_justagent_temp",
                 new_root,
                 cwd=self._shadow_repo,
             )

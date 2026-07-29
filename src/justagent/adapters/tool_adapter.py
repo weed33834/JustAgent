@@ -7,27 +7,20 @@ import subprocess
 from pathlib import Path
 
 from justagent.models.config import ToolsConfig
+from justagent.utils import glob_to_regex
 from justagent.utils.hashing import ToolVerifier
-
-
-def _glob_to_regex(pattern: str) -> str:
-    """Translate a glob ``pattern`` (with ``**`` support) into a regex string."""
-    # fnmatch.translate gives a Python regex; we use it so the same glob
-    # semantics as Path.match / glob are applied. ``**`` is handled by
-    # fnmatch as ``*`` which is good enough for directory-prefix excludes.
-    return fnmatch.translate(pattern)
 
 
 def _build_force_exclude_regex(exclude: list[str]) -> str:
     """Combine a list of glob exclude patterns into a single black regex.
 
     black's ``--force-exclude`` takes a single regex; multiple patterns are
-    joined with ``|``. Each glob is translated via :func:`_glob_to_regex`
+    joined with ``|``. Each glob is translated via :func:`glob_to_regex`
     so users can write ``migrations/`` or ``vendor/**`` in config.
     """
     if not exclude:
         return ""
-    parts = [_glob_to_regex(p.strip()) for p in exclude if p and p.strip()]
+    parts = [glob_to_regex(p.strip()).pattern for p in exclude if p and p.strip()]
     return "|".join(parts) if parts else ""
 
 

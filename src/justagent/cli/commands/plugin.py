@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _distribution_version
@@ -20,6 +21,8 @@ from justagent.core.registry_index import RegistryIndex
 from justagent.core.sandbox import SandboxRunner
 from justagent.exceptions import PluginError
 from justagent.utils.hashing import pip_cmd
+
+logger = logging.getLogger("justagent.cli.commands.plugin")
 
 app = typer.Typer()
 
@@ -94,10 +97,16 @@ def _installed_version(package: str) -> Version | None:
     except PackageNotFoundError:
         return None
     except Exception:
+        logger.debug(
+            "Failed to read installed version for %s", package, exc_info=True
+        )
         return None
     try:
         return parse_version(raw)
     except Exception:
+        logger.debug(
+            "Failed to parse version %r for %s", raw, package, exc_info=True
+        )
         return None
 
 

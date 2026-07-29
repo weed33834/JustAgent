@@ -42,6 +42,8 @@ from typing import Any, Iterator
 
 from pydantic import BaseModel, Field
 
+from justagent.utils import utcnow
+
 logger = logging.getLogger("justagent.knowledge")
 
 
@@ -250,11 +252,6 @@ def detect_type(path: Path | str) -> DocumentType:
     """
     ext = Path(path).suffix.lower()
     return _EXTENSION_MAP.get(ext, DocumentType.UNKNOWN)
-
-
-def utcnow() -> float:
-    """Return the current Unix timestamp."""
-    return time.time()
 
 
 def format_timestamp(ts: float) -> str:

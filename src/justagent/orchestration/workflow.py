@@ -1003,12 +1003,12 @@ class WorkflowEngine:
         return ready, blocked
 
     def _eval_condition(self, expression: str, namespace: dict[str, Any]) -> bool:
-        """Evaluate a boolean condition string against *namespace*.
+        """Evaluate a boolean condition string against *namespace* safely.
 
-        Simple literals (``true``/``false``/``1``/``0``) are handled directly.
-        Otherwise the expression is evaluated with a restricted builtin
-        namespace. This is acceptable for a local-first, trusted-author
-        workflow engine. Any evaluation error is treated as False.
+        Uses :mod:`simpleeval` (a sandboxed expression evaluator that does
+        NOT use ``eval``) to prevent code injection. Simple literals
+        (``true``/``false``/``1``/``0``) are short-circuited for speed.
+        Any evaluation error is treated as False.
         """
 
         if not expression:
@@ -1019,10 +1019,15 @@ class WorkflowEngine:
             return True
         if low in ("false", "0", "no", "fail"):
             return False
-        safe_globals: dict[str, Any] = {"__builtins__": {}}
-        safe_locals = dict(namespace)
         try:
-            result = eval(expr, safe_globals, safe_locals)  # noqa: S307 - trusted local workflows
+            from simpleeval import EvalWithCompoundTypes, NameNotDefined
+
+            evaluator = EvalWithCompoundTypes(names=namespace)
+            result = evaluator.eval(expr)
+        except NameNotDefined:
+            # A referenced variable is not yet in scope — treat as False.
+            logger.debug("Condition %r references undefined name", expression)
+            return False
         except Exception:  # noqa: BLE001 - treat unparseable as False
             logger.debug("Condition %r evaluated to False (parse error)", expression)
             return False

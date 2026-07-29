@@ -23,7 +23,7 @@ class ExitCode(IntEnum):
     USER_ABORT = 130
 
 
-class MyAgentError(Exception):
+class JustAgentError(Exception):
     """Base exception for all JustAgent errors."""
 
     code: ExitCode = ExitCode.USAGE_ERROR
@@ -40,67 +40,89 @@ class MyAgentError(Exception):
         self.details = details or {}
 
 
-class ConfigError(MyAgentError):
+# Backward-compatible alias for any external code still referencing the old name.
+MyAgentError = JustAgentError
+
+
+class ConfigError(JustAgentError):
     """Raised when configuration is invalid or missing."""
 
     code = ExitCode.CONFIG_ERROR
 
 
-class PermissionDeniedError(MyAgentError):
+class PermissionDeniedError(JustAgentError):
     """Raised when an RBAC permission check denies access."""
 
     code = ExitCode.PERMISSION_DENIED
 
 
-class ToolChainError(MyAgentError):
+class ToolChainError(JustAgentError):
     """Raised when an external tool (autoflake, black, etc.) fails."""
 
     code = ExitCode.CLEAN_ERROR
 
 
-class GitError(MyAgentError):
+class GitError(JustAgentError):
     """Raised when a Git operation fails."""
 
     code = ExitCode.GIT_ERROR
 
 
-class ModelGatewayError(MyAgentError):
+class ModelGatewayError(JustAgentError):
     """Raised when a local model service is unavailable or returns an error."""
 
     code = ExitCode.MODEL_GATEWAY_ERROR
 
 
-class PluginError(MyAgentError):
+class PluginError(JustAgentError):
     """Raised when a plugin fails in a way that should abort the command."""
 
     code = ExitCode.PLUGIN_ERROR
 
 
-class UploadError(MyAgentError):
+class UploadError(JustAgentError):
     """Raised when an upload/publish operation fails."""
 
     code = ExitCode.UPLOAD_ERROR
 
 
-class VerifyError(MyAgentError):
+class VerifyError(JustAgentError):
     """Raised when a verification command fails."""
 
     code = ExitCode.VERIFY_ERROR
 
 
-class SecurityScanError(MyAgentError):
+class SecurityScanError(JustAgentError):
     """Raised when a security scan finds issues above the configured threshold."""
 
     code = ExitCode.SECURITY_ERROR
 
 
-class SandboxError(MyAgentError):
+class SandboxError(JustAgentError):
     """Raised when a required sandbox cannot be enforced."""
 
     code = ExitCode.SECURITY_ERROR
 
 
-class RegistryError(MyAgentError):
+class RegistryError(JustAgentError):
     """Raised when the plugin registry index cannot be verified or trusted."""
 
     code = ExitCode.SECURITY_ERROR
+
+
+__all__ = [
+    "ConfigError",
+    "ExitCode",
+    "GitError",
+    "JustAgentError",
+    "ModelGatewayError",
+    "MyAgentError",
+    "PermissionDeniedError",
+    "PluginError",
+    "RegistryError",
+    "SandboxError",
+    "SecurityScanError",
+    "ToolChainError",
+    "UploadError",
+    "VerifyError",
+]

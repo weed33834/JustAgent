@@ -221,3 +221,18 @@ class LoopDetectionTracker:
         """Current consecutive-identical-call count (for observability)."""
 
         return self._state.consecutive_identical_count
+
+
+__all__ = [
+    "LoopCheckResult",
+    "LoopDetectionCall",
+    "LoopDetectionConfig",
+    "LoopDetectionState",
+    "LoopDetectionTracker",
+    "LoopDetectionVerdict",
+    "LoopVerdictKind",
+    "check_repeated_tool_call",
+    "create_loop_detection_state",
+    "reset_loop_detection_state",
+    "tool_call_signature",
+]

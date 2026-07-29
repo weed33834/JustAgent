@@ -35,6 +35,8 @@ from typing import Any, Iterator
 
 from pydantic import BaseModel, Field
 
+from justagent.utils import now
+
 logger = logging.getLogger("justagent.knowledge")
 
 
@@ -88,7 +90,7 @@ class Entity(BaseModel):
     aliases: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
     source_documents: list[str] = Field(default_factory=list)
-    created_at: float = Field(default_factory=lambda: __import__("time").time())
+    created_at: float = Field(default_factory=now)
 
 
 class Relation(BaseModel):
@@ -112,7 +114,7 @@ class Relation(BaseModel):
     weight: float = 1.0
     metadata: dict[str, Any] = Field(default_factory=dict)
     source_documents: list[str] = Field(default_factory=list)
-    created_at: float = Field(default_factory=lambda: __import__("time").time())
+    created_at: float = Field(default_factory=now)
 
 
 # ---------------------------------------------------------------------------

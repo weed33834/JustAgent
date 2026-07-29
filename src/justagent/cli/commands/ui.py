@@ -96,7 +96,7 @@ def _build_app(config: AppConfig, audit_logger: AuditLogger) -> Any:
         ("5", "doctor", [sys.executable, "-m", "justagent", "doctor"]),
     ]
 
-    class MyAgentDashboard(App[None]):
+    class JustAgentDashboard(App[None]):
         CSS = """
         Screen { layout: vertical; }
         #header { height: 3; background: $primary; color: $text; padding: 0 1; }
@@ -177,7 +177,7 @@ def _build_app(config: AppConfig, audit_logger: AuditLogger) -> Any:
         async def action_run_doctor(self) -> None:
             await self._run_command(actions[4][2])
 
-    return MyAgentDashboard()
+    return JustAgentDashboard()
 
 
 def ui(ctx: typer.Context) -> None:

@@ -40,22 +40,6 @@ _CLIENT_NAME = "justagent"
 _CLIENT_VERSION = "2.0.0"
 
 
-def _is_mcp_sdk_available() -> bool:
-    """Return True if the official ``mcp`` SDK is installed.
-
-    The SDK is an optional backend (declared via the ``mcp`` extra in
-    ``pyproject.toml``). When unavailable, the lightweight client
-    implemented in this module is used instead. The import is performed
-    inside the function so the module loads cleanly without the SDK.
-    """
-
-    try:
-        import mcp  # noqa: F401  — presence check only
-    except ImportError:
-        return False
-    return True
-
-
 # ---------------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------------
@@ -250,22 +234,6 @@ def _jsonrpc_notification(
     if params is not None:
         message["params"] = params
     return message
-
-
-def _jsonrpc_response(id: int | str, result: Any) -> dict[str, Any]:
-    """Build a JSON-RPC 2.0 success response."""
-
-    return {"jsonrpc": "2.0", "id": id, "result": result}
-
-
-def _jsonrpc_error(id: int | str, code: int, message: str) -> dict[str, Any]:
-    """Build a JSON-RPC 2.0 error response."""
-
-    return {
-        "jsonrpc": "2.0",
-        "id": id,
-        "error": {"code": code, "message": message},
-    }
 
 
 # ---------------------------------------------------------------------------

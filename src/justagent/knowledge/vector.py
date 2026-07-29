@@ -55,6 +55,7 @@ from typing import Any, Sequence
 from pydantic import BaseModel, Field
 
 from justagent.knowledge.document import Chunk
+from justagent.utils import now
 
 logger = logging.getLogger("justagent.knowledge")
 
@@ -93,7 +94,7 @@ class VectorRecord(BaseModel):
     embedding: list[float] = Field(default_factory=list)
     document_id: str = ""
     document_title: str = ""
-    created_at: float = Field(default_factory=lambda: __import__("time").time())
+    created_at: float = Field(default_factory=now)
 
     def model_post_init(self, __context: Any) -> None:
         """Derive ``document_id`` from the chunk if not explicitly set."""
@@ -211,8 +212,13 @@ class HashingEmbedder(EmbeddingProvider):
     # ------------------------------------------------------------------
 
     def _tokenize(self, text: str) -> list[str]:
-        """Extract lowercase word tokens from ``text``."""
-        return [t.lower() for t in self._TOKEN_PATTERN.findall(text)]
+        """Tokenize text into words, using jieba for Chinese text."""
+        try:
+            import jieba
+
+            return [t.strip().lower() for t in jieba.cut(text) if t.strip()]
+        except ImportError:
+            return re.findall(r"\w+", text.lower())
 
     @staticmethod
     def _hash(token: str) -> int:

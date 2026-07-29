@@ -31,6 +31,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from justagent.utils import glob_to_regex
+
 logger = logging.getLogger("justagent.permissions")
 
 
@@ -121,61 +123,20 @@ def _stringify_input(tool_input: dict[str, Any]) -> str:
     return json.dumps(tool_input, sort_keys=True, default=str)
 
 
-# Compiled-glob cache for patterns that contain ``**``. Patterns without
-# ``**`` keep using ``fnmatch`` (which already caches internally).
-_REGEX_CACHE: dict[str, re.Pattern[str]] = {}
-
-
-def _glob_to_regex(pattern: str) -> str:
-    """Translate a glob pattern into a regex.
-
-    Translation rules (used when the pattern contains ``**``):
-
-    * ``**`` -> ``.*``  (matches any character, including ``/`` — the
-      recursive glob that ``fnmatch`` does not provide).
-    * ``*``  -> ``[^/]*`` (matches a single path segment, no ``/``).
-    * ``?``  -> ``[^/]`` (matches a single character, no ``/``).
-    * every other character is regex-escaped.
-    """
-
-    out: list[str] = []
-    i = 0
-    n = len(pattern)
-    while i < n:
-        c = pattern[i]
-        if c == "*" and i + 1 < n and pattern[i + 1] == "*":
-            out.append(".*")
-            i += 2
-        elif c == "*":
-            out.append("[^/]*")
-            i += 1
-        elif c == "?":
-            out.append("[^/]")
-            i += 1
-        else:
-            out.append(re.escape(c))
-            i += 1
-    return "".join(out)
-
-
 def _glob_match(pattern: str, text: str) -> bool:
     """Glob-match ``text`` against ``pattern``.
 
-    Patterns containing ``**`` use a custom translator where ``**``
-    matches any character including ``/`` (so ``/tmp/**`` matches
-    ``/tmp/a/b/c``). Patterns without ``**`` keep ``fnmatch`` behaviour
-    for backward compatibility (``fnmatch``'s ``*`` already crosses ``/``,
-    which existing ``pattern="*"`` rules rely on). Compiled regexes are
-    cached for performance.
+    Patterns containing ``**`` use :func:`justagent.utils.glob_to_regex`
+    where ``**`` matches any character including ``/`` (so ``/tmp/**``
+    matches ``/tmp/a/b/c``). Patterns without ``**`` keep ``fnmatch``
+    behaviour for backward compatibility (``fnmatch``'s ``*`` already
+    crosses ``/``, which existing ``pattern="*"`` rules rely on). Compiled
+    regexes are cached internally by :func:`glob_to_regex`.
     """
 
     if "**" not in pattern:
         return fnmatch.fnmatch(text, pattern)
-    regex = _REGEX_CACHE.get(pattern)
-    if regex is None:
-        regex = re.compile(_glob_to_regex(pattern))
-        _REGEX_CACHE[pattern] = regex
-    return regex.fullmatch(text) is not None
+    return glob_to_regex(pattern).fullmatch(text) is not None
 
 
 class PermissionEngine:

@@ -516,8 +516,8 @@ class SSOManager:
                 values = [v.text for v in attr.findall("saml:AttributeValue", ns) if v.text]
                 if name:
                     claims[name] = values[0] if len(values) == 1 else values
-        except Exception:  # noqa: BLE001 - best-effort extraction
-            pass
+        except Exception as exc:  # noqa: BLE001 - best-effort extraction
+            logger.debug("SAML claim extraction failed: %s", exc)
 
         # Map common SAML attribute names to standard claim keys.
         mapping = {

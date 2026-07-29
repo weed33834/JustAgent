@@ -230,13 +230,13 @@ def test_project_summary_go_project_has_matching_rule(tmp_path: Path) -> None:
 def test_build_app_returns_dashboard_with_bindings(tmp_path: Path) -> None:
     dashboard = _make_dashboard(tmp_path)
     assert dashboard is not None
-    assert dashboard.__class__.__name__ == "MyAgentDashboard"
+    assert dashboard.__class__.__name__ == "JustAgentDashboard"
     # Quit binding + one per action (clean/verify/commit/upload/doctor).
     assert len(dashboard.BINDINGS) == 6  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
-# MyAgentDashboard action_run_* — subprocess.run + DOM mocked.
+# JustAgentDashboard action_run_* — subprocess.run + DOM mocked.
 # ---------------------------------------------------------------------------
 
 

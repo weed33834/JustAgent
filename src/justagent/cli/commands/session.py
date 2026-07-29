@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from datetime import datetime
 
 import typer
@@ -102,10 +104,14 @@ def resume_session(
     ctx: typer.Context,
     session_id: str = typer.Argument(..., help="Session ID"),
 ) -> None:
-    """Resume a saved session.
+    """Resume a saved session by launching the interactive agent.
 
-    The current implementation prints resume instructions; for full
-    inline resume use: ``justagent agent -i --resume <ID>``.
+    Validates that the session exists, then spawns
+    ``justagent agent -i --resume <session_id>`` as a subprocess so the
+    restored conversation continues in the interactive REPL. Relevant
+    global options (``--config``, ``--lang``, ``--verbose``, ``--yes``)
+    are forwarded from the current invocation so the resumed run matches
+    the caller's context.
     """
 
     i18n: I18n = get_i18n_from_ctx(ctx)
@@ -117,8 +123,49 @@ def resume_session(
             err=True,
         )
         raise typer.Exit(code=1)
-    typer.echo(i18n._("session.resume_ready", session_id=session_id))
-    typer.echo(f"  justagent agent -i --resume {session_id}")
+
+    # Launch the interactive agent with the session restored. We use a
+    # subprocess (rather than invoking the ``agent`` callback in-process)
+    # because the interactive REPL needs direct access to the controlling
+    # TTY for stdin/stdout, and the ``agent`` command depends on
+    # ``ctx.obj`` state (config, audit logger, ...) that is set up by the
+    # top-level callback — a fresh process reproduces that setup cleanly.
+    cmd: list[str] = [
+        sys.executable,
+        "-m",
+        "justagent",
+        "agent",
+        "-i",
+        "--resume",
+        session_id,
+    ]
+
+    # Forward the global options that affect the resumed run so it behaves
+    # like the caller typed ``justagent agent -i --resume <ID>`` with the
+    # same configuration context.
+    obj = ctx.obj if isinstance(ctx.obj, dict) else {}
+    config_path = obj.get("config_path")
+    if config_path:
+        cmd.extend(["--config", str(config_path)])
+    lang = getattr(obj.get("i18n"), "lang", None)
+    if lang:
+        cmd.extend(["--lang", str(lang)])
+    if obj.get("verbose"):
+        cmd.append("--verbose")
+    if obj.get("yes"):
+        cmd.append("--yes")
+
+    typer.echo(i18n._("session.resuming", session_id=session_id))
+    try:
+        result = subprocess.run(cmd)
+    except OSError as exc:
+        typer.secho(
+            i18n._("error.prefix", exc=exc),
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    raise typer.Exit(code=result.returncode)
 
 
 @app.command("delete", help="Delete a specific session.")

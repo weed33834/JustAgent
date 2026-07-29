@@ -21,10 +21,8 @@ from justagent.agent.mcp_client import (
     MCPTransportType,
     OAuthTokenProvider,
     StaticTokenProvider,
-    _jsonrpc_error,
     _jsonrpc_notification,
     _jsonrpc_request,
-    _jsonrpc_response,
 )
 from justagent.exceptions import MyAgentError
 
@@ -369,18 +367,6 @@ class TestJSONRPC:
         msg = _jsonrpc_notification("progress", {"pct": 50})
         assert msg["params"] == {"pct": 50}
         assert "id" not in msg
-
-    def test_response_format(self) -> None:
-        msg = _jsonrpc_response(1, {"tools": []})
-        assert msg["jsonrpc"] == "2.0"
-        assert msg["id"] == 1
-        assert msg["result"] == {"tools": []}
-
-    def test_error_format(self) -> None:
-        msg = _jsonrpc_error(1, -32601, "Method not found")
-        assert msg["jsonrpc"] == "2.0"
-        assert msg["id"] == 1
-        assert msg["error"] == {"code": -32601, "message": "Method not found"}
 
     def test_jsonrpc_error_construction(self) -> None:
         err = JSONRPCError(-32601, "Method not found", "extra")

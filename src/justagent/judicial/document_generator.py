@@ -34,7 +34,6 @@ import asyncio
 import logging
 import re
 import threading
-import time
 import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -47,6 +46,7 @@ from justagent.adapters.model_gateway import (
     ModelGateway,
 )
 from justagent.knowledge.rag import RAGPipeline
+from justagent.utils import now
 
 if TYPE_CHECKING:
     from justagent.judicial.case_manager import CaseContext, CaseManager
@@ -205,18 +205,12 @@ class GeneratedDocument(BaseModel):
     citation_verifications: list[CitationVerification] = Field(default_factory=list)
     all_citations_valid: bool = True
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _now() -> float:
-    """Return the current Unix timestamp."""
-
-    return time.time()
 
 
 def _render_prompt(template: str, variables: dict[str, Any]) -> str:
@@ -761,6 +755,7 @@ class LegalDocumentGenerator:
 
         # 2. Build case context.
         ctx = self._case_manager.build_context(case_id)
+        case = self._case_manager.get_case(case_id)
 
         # 3. Retrieve legal context via RAG (if configured).
         legal_context = self._retrieve_legal_context(case_id, ctx)
@@ -777,9 +772,7 @@ class LegalDocumentGenerator:
             "disputed": ctx.disputed_text,
             "timeline": ctx.timeline_text,
             "evidence": ctx.evidence_summary,
-            "court": self._case_manager.get_case(case_id).court
-            if self._case_manager.get_case(case_id)
-            else "",
+            "court": case.court if case else "",
             "legal_context": legal_context,
             "evidence_analysis": evidence_analysis,
         }

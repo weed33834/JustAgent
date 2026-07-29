@@ -41,7 +41,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-import time
 import uuid
 from enum import Enum
 from typing import Any
@@ -57,6 +56,7 @@ from justagent.knowledge.vector import (
     VectorStore,
     create_default_embedder,
 )
+from justagent.utils import now
 
 logger = logging.getLogger("justagent.judicial.legal_knowledge")
 
@@ -163,7 +163,7 @@ class LegalArticle(BaseModel):
     status: ArticleStatus = ArticleStatus.EFFECTIVE
     keywords: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
 
     @property
     def is_effective(self) -> bool:
@@ -223,7 +223,7 @@ class LegalCase(BaseModel):
     keywords: list[str] = Field(default_factory=list)
     summary: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
 
     @property
     def is_guiding(self) -> bool:
@@ -306,12 +306,6 @@ class ConceptExplanation(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _now() -> float:
-    """Return the current Unix timestamp."""
-
-    return time.time()
-
-
 def _keyword_score(query_terms: list[str], text: str) -> float:
     """Compute a simple keyword-overlap score in ``[0, 1]``.
 
@@ -324,6 +318,21 @@ def _keyword_score(query_terms: list[str], text: str) -> float:
     lower = text.lower()
     hits = sum(1 for term in query_terms if term.lower() in lower)
     return hits / len(query_terms)
+
+
+def _tokenize_query(query: str) -> list[str]:
+    """Tokenize a search query, using jieba for Chinese text."""
+
+    try:
+        import jieba
+
+        tokens = [t.strip() for t in jieba.cut(query) if t.strip()]
+        # Also include the full query as a token for exact match
+        if query.strip() and query.strip() not in tokens:
+            tokens.append(query.strip())
+        return tokens
+    except ImportError:
+        return [t for t in query.split() if t.strip()]
 
 
 # ---------------------------------------------------------------------------
@@ -649,7 +658,7 @@ class LegalKnowledgeBase:
         if not candidates:
             return []
 
-        query_terms = [t for t in query.split() if t.strip()]
+        query_terms = _tokenize_query(query)
 
         # Semantic search via vector store.
         semantic_scores: dict[str, float] = {}
@@ -657,7 +666,7 @@ class LegalKnowledgeBase:
             qvec = self._embedder.embed(query)
             results = self._store.search(
                 qvec,
-                top_k=max(top_k * 3, top_k),
+                top_k=top_k * 3,
                 document_ids=[a.id for a in candidates],
                 min_score=0.0,
             )
@@ -719,14 +728,14 @@ class LegalKnowledgeBase:
         if not candidates:
             return []
 
-        query_terms = [t for t in query.split() if t.strip()]
+        query_terms = _tokenize_query(query)
 
         semantic_scores: dict[str, float] = {}
         if self._store is not None and self._embedder is not None:
             qvec = self._embedder.embed(query)
             results = self._store.search(
                 qvec,
-                top_k=max(top_k * 3, top_k),
+                top_k=top_k * 3,
                 document_ids=[c.id for c in candidates],
                 min_score=0.0,
             )
@@ -994,8 +1003,8 @@ class LegalKnowledgeBase:
                     weight=0.9,
                     source_documents=[article.id],
                 )
-            except KeyError:
-                pass
+            except KeyError as exc:
+                logger.debug("Entity not found, skipping definition relation: %s", exc)
 
 
 __all__ = [

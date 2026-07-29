@@ -10,6 +10,9 @@ import typer
 from pydantic import HttpUrl
 
 from justagent.adapters.model_gateway import ChatMessage
+from justagent.adapters.providers.unified_gateway import (
+    _PROVIDER_BASE_URLS as _DEFAULT_BASE_URLS,
+)
 from justagent.core.i18n import I18n, get_i18n_from_ctx
 from justagent.core.model_router import ModelRouter
 from justagent.exceptions import ModelGatewayError
@@ -45,11 +48,9 @@ _LLM_PROVIDER_TO_BACKEND: dict[LlmProvider, Provider] = {
     LlmProvider.OLLAMA: Provider.OLLAMA,
 }
 
-_DEFAULT_BASE_URLS: dict[Provider, str] = {
-    Provider.OPENAI: "https://api.openai.com/v1",
-    Provider.OPENROUTER: "https://openrouter.ai/api/v1",
-    Provider.OLLAMA: "http://127.0.0.1:11434/v1",
-}
+#: Default base URLs for providers that don't specify one in config.
+#: Imported from :data:`unified_gateway._PROVIDER_BASE_URLS` (single source
+#: of truth) — see ``justagent.adapters.providers.unified_gateway``.
 
 
 def _model_router(config: AppConfig) -> ModelRouter:

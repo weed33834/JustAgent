@@ -62,8 +62,8 @@ def _cgroup_cpu_count() -> int | None:
             period = int(parts[1])
             if quota > 0 and period > 0:
                 return (quota + period - 1) // period  # ceil(quota / period)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("cgroup v2 cpu.max read failed: %s", exc)
     # cgroup v1 fallback.
     try:
         with open("/sys/fs/cgroup/cpu/cpu.cfs_quota_us") as f:  # noqa: PTH123
@@ -72,8 +72,8 @@ def _cgroup_cpu_count() -> int | None:
             period = int(f.read().strip())
         if quota > 0 and period > 0:
             return (quota + period - 1) // period
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("cgroup v1 cpu quota read failed: %s", exc)
     return None
 
 
@@ -88,8 +88,9 @@ def _cpu_count() -> int:
         import os
 
         host = os.cpu_count() or 2
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         host = 2
+        logger.debug("cpu_count failed, defaulting to 2: %s", exc)
     cgroup = _cgroup_cpu_count()
     return min(host, cgroup) if cgroup is not None else host
 
@@ -111,16 +112,16 @@ def _cgroup_memory_gb() -> float | None:
             bytes_limit = int(raw)
             if bytes_limit > 0:
                 return bytes_limit / (1024**3)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("cgroup v2 memory.max read failed: %s", exc)
     # cgroup v1 fallback.
     try:
         with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:  # noqa: PTH123
             bytes_limit = int(f.read().strip())
         if bytes_limit > 0:
             return bytes_limit / (1024**3)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("cgroup v1 memory limit read failed: %s", exc)
     return None
 
 
@@ -140,8 +141,8 @@ def _host_memory_gb() -> float:
                 if line.startswith("MemTotal:"):
                     kb = int(line.split()[1])
                     return kb / (1024**2)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logger.debug("Failed to read /proc/meminfo: %s", exc)
 
     logger.warning("Could not detect system memory; assuming 8 GB")
     return 8.0

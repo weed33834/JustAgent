@@ -23,6 +23,26 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
+# Module-level shared console so all callers (command modules, display
+# helpers, etc.) render to the same Rich output stream by default.
+_shared_console: Console | None = None
+
+
+def get_console() -> Console:
+    """Return a shared :class:`rich.console.Console` instance.
+
+    A single module-level console is reused across calls so that Rich
+    output (tables, panels, spinners) is consistent and does not fight
+    over the terminal. Command modules that need Rich rendering without
+    the full :class:`RichDisplay` lifecycle should use this helper
+    rather than constructing their own ``Console()``.
+    """
+
+    global _shared_console
+    if _shared_console is None:
+        _shared_console = Console()
+    return _shared_console
+
 
 class RichDisplay:
     """Centralised Rich-based terminal output for the agent CLI.
@@ -311,4 +331,4 @@ class RichDisplay:
         return raw[:120]
 
 
-__all__ = ["RichDisplay"]
+__all__ = ["RichDisplay", "get_console"]

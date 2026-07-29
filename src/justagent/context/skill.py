@@ -423,6 +423,100 @@ class SkillLoader:
             metadata={},
         )
 
+    def update_skill(
+        self,
+        name: str,
+        *,
+        description: str | None = None,
+        body: str | None = None,
+        triggers: list[SkillTrigger] | None = None,
+    ) -> Skill:
+        """Update an existing skill's fields and persist to disk.
+
+        Only the provided fields are updated; others remain unchanged.
+
+        Raises:
+            SkillError: If the skill does not exist.
+        """
+
+        skill = self.get(name)
+        if skill is None:
+            raise SkillError(f"Skill not found: {name}", details={"name": name})
+        new_description = description if description is not None else skill.description
+        new_body = body if body is not None else skill.body
+        new_triggers = triggers if triggers is not None else skill.triggers
+        content = _serialize_skill(name, new_description, new_body, new_triggers)
+        atomic_write_text(skill.path, content, encoding="utf-8")
+        return Skill(
+            name=name,
+            description=new_description,
+            path=skill.path,
+            body=new_body,
+            triggers=new_triggers,
+            metadata=skill.metadata,
+        )
+
+    def delete_skill(self, name: str) -> bool:
+        """Delete a skill and its directory from disk.
+
+        Returns True if the skill was found and deleted, False if not found.
+        """
+
+        skill = self.get(name)
+        if skill is None:
+            return False
+        skill_dir = skill.path.parent
+        # Remove the SKILL.md file.
+        skill.path.unlink(missing_ok=True)
+        # Remove the skill directory if it's now empty (or only contains
+        # non-skill files that were part of the skill bundle).
+        import shutil
+
+        shutil.rmtree(skill_dir, ignore_errors=True)
+        return True
+
+    def import_skill(self, source_path: Path, name: str | None = None) -> Skill:
+        """Import a skill from an external ``SKILL.md`` file.
+
+        Copies the file into the first configured skills directory. If
+        *name* is provided, the skill is renamed; otherwise the original
+        directory name is used.
+
+        Raises:
+            SkillError: If the source file doesn't exist or is malformed.
+        """
+
+        source = Path(source_path)
+        if not source.is_file():
+            raise SkillError(
+                f"Source file not found: {source_path}",
+                details={"path": str(source_path)},
+            )
+        try:
+            skill = parse_skill_file(source)
+        except SkillError:
+            raise
+        skill_name = name or skill.name
+        if not self._config.skills_dirs:
+            raise SkillError("No skills_dirs configured")
+        skills_dir = self._resolve_skills_dir(self._config.skills_dirs[0])
+        skill_dir = skills_dir / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        dest = skill_dir / "SKILL.md"
+        content = source.read_text(encoding="utf-8")
+        # Re-serialize with the new name if renamed.
+        if name and name != skill.name:
+            content = _serialize_skill(name, skill.description, skill.body, skill.triggers)
+        atomic_write_text(dest, content, encoding="utf-8")
+        return Skill(
+            name=skill_name,
+            description=skill.description,
+            path=dest,
+            body=skill.body,
+            triggers=skill.triggers,
+            metadata=skill.metadata,
+        )
+
 
 __all__ = [
     "Skill",

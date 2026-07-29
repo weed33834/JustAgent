@@ -15,7 +15,6 @@ store loads existing entries on startup so chains survive process restarts.
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import logging
 from collections.abc import AsyncIterator, Iterator
@@ -25,6 +24,8 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+from justagent.utils import sha256_hex
 
 logger = logging.getLogger("justagent.communication.audit")
 
@@ -109,7 +110,7 @@ class AuditEntry(BaseModel):
     def compute_hash(self) -> str:
         """Return the SHA-256 hex digest of this entry's signing payload."""
 
-        return hashlib.sha256(self._signing_payload().encode("utf-8")).hexdigest()
+        return sha256_hex(self._signing_payload())
 
     def seal(self) -> AuditEntry:
         """Return a copy with ``entry_hash`` populated (idempotent)."""

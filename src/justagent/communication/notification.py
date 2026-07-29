@@ -34,7 +34,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 import httpx
 from pydantic import BaseModel, Field
@@ -605,7 +605,7 @@ class InAppChannel(BaseNotificationChannel):
 
 
 # Type alias for the IM payload builder callable.
-_PayloadBuilder = Any  # Callable[[Notification], dict[str, Any]]
+_PayloadBuilder = Callable[["Notification"], dict[str, Any]]
 
 
 # ---------------------------------------------------------------------------

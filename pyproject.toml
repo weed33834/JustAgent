@@ -61,6 +61,10 @@ dependencies = [
     "tomli-w>=1.2.0",
     "litellm>=1.60.0",
     "structlog>=25.1.0",
+    # Safe expression evaluation (replaces eval() in workflow engine)
+    "simpleeval>=1.0.0",
+    # Chinese text segmentation for judicial NLP
+    "jieba>=0.42.1",
 ]
 
 [project.optional-dependencies]

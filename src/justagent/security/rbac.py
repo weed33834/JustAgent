@@ -26,13 +26,14 @@ from __future__ import annotations
 
 import logging
 import threading
-import time
 import uuid
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+from justagent.utils import now
 
 logger = logging.getLogger("justagent.security.rbac")
 
@@ -160,7 +161,7 @@ class Role(BaseModel):
     description: str = ""
     permissions: dict[ResourceType, set[Permission]] = Field(default_factory=dict)
     inherits_from: list[str] = Field(default_factory=list)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
     system: bool = False
 
     def grants(
@@ -198,7 +199,7 @@ class User(BaseModel):
     roles: list[str] = Field(default_factory=list)
     status: UserStatus = UserStatus.ACTIVE
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
     last_active: float = 0.0
 
     @property
@@ -239,12 +240,6 @@ class AccessDecision:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _now() -> float:
-    """Return the current Unix timestamp."""
-
-    return time.time()
 
 
 # ---------------------------------------------------------------------------

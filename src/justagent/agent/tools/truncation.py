@@ -11,11 +11,14 @@ for the user to inspect.
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logger = logging.getLogger("justagent.agent.tools.truncation")
 
 # ---------------------------------------------------------------------------
 # Result
@@ -112,6 +115,7 @@ class TruncationService:
                 f.write(content)
         except Exception:
             # If we can't save the full output, just hard-truncate.
+            logger.debug("Failed to save full tool output to disk", exc_info=True)
             return TruncationResult(
                 content=self._head_tail(content),
                 truncated=True,

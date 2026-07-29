@@ -13,7 +13,7 @@ import typer
 from justagent.cli import commands
 from justagent.core.audit_logger import AuditLogger
 from justagent.core.config_center import load_config
-from justagent.core.i18n import get_i18n
+from justagent.core.i18n import I18n, get_i18n
 from justagent.core.logging_config import configure_structlog
 from justagent.exceptions import ConfigError, ExitCode, MyAgentError
 
@@ -21,9 +21,13 @@ from justagent.exceptions import ConfigError, ExitCode, MyAgentError
 # 两者不共享 ctx，故用模块级变量桥接。
 _audit_logger: AuditLogger | None = None
 
+# 模块级 i18n：用于绑定 help 文本（导入时）以及错误处理路径（运行时）。
+# main_callback 会按 --lang 重新初始化以覆盖运行时输出。
+_i18n: I18n = get_i18n()
+
 app = typer.Typer(
     name="justagent",
-    help="JustAgent：本地优先的 AI 编码智能体（agent / session / plan / act / yolo）",
+    help=_i18n._("cli.help"),
     no_args_is_help=True,
     rich_markup_mode="rich",
     pretty_exceptions_enable=False,
@@ -44,12 +48,12 @@ def _version_callback(value: bool | None) -> None:
 @app.callback()
 def main_callback(
     ctx: typer.Context,
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="详细输出"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="仅显示操作而不执行"),
-    yes: bool = typer.Option(False, "--yes", "-y", help="跳过交互式确认"),
-    config_path: Path | None = typer.Option(None, "--config", "-c", help="配置文件路径"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help=_i18n._("option.verbose")),
+    dry_run: bool = typer.Option(False, "--dry-run", "-n", help=_i18n._("option.dry_run")),
+    yes: bool = typer.Option(False, "--yes", "-y", help=_i18n._("option.yes")),
+    config_path: Path | None = typer.Option(None, "--config", "-c", help=_i18n._("option.config_path")),
     lang: str | None = typer.Option(
-        None, "--lang", help="输出语言（保留兼容，当前默认中文）", show_default=False
+        None, "--lang", help=_i18n._("option.lang"), show_default=False
     ),
     version: bool | None = typer.Option(
         None,
@@ -62,7 +66,7 @@ def main_callback(
     ),
 ) -> None:
     """JustAgent 全局选项。"""
-    global _audit_logger
+    global _audit_logger, _i18n
     ctx.ensure_object(dict)
 
     config = load_config(config_path=config_path)
@@ -87,7 +91,8 @@ def main_callback(
     # When main_callback is called directly (e.g. in tests), typer leaves
     # OptionInfo sentinel objects as default values instead of None.
     lang_str = lang if isinstance(lang, str) else None
-    ctx.obj["i18n"] = get_i18n(lang_str)
+    _i18n = get_i18n(lang_str)
+    ctx.obj["i18n"] = _i18n
 
 
 commands.register_all(app)
@@ -137,23 +142,23 @@ def _is_unknown_command(command: str) -> bool:
 
 
 def _print_suggestion(exc: MyAgentError) -> None:
-    """针对常见错误类型打印下一步建议（明文中文）。"""
+    """针对常见错误类型打印下一步建议。"""
     message = str(exc).lower()
     details = getattr(exc, "details", {}) or {}
     suggestion: str | None = None
 
     if isinstance(exc, ConfigError):
-        suggestion = "运行 `justagent init` 创建配置文件。"
+        suggestion = _i18n._("error.suggestion.init")
     elif "api key" in message or (
         "model" in message and ("unreachable" in message or "backend" in message)
     ):
-        suggestion = "编辑 `.justagent.toml` 配置模型后端，或运行 `justagent init`。"
+        suggestion = _i18n._("error.suggestion.model_config")
     elif "command not found" in message or "not found on path" in message:
-        suggestion = "安装所需工具，或将其加入 PATH。"
+        suggestion = _i18n._("error.suggestion.install_tool")
     elif "upload" in message:
         _target = details.get("target") or "<target>"
         typer.secho(
-            f"\n💡 使用 `justagent upload --target {_target} --dry-run` 预览上传。",
+            f"\n💡 {_i18n._('error.suggestion.upload_dry_run', target=_target)}",
             fg=typer.colors.CYAN,
             err=True,
         )
@@ -171,8 +176,8 @@ def cli_entrypoint() -> int:
     command = _guess_command()
 
     if _is_unknown_command(command):
-        typer.secho(f"未知命令：{command}", fg=typer.colors.RED, err=True)
-        typer.secho("💡 运行 `justagent --help` 查看可用命令。", fg=typer.colors.CYAN, err=True)
+        typer.secho(_i18n._("cli.unknown_command", command=command), fg=typer.colors.RED, err=True)
+        typer.secho(f"💡 {_i18n._('cli.unknown_command.suggestion')}", fg=typer.colors.CYAN, err=True)
         # 用法错误，退出码 2 与 Unix "调用错误" 约定一致。
         return ExitCode.CONFIG_ERROR
 
@@ -183,13 +188,13 @@ def cli_entrypoint() -> int:
         exit_code = exc.exit_code
     except MyAgentError as exc:
         exit_code = exc.code
-        typer.secho(f"错误：{exc}", fg=typer.colors.RED, err=True)
+        typer.secho(_i18n._("error.prefix", exc=str(exc)), fg=typer.colors.RED, err=True)
         _print_suggestion(exc)
     except Exception as exc:
         exit_code = ExitCode.USAGE_ERROR
         logger.exception("Unhandled exception")
-        typer.secho(f"意外错误：{exc}", fg=typer.colors.RED, err=True)
-        typer.secho("\n💡 运行 `justagent doctor` 诊断环境。", fg=typer.colors.CYAN, err=True)
+        typer.secho(_i18n._("unexpected_error.prefix", exc=str(exc)), fg=typer.colors.RED, err=True)
+        typer.secho(f"\n💡 {_i18n._('error.suggestion.doctor')}", fg=typer.colors.CYAN, err=True)
     finally:
         # 关闭 main_callback 创建的 AuditLogger，释放 HTTP 连接池。
         if _audit_logger is not None:

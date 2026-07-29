@@ -30,8 +30,8 @@ Design:
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import json
+import logging
 import time
 import uuid
 from collections.abc import Awaitable, Callable
@@ -84,6 +84,13 @@ from justagent.permissions import (
     create_plan_mode_engine,
     create_yolo_mode_engine,
 )
+
+# ---------------------------------------------------------------------------
+# Module logger
+# ---------------------------------------------------------------------------
+
+logger = logging.getLogger("justagent.agent.runtime")
+
 
 # ---------------------------------------------------------------------------
 # No-op callbacks (named so mypy can infer their types — lambdas can't)
@@ -444,6 +451,27 @@ class MistakeLimitHitEvent(RuntimeEvent):
     reason: str = ""
 
 
+@dataclass(kw_only=True)
+class CompactionEvent(RuntimeEvent):
+    """Emitted when the auto-compactor reclaims context-window tokens."""
+
+    iteration: int
+    removed_count: int = 0
+    tokens_before: int = 0
+    tokens_after: int = 0
+    mode: str = "basic"
+
+
+@dataclass(kw_only=True)
+class EvaluationCompletedEvent(RuntimeEvent):
+    """Emitted after the evaluation pipeline assesses the run's output."""
+
+    overall_score: float = 0.0
+    passed: bool = True
+    criterion_count: int = 0
+    feedback: str = ""
+
+
 EventEmitter = Callable[[RuntimeEvent], Awaitable[None]]
 
 
@@ -485,6 +513,22 @@ class AgentRuntimeConfig:
     #: tracking (the runtime still creates one — pass a pre-populated
     #: instance only if you need to share state across runs).
     change_tracker: ChangeTracker | None = None
+    #: Whether to auto-compact the conversation when it nears the
+    #: context-window budget. When ``True``, a :class:`Compactor` is
+    #: created from ``compaction_config`` (or defaults) and invoked
+    #: before each LLM call if ``should_compact`` trips.
+    auto_compact: bool = True
+    #: Configuration for the auto-compactor. Ignored when
+    #: ``auto_compact`` is ``False``.
+    compaction_config: Any = None  # CompactionConfig, lazy to avoid circular import
+    #: Whether to evaluate the agent's final output after each run.
+    #: When ``True``, calls the registered evaluator (if any) and
+    #: emits an :class:`EvaluationCompletedEvent`.
+    auto_evaluate: bool = False
+    #: Whether to inject long-term memories into the system prompt.
+    #: When ``True``, relevant memories from the :class:`MemoryManager`
+    #: (if attached) are retrieved and prepended to the system prompt.
+    enable_memory: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -535,6 +579,8 @@ class AgentRuntime:
         session: Session | None = None,
         session_store: SessionStore | None = None,
         permission_engine: PermissionEngine | None = None,
+        memory_manager: Any = None,
+        evaluator: Any = None,
     ) -> None:
         self._client = client
         if isinstance(tools, ToolRegistry):
@@ -576,6 +622,12 @@ class AgentRuntime:
         )
         self._session: Session | None = session
         self._session_store: SessionStore | None = session_store
+        # Long-term memory manager (optional, for cross-session context).
+        self._memory_manager = memory_manager
+        # Evaluation pipeline (optional, for output quality assessment).
+        self._evaluator = evaluator
+        # Auto-compactor (lazy-initialised from config on first use).
+        self._compactor: Any = None
         if session is not None:
             # Restore conversation history from the persisted session so
             # ``continue_run`` picks up where the previous process left off.
@@ -712,8 +764,10 @@ class AgentRuntime:
 
         if self._session is None or self._session_store is None:
             return
-        with contextlib.suppress(Exception):
+        try:
             self.save_session()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to save session: %s", exc)
 
     async def run(self, user_input: str) -> RunResult:
         """Run the agent loop with ``user_input`` as the initial prompt.
@@ -743,6 +797,8 @@ class AgentRuntime:
             self._config.system_prompt,
             self._mode_config.mode,
         )
+        # Inject long-term memory context if enabled.
+        system_prompt = self._inject_memory(system_prompt, user_input)
         if system_prompt:
             self._messages.append(Message(role="system", content=system_prompt))
 
@@ -753,6 +809,7 @@ class AgentRuntime:
         )
 
         result = await self._run_loop()
+        await self._maybe_evaluate(result)
         await self._emit_terminal_event(result)
         self._safe_save_session()
         return result
@@ -783,6 +840,8 @@ class AgentRuntime:
                 self._config.system_prompt,
                 self._mode_config.mode,
             )
+            # Inject long-term memory context if enabled.
+            system_prompt = self._inject_memory(system_prompt, user_input)
             if system_prompt:
                 self._messages.insert(
                     0, Message(role="system", content=system_prompt)
@@ -797,6 +856,7 @@ class AgentRuntime:
         )
 
         result = await self._run_loop()
+        await self._maybe_evaluate(result)
         await self._emit_terminal_event(result)
         self._safe_save_session()
         return result
@@ -839,6 +899,9 @@ class AgentRuntime:
                         iteration=self._iteration,
                     )
                 )
+
+                # --- 0. Auto-compact if needed (before LLM call) ---
+                await self._maybe_compact()
 
                 # --- 1. Call the LLM ---
                 try:
@@ -1367,6 +1430,160 @@ class AgentRuntime:
                 )
             )
 
+    # -- internal: compaction --------------------------------------------
+
+    def _ensure_compactor(self) -> Any:
+        """Lazily create the auto-compactor from config.
+
+        Imports :mod:`justagent.agent.compaction` lazily to avoid the
+        circular dependency (compaction imports ``Message`` from runtime).
+        """
+
+        if self._compactor is not None:
+            return self._compactor
+        if not self._config.auto_compact:
+            return None
+        try:
+            from justagent.agent.compaction import CompactionConfig, Compactor
+
+            cfg = self._config.compaction_config
+            if cfg is None:
+                cfg = CompactionConfig()
+            self._compactor = Compactor(cfg, llm_client=self._client)
+            return self._compactor
+        except ImportError:
+            return None
+
+    async def _maybe_compact(self) -> None:
+        """Run auto-compaction if the context window is nearly full.
+
+        Estimates the current token count from accumulated usage, checks
+        ``should_compact``, and if True, replaces ``self._messages`` with
+        the compacted list and emits a :class:`CompactionEvent`.
+        """
+
+        compactor = self._ensure_compactor()
+        if compactor is None:
+            return
+        # Estimate current tokens from the last LLM response's prompt_tokens.
+        current_tokens = int(self._total_usage.get("prompt_tokens", 0))
+        if current_tokens == 0:
+            # Fallback: rough estimate (4 chars ≈ 1 token).
+            current_tokens = sum(len(m.content) for m in self._messages) // 4
+        if not compactor.should_compact(self._messages, current_tokens):
+            return
+        result = compactor.compact(self._messages)
+        if result.removed_count > 0:
+            self._messages = result.compacted_messages
+            await self._emit_event(
+                CompactionEvent(
+                    type="compaction",
+                    run_id=self._run_id,
+                    iteration=self._iteration,
+                    removed_count=result.removed_count,
+                    tokens_before=result.tokens_before,
+                    tokens_after=result.tokens_after,
+                    mode=compactor.config.mode,
+                )
+            )
+
+    # -- internal: long-term memory -------------------------------------
+
+    def _inject_memory(self, system_prompt: str, user_input: str) -> str:
+        """Retrieve relevant memories and prepend them to the system prompt.
+
+        When ``enable_memory`` is True and a :class:`MemoryManager` is
+        attached, this queries the memory store for memories relevant to
+        ``user_input`` and prepends a ``<memory>`` block to the system
+        prompt. If no memories are found, the prompt is returned unchanged.
+        """
+
+        if not self._config.enable_memory or self._memory_manager is None:
+            return system_prompt
+        try:
+            context = self._memory_manager.build_context(user_input, max_memories=5)
+            if not context:
+                return system_prompt
+            memory_block = f"\n\n<memories>\n{context}\n</memories>"
+            return system_prompt + memory_block
+        except Exception as exc:  # noqa: BLE001 - memory is best-effort
+            logger.debug("Memory injection failed (best-effort): %s", exc)
+            return system_prompt
+
+    # -- internal: evaluation -------------------------------------------
+
+    async def _maybe_evaluate(self, result: RunResult) -> None:
+        """Run the evaluation pipeline on the run's final output.
+
+        When ``auto_evaluate`` is True and an evaluator is attached,
+        this calls the evaluator's ``evaluate`` method with the final
+        content and emits an :class:`EvaluationCompletedEvent`. Errors
+        are swallowed (evaluation is best-effort).
+        """
+
+        if not self._config.auto_evaluate or self._evaluator is None:
+            return
+        if not result.final_content:
+            return
+        try:
+            eval_result = await self._run_evaluation(result.final_content)
+            if eval_result is not None:
+                await self._emit_event(
+                    EvaluationCompletedEvent(
+                        type="evaluation-completed",
+                        run_id=self._run_id,
+                        overall_score=eval_result.get("overall_score", 0.0),
+                        passed=eval_result.get("passed", True),
+                        criterion_count=eval_result.get("criterion_count", 0),
+                        feedback=eval_result.get("feedback", ""),
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001 - evaluation is best-effort
+            logger.warning("Evaluation failed (best-effort, continuing): %s", exc)
+
+    async def _run_evaluation(self, content: str) -> dict[str, Any] | None:
+        """Execute evaluation and return a summary dict.
+
+        Handles both async and sync evaluators. Returns ``None`` if the
+        evaluator doesn't produce a usable result.
+        """
+
+        evaluator = self._evaluator
+        # Try async evaluate first.
+        if hasattr(evaluator, "evaluate_async"):
+            raw = await evaluator.evaluate_async(content)
+        elif hasattr(evaluator, "evaluate"):
+            raw = evaluator.evaluate(content)
+            if asyncio.iscoroutine(raw):
+                raw = await raw
+        else:
+            return None
+        # Normalise the result into a flat dict.
+        if hasattr(raw, "overall_score"):
+            return {
+                "overall_score": float(raw.overall_score),
+                "passed": getattr(raw, "passed", True),
+                "criterion_count": len(getattr(raw, "scores", [])),
+                "feedback": getattr(raw, "feedback", ""),
+            }
+        if isinstance(raw, dict):
+            return raw
+        return None
+
+    # -- public: component accessors ------------------------------------
+
+    @property
+    def memory_manager(self) -> Any:
+        """The attached long-term memory manager, if any."""
+
+        return self._memory_manager
+
+    @property
+    def evaluator(self) -> Any:
+        """The attached evaluation pipeline, if any."""
+
+        return self._evaluator
+
 
 __all__ = [
     "AgentMode",
@@ -1374,6 +1591,8 @@ __all__ = [
     "AgentRuntimeConfig",
     "AssistantMessageEvent",
     "ChangeTracker",
+    "CompactionEvent",
+    "EvaluationCompletedEvent",
     "EventEmitter",
     "LLMClient",
     "LLMRequest",

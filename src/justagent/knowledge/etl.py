@@ -509,6 +509,7 @@ class DatabaseSource(ETLSource):
                 try:
                     conn.close()
                 except Exception:
+                    logger.debug("Failed to close connection", exc_info=True)
                     pass
 
 

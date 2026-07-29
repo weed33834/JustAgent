@@ -32,46 +32,13 @@ from typing import TYPE_CHECKING
 
 import structlog
 
+from justagent.utils import glob_to_regex, matches_any
+
 if TYPE_CHECKING:
     from justagent.core.audit_logger import AuditLogger
     from justagent.models.config import AppConfig, HookConfig
 
 logger = structlog.get_logger("justagent")
-
-
-def _glob_to_regex(pattern: str) -> re.Pattern[str]:
-    """Convert a glob pattern (with ** support) to a compiled regex."""
-    # Build regex char-by-char to handle ** correctly.
-    parts: list[str] = []
-    i = 0
-    while i < len(pattern):
-        if pattern[i : i + 3] == "**/":
-            # **/ matches zero or more leading path components
-            parts.append("(?:.*/)?")
-            i += 3
-        elif pattern[i : i + 2] == "**":
-            # ** matches anything (including /)
-            parts.append(".*")
-            i += 2
-        elif pattern[i] == "*":
-            parts.append("[^/]*")
-            i += 1
-        elif pattern[i] == "?":
-            parts.append("[^/]")
-            i += 1
-        else:
-            parts.append(re.escape(pattern[i]))
-            i += 1
-    return re.compile("".join(parts))
-
-
-def _matches_any(path_str: str, patterns: Sequence[str]) -> bool:
-    """Return True if ``path_str`` matches any of the glob ``patterns``.
-
-    Supports ``**`` for recursive path matching (unlike :func:`fnmatch.fnmatch`
-    which treats ``*`` as matching ``/``).
-    """
-    return any(_glob_to_regex(p).fullmatch(path_str) for p in patterns)
 
 
 @dataclass(frozen=True)
@@ -146,9 +113,9 @@ class OnSaveHookRunner:
         matches: list[tuple[int, HookConfig]] = []
         for idx, hook in enumerate(self.config.hooks.on_save):
             include = hook.include or ["**/*"]
-            if not _matches_any(rel_str, include):
+            if not matches_any(rel_str, include):
                 continue
-            if _matches_any(rel_str, hook.exclude):
+            if matches_any(rel_str, hook.exclude):
                 continue
             matches.append((idx, hook))
         return matches

@@ -98,11 +98,11 @@
     {
       "name": "commit-sign",
       "package": "justagent-commit-sign",
-      "module": "myagent_commit_sign.plugin",
+      "module": "justagent_commit_sign.plugin",
       "version": "0.1.0",
       "description": "自动为生成的 commit 添加 GPG 签名。",
       "trust_level": "community",
-      "entry_point": "myagent_commit_sign.plugin:CommitSignPlugin",
+      "entry_point": "justagent_commit_sign.plugin:CommitSignPlugin",
       "hooks": ["pre_commit"],
       "publisher": {
         "id": "alice-chen",
@@ -131,11 +131,11 @@
     {
       "name": "jira-link",
       "package": "justagent-jira-link",
-      "module": "myagent_jira_link.plugin",
+      "module": "justagent_jira_link.plugin",
       "version": "0.2.1",
       "description": "从分支名提取 Jira Ticket 并写入 commit message。",
       "trust_level": "community",
-      "entry_point": "myagent_jira_link.plugin:JiraLinkPlugin",
+      "entry_point": "justagent_jira_link.plugin:JiraLinkPlugin",
       "hooks": ["pre_commit"],
       "publisher": {
         "id": "jira-link-contrib",
@@ -162,11 +162,11 @@
     {
       "name": "changelog",
       "package": "justagent-changelog",
-      "module": "myagent_changelog.plugin",
+      "module": "justagent_changelog.plugin",
       "version": "0.1.0",
       "description": "根据 commit 历史自动生成或更新 CHANGELOG.md。",
       "trust_level": "community",
-      "entry_point": "myagent_changelog.plugin:ChangelogPlugin",
+      "entry_point": "justagent_changelog.plugin:ChangelogPlugin",
       "hooks": ["post_commit"],
       "publisher": {
         "id": "changelog-contrib",
@@ -193,11 +193,11 @@
     {
       "name": "pytest-cov",
       "package": "justagent-pytest-cov",
-      "module": "myagent_pytest_cov.plugin",
+      "module": "justagent_pytest_cov.plugin",
       "version": "0.1.2",
       "description": "pre_commit 阶段运行 pytest 并检查覆盖率阈值。",
       "trust_level": "community",
-      "entry_point": "myagent_pytest_cov.plugin:PytestCovPlugin",
+      "entry_point": "justagent_pytest_cov.plugin:PytestCovPlugin",
       "hooks": ["pre_commit"],
       "publisher": {
         "id": "pytest-cov-contrib",

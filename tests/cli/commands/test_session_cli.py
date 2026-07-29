@@ -16,6 +16,11 @@ runner = CliRunner()
 def _invoke(
     args: list[str], *, sessions_dir: Path, monkeypatch: pytest.MonkeyPatch
 ):
+    # Set the canonical env var explicitly. Config loading runs
+    # ``_migrate_legacy_env()`` which would otherwise copy the legacy
+    # ``MYAGENT_*`` value into ``JUSTAGENT_*`` as an untracked side effect
+    # and leak across tests. Setting it here keeps each test isolated.
+    monkeypatch.setenv("JUSTAGENT_SESSIONS_DIR", str(sessions_dir))
     monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(sessions_dir))
     return runner.invoke(app, ["session", *args])
 
@@ -147,7 +152,7 @@ class TestSessionDelete:
 
 
 # ---------------------------------------------------------------------------
-# resume (prints instructions)
+# resume (launches the interactive agent with --resume <id>)
 # ---------------------------------------------------------------------------
 
 
@@ -159,12 +164,29 @@ class TestSessionResume:
         store = SessionStore(sessions_dir)
         sid = _seed_session(store)
 
+        captured: dict[str, object] = {}
+
+        class _Completed:
+            returncode = 0
+
+        def _fake_run(cmd, *args, **kwargs):
+            captured["cmd"] = list(cmd)
+            return _Completed()
+
+        # Don't actually spawn an interactive subprocess in the unit test.
+        monkeypatch.setattr("subprocess.run", _fake_run)
+
         result = _invoke(
             ["resume", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch
         )
         assert result.exit_code == 0
         assert sid in result.output
-        assert "--resume" in result.output
+        # The interactive agent is launched with the session restored.
+        cmd = list(captured.get("cmd", []))
+        assert "agent" in cmd
+        assert "-i" in cmd
+        assert "--resume" in cmd
+        assert sid in cmd
 
     def test_resume_nonexistent(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

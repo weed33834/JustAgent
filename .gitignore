@@ -46,9 +46,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# MyAgent local
-.myagent/
-.myagent.toml
+# JustAgent local
+.justagent/
+.justagent.toml
 
 # Secrets — never commit
 .env

@@ -9,6 +9,7 @@ To use a custom gateway, set provider=openai with a custom base_url.
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 from typing import Any, cast
@@ -23,6 +24,8 @@ from justagent.adapters.model_gateway import (
 from justagent.exceptions import ModelGatewayError
 from justagent.models.config import ModelBackendConfig, Provider
 
+logger = logging.getLogger("justagent.adapters.providers.unified_gateway")
+
 # Map internal providers to LiteLLM model prefix / custom_llm_provider.
 _PROVIDER_MAP: dict[Provider, str] = {
     Provider.OLLAMA: "ollama",
@@ -35,6 +38,13 @@ _PROVIDER_MAP: dict[Provider, str] = {
 }
 
 # Default base URL for each local provider.
+#
+# This is the single canonical source of provider -> base URL defaults for
+# the whole project. The CLI command modules (``agent``, ``fix``, ``skill``)
+# import this mapping instead of redefining their own so the values stay in
+# sync. Note that ``UnifiedGateway.__init__`` runs these through
+# :func:`_normalize_base_url` (which appends ``/v1`` for bare roots), so the
+# values here are intentionally unnormalized.
 _PROVIDER_BASE_URLS: dict[Provider, str] = {
     Provider.OLLAMA: "http://localhost:11434",
     Provider.LM_STUDIO: "http://localhost:1234/v1",
@@ -132,6 +142,9 @@ class UnifiedGateway(ModelGateway):
             )
             return bool(response and response.choices)
         except Exception:
+            logger.debug(
+                "Health check failed for provider %s", self._provider.value, exc_info=True
+            )
             return False
 
     def list_models(self) -> list[str]:

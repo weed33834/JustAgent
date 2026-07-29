@@ -42,7 +42,6 @@ Example::
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import json
 import logging
@@ -55,6 +54,8 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+from justagent.utils import sha256_hex
 
 logger = logging.getLogger("justagent.security.compliance")
 
@@ -246,7 +247,7 @@ class AuditTrail(BaseModel):
     def compute_hash(self) -> str:
         """Return the SHA-256 hex digest of this entry's signing payload."""
 
-        return hashlib.sha256(self._signing_payload().encode("utf-8")).hexdigest()
+        return sha256_hex(self._signing_payload())
 
     def seal(self) -> AuditTrail:
         """Return a copy with ``entry_hash`` populated (idempotent)."""

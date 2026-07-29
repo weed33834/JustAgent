@@ -397,8 +397,8 @@ class DatabaseBackend(ABC):
             broken = True
             try:
                 conn.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Rollback failed: %s", exc)
             raise
         finally:
             # NOTE: must release in ``finally`` — a ``return`` inside the
@@ -437,8 +437,8 @@ class DatabaseBackend(ABC):
             broken = True
             try:
                 conn.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Rollback failed: %s", exc)
             raise
         finally:
             self._pool.release(conn, broken=broken)
@@ -468,8 +468,8 @@ class DatabaseBackend(ABC):
         except Exception:
             try:
                 conn.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Transaction rollback failed: %s", exc)
             self._pool.release(conn, broken=True)
             raise
         else:
@@ -630,8 +630,8 @@ class SqliteBackend(DatabaseBackend):
             try:
                 conn.execute("PRAGMA journal_mode=WAL")
                 conn.execute("PRAGMA busy_timeout=5000")
-            except sqlite3.DatabaseError:
-                pass
+            except sqlite3.DatabaseError as exc:
+                logger.debug("Failed to set WAL mode: %s", exc)
         conn.row_factory = None
         return conn
 

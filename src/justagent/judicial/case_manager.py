@@ -38,7 +38,6 @@ import asyncio
 import logging
 import re
 import threading
-import time
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -50,6 +49,7 @@ from justagent.knowledge.document import (
     Document,
     DocumentParser,
 )
+from justagent.utils import now
 
 logger = logging.getLogger("justagent.judicial.case_manager")
 
@@ -270,7 +270,7 @@ class CaseMaterial(BaseModel):
     document: Document
     material_type: MaterialType = MaterialType.OTHER
     case_id: str = ""
-    imported_at: float = Field(default_factory=lambda: _now())
+    imported_at: float = Field(default_factory=now)
     notes: str = ""
 
 
@@ -310,8 +310,8 @@ class CaseFile(BaseModel):
     material_ids: list[str] = Field(default_factory=list)
     status: CaseStatus = CaseStatus.DRAFT
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
-    updated_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
+    updated_at: float = Field(default_factory=now)
 
     @property
     def is_active(self) -> bool:
@@ -367,16 +367,10 @@ class CaseContext(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _now() -> float:
-    """Return the current Unix timestamp."""
-
-    return time.time()
-
-
 def _touch(case: CaseFile) -> None:
     """Update the ``updated_at`` timestamp on a case."""
 
-    case.updated_at = _now()
+    case.updated_at = now()
 
 
 # Regex patterns for rule-based structured extraction fallback.

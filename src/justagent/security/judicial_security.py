@@ -47,11 +47,9 @@ Example::
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import threading
-import time
 import uuid
 from enum import Enum
 from typing import Any
@@ -63,6 +61,7 @@ from justagent.security.compliance import (
     AuditTrail,
     AuditTrailManager,
 )
+from justagent.utils import now, sha256_hex
 
 logger = logging.getLogger("justagent.security.judicial_security")
 
@@ -161,24 +160,9 @@ _DEFAULT_CLEARANCE = JudicialSecurityLevel.PUBLIC
 # ---------------------------------------------------------------------------
 
 
-def _now() -> float:
-    """Return the current Unix timestamp."""
-
-    return time.time()
-
-
-def _sha256(data: bytes | str) -> str:
-    """Return the SHA-256 hex digest of *data*.
-
-    Strings are encoded as UTF-8 before hashing.
-    """
-
-    if isinstance(data, str):
-        data = data.encode("utf-8")
-    return hashlib.sha256(data).hexdigest()
-
-
 #: SHA-256 of an empty string — sentinel for the genesis custody record.
+#: Kept as a local constant for the default field value; SHA-256 hashing
+#: itself is centralised in :func:`justagent.utils.sha256_hex`.
 _GENESIS_PREV_HASH = "0" * 64
 
 
@@ -202,7 +186,7 @@ class CaseClassification(BaseModel):
     case_id: str
     security_level: JudicialSecurityLevel = JudicialSecurityLevel.INTERNAL
     classified_by: str = ""
-    classified_at: float = Field(default_factory=_now)
+    classified_at: float = Field(default_factory=now)
     reason: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -590,7 +574,7 @@ class EvidenceItem(BaseModel):
     case_id: str
     content_hash: str
     registered_by: str = ""
-    registered_at: float = Field(default_factory=_now)
+    registered_at: float = Field(default_factory=now)
     description: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -619,7 +603,7 @@ class CustodyRecord(BaseModel):
     evidence_id: str
     handler: str
     action: str
-    timestamp: float = Field(default_factory=_now)
+    timestamp: float = Field(default_factory=now)
     notes: str = ""
     prev_hash: str = _GENESIS_PREV_HASH
     record_hash: str = ""
@@ -641,7 +625,7 @@ class CustodyRecord(BaseModel):
     def compute_hash(self) -> str:
         """Return the SHA-256 hex digest of this record's signing payload."""
 
-        return _sha256(self._signing_payload())
+        return sha256_hex(self._signing_payload())
 
     def seal(self) -> CustodyRecord:
         """Return a copy with ``record_hash`` populated (idempotent)."""
@@ -714,7 +698,7 @@ class EvidenceChainSecurity:
         """
 
         eid = evidence_id or uuid.uuid4().hex
-        content_hash = _sha256(content)
+        content_hash = sha256_hex(content)
         item = EvidenceItem(
             evidence_id=eid,
             case_id=case_id,
@@ -815,7 +799,7 @@ class EvidenceChainSecurity:
         if item is None:
             logger.warning("Evidence not found for verification: %s", evidence_id)
             return False
-        recomputed = _sha256(content)
+        recomputed = sha256_hex(content)
         if recomputed != item.content_hash:
             logger.error(
                 "Evidence content hash mismatch for %s: expected %s, got %s",

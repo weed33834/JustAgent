@@ -40,6 +40,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
 
+from justagent.utils import utcnow
+
 logger = logging.getLogger("justagent.resources")
 
 
@@ -891,9 +893,10 @@ class StorageManager:
             info = backend.stat(key)
             size = info.size
             files = 0 if info.is_dir else 1
-        except StorageError:
+        except StorageError as exc:
             size = 0
             files = 0
+            logger.debug("stat failed: %s", exc)
         removed = backend.delete(key)
         if removed:
             self._quota.record(
@@ -929,8 +932,8 @@ class StorageManager:
             info = src_backend.stat(src_key)
             size = info.size
             files = 0 if info.is_dir else 1
-        except StorageError:
-            pass
+        except StorageError as exc:
+            logger.debug("stat failed during rename: %s", exc)
         src_backend.rename(src_key, dst_key)
         src_ns = self._namespace_for(self._scheme_of(src), src_key)
         dst_ns = self._namespace_for(self._scheme_of(dst), dst_key)
@@ -949,8 +952,9 @@ class StorageManager:
         namespace = self._namespace_for(scheme, dst_key)
         try:
             size = src_backend.stat(src_key).size
-        except StorageError:
+        except StorageError as exc:
             size = 0
+            logger.debug("stat failed during copy: %s", exc)
         if not self._quota.check(namespace, extra_bytes=size, extra_files=1):
             raise QuotaExceededError(
                 namespace,
@@ -990,12 +994,6 @@ class StorageManager:
                 backend.close()
             except Exception as exc:  # noqa: BLE001
                 logger.debug("backend close error: %s", exc)
-
-
-def utcnow() -> float:
-    """Return the current UTC timestamp (kept for callers/tests)."""
-
-    return datetime.now(tz=timezone.utc).timestamp()
 
 
 __all__ = [

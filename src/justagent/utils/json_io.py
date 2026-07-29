@@ -10,28 +10,17 @@ their own data-shape and validation logic.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 import structlog
 
+from justagent.utils.atomic_write import atomic_write_text
 from justagent.utils.permissions import (
     ensure_dir_permissions,
     ensure_file_permissions,
     warn_if_too_broad,
 )
-
-
-def atomic_write_text(path: Path, content: str, encoding: str = "utf-8") -> None:
-    """Write text to ``path`` atomically via write-temp-then-rename."""
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    try:
-        tmp.write_text(content, encoding=encoding)
-        os.replace(tmp, path)
-    except Exception:
-        tmp.unlink(missing_ok=True)
-        raise
 
 
 logger = structlog.get_logger("justagent")

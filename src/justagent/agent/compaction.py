@@ -120,6 +120,12 @@ class Compactor:
         self._config = config
         self._llm_client = llm_client
 
+    @property
+    def config(self) -> CompactionConfig:
+        """The compaction configuration backing this compactor."""
+
+        return self._config
+
     def should_compact(
         self,
         messages: list[Message],

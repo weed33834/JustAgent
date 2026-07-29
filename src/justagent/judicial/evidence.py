@@ -37,7 +37,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-import time
 import uuid
 from enum import Enum
 from typing import Any
@@ -49,6 +48,7 @@ from justagent.knowledge.graph import (
     EntityType,
     KnowledgeGraph,
 )
+from justagent.utils import now
 
 logger = logging.getLogger("justagent.judicial.evidence")
 
@@ -205,7 +205,7 @@ class Evidence(BaseModel):
     probative_strength: ProbativeStrength = ProbativeStrength.MEDIUM
     probative_score: float = 0.0
     metadata: dict[str, Any] = Field(default_factory=dict)
-    created_at: float = Field(default_factory=lambda: _now())
+    created_at: float = Field(default_factory=now)
     reviewed: bool = False
 
     @property
@@ -300,10 +300,24 @@ class ChainAnalysisResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _now() -> float:
-    """Return the current Unix timestamp."""
+def _tokenize(text: str) -> set[str]:
+    """Tokenize text into a set of terms using jieba for Chinese.
 
-    return time.time()
+    Falls back to whitespace splitting when jieba is not installed.
+    Filters out single-character tokens and common stop words to
+    improve matching precision.
+    """
+
+    try:
+        import jieba
+
+        tokens = set(jieba.cut(text))
+    except ImportError:
+        tokens = set(text.split())
+
+    # Remove empty strings, single punctuation, and common stop words.
+    stop_words = {"的", "了", "和", "是", "在", "有", "与", "对", "为", "及", "或"}
+    return {t for t in tokens if len(t) >= 2 and t not in stop_words}
 
 
 def _probative_strength_from_score(score: float) -> ProbativeStrength:
@@ -486,8 +500,8 @@ class EvidenceChain:
                         weight=weight,
                         metadata={"description": description},
                     )
-                except KeyError:
-                    pass
+                except KeyError as exc:
+                    logger.debug("Entity not found in knowledge graph, skipping relation: %s", exc)
         return relation
 
     def list_relations(
@@ -671,8 +685,8 @@ class EvidenceChain:
                     if evidence.source_document_id
                     else [],
                 )
-            except KeyError:
-                pass
+            except KeyError as exc:
+                logger.debug("Entity not found in knowledge graph, skipping relation: %s", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -769,6 +783,8 @@ class EvidenceReviewer:
 
         Computes a relevance score in ``[0, 1]`` based on the textual
         overlap between the evidence description and the proving object.
+        Uses :mod:`jieba` for proper Chinese word segmentation when
+        available, falling back to character-level matching otherwise.
         A higher score means the evidence is more directly relevant to
         what it claims to prove.
 
@@ -789,9 +805,9 @@ class EvidenceReviewer:
         if not evidence.description:
             return 0.3, "证据描述缺失，关联性难以判断。"
 
-        # Simple keyword overlap between description and proving object.
-        desc_terms = set(evidence.description.lower().split())
-        obj_terms = set(evidence.proving_object.lower().split())
+        # Use jieba for proper Chinese word segmentation.
+        desc_terms = _tokenize(evidence.description.lower())
+        obj_terms = _tokenize(evidence.proving_object.lower())
         if not obj_terms:
             return 0.3, "证明对象为空，关联性难以判断。"
 

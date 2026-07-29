@@ -51,6 +51,9 @@ from justagent.agent.runtime import (
 from justagent.agent.session import Session, SessionError, get_session_store
 from justagent.agent.slash_commands import CommandAction, create_default_registry
 from justagent.agent.tools.builtin import make_default_tools
+from justagent.adapters.providers.unified_gateway import (
+    _PROVIDER_BASE_URLS as _DEFAULT_BASE_URLS,
+)
 from justagent.cli.display import RichDisplay
 from justagent.exceptions import MyAgentError
 from justagent.models.config import AppConfig, LlmProvider, Provider
@@ -85,11 +88,8 @@ _LLM_PROVIDER_TO_BACKEND: dict[LlmProvider, Provider] = {
 }
 
 #: Default base URLs for providers that don't specify one in config.
-_DEFAULT_BASE_URLS: dict[Provider, str] = {
-    Provider.OPENAI: "https://api.openai.com/v1",
-    Provider.OPENROUTER: "https://openrouter.ai/api/v1",
-    Provider.OLLAMA: "http://127.0.0.1:11434/v1",
-}
+#: Imported from :data:`unified_gateway._PROVIDER_BASE_URLS` (single source
+#: of truth) — see ``justagent.adapters.providers.unified_gateway``.
 
 
 def register(parent: typer.Typer) -> None:
@@ -491,7 +491,7 @@ async def _run_interactive(
                     break
             else:
                 typer.secho(
-                    "\nmyagent> ", fg=typer.colors.CYAN, bold=True, nl=False
+                    "\njustagent> ", fg=typer.colors.CYAN, bold=True, nl=False
                 )
                 line = input()
         except (EOFError, KeyboardInterrupt):
@@ -609,6 +609,12 @@ def agent(
     resume: str | None = typer.Option(
         None, "--resume", help="恢复指定会话（加载历史后进入交互模式）"
     ),
+    memory: bool = typer.Option(
+        False, "--memory", help="启用长期记忆（跨会话上下文保留）"
+    ),
+    evaluate: bool = typer.Option(
+        False, "--evaluate", help="启用输出质量评估（LLM-as-Judge）"
+    ),
 ) -> None:
     """运行本地 AI 智能体循环。
 
@@ -693,6 +699,9 @@ def agent(
         max_tokens=max_tokens,
         initial_mode=initial_mode,
         change_tracker=change_tracker,
+        auto_compact=True,
+        enable_memory=memory,
+        auto_evaluate=evaluate,
     )
     emit = _make_emit_callback(
         json_mode=json_output,
@@ -775,6 +784,31 @@ def agent(
             initial_prompt=prompt,
         )
 
+    # Optionally create a long-term memory manager for cross-session context.
+    memory_manager = None
+    if memory:
+        try:
+            from justagent.agent.memory import MemoryManager, MemoryStore
+
+            mem_store = MemoryStore()
+            memory_manager = MemoryManager(mem_store)
+        except Exception:  # noqa: BLE001 - memory is best-effort
+            pass
+
+    # Optionally create an evaluation pipeline for output quality assessment.
+    evaluator = None
+    if evaluate:
+        try:
+            from justagent.agent.evaluation import (
+                EvaluationPipeline,
+                RuleBasedEvaluator,
+            )
+
+            evaluator = EvaluationPipeline()
+            evaluator.register_evaluator(RuleBasedEvaluator(), weight=1.0)
+        except Exception:  # noqa: BLE001 - evaluation is best-effort
+            pass
+
     runtime = AgentRuntime(
         client=client,
         tools=tools,
@@ -784,6 +818,8 @@ def agent(
         ask=_ask,
         session=session,
         session_store=session_store,
+        memory_manager=memory_manager,
+        evaluator=evaluator,
     )
 
     # Audit log start (best-effort).

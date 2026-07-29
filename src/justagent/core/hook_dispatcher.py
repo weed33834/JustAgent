@@ -22,7 +22,7 @@ from justagent.core.context import CommandContext
 from justagent.core.plugin_registry import PluginRegistry, TrustLevel
 from justagent.core.sandbox import SandboxRunner
 from justagent.exceptions import PluginError
-from justagent.hookspec import MyAgentHookSpec
+from justagent.hookspec import JustAgentHookSpec
 from justagent.plugins.defaults import FixSuggestion
 
 if TYPE_CHECKING:
@@ -115,7 +115,7 @@ class HookDispatcher:
         audit_logger: AuditLogger | None = None,
     ) -> None:
         self.pm = pluggy.PluginManager("justagent")
-        self.pm.add_hookspecs(MyAgentHookSpec)
+        self.pm.add_hookspecs(JustAgentHookSpec)
         self.registry = registry or PluginRegistry()
         self._sandbox_runner_factory = sandbox_runner_factory
         self._no_sandbox = no_sandbox

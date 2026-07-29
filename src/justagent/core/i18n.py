@@ -67,15 +67,21 @@ def _load_catalog(lang: str) -> dict[str, str]:
 def _detect_locale() -> str:
     """Detect preferred language from environment or system locale.
 
-    Note: this resolves the locale from env vars (``MYAGENT_LANG``/``LANG``)
-    and the system locale only — it never reads ``config.locale``. As a
-    consequence, module-level ``get_i18n()`` calls (used to bind typer help
-    text at import time, e.g. in ``upload.py``/``config.py``/``main.py``)
-    are governed solely by env vars; ``config.locale`` cannot override help
-    text bound during module load. Runtime command output should use
-    ``get_i18n_from_ctx`` instead, which honours the per-invocation locale.
+    Note: this resolves the locale from env vars (``JUSTAGENT_LANG``/
+    ``MYAGENT_LANG``/``LANG``) and the system locale only — it never reads
+    ``config.locale``. As a consequence, module-level ``get_i18n()`` calls
+    (used to bind typer help text at import time, e.g. in ``upload.py``/
+    ``config.py``/``main.py``) are governed solely by env vars;
+    ``config.locale`` cannot override help text bound during module load.
+    Runtime command output should use ``get_i18n_from_ctx`` instead, which
+    honours the per-invocation locale.
     """
-    env_lang = os.environ.get("MYAGENT_LANG") or os.environ.get("LANG", "")
+
+    env_lang = (
+        os.environ.get("JUSTAGENT_LANG")
+        or os.environ.get("MYAGENT_LANG")
+        or os.environ.get("LANG", "")
+    )
     normalized = env_lang.split(".")[0].replace("-", "_").lower()
     if normalized.startswith("zh"):
         return "zh"

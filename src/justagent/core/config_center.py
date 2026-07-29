@@ -16,11 +16,15 @@ from justagent.models.config import AppConfig
 logger = structlog.get_logger("justagent")
 
 DEFAULT_CONFIG_NAME = ".justagent.toml"
-ENV_PREFIX = "MYAGENT_"
+ENV_PREFIX = "JUSTAGENT_"
 
 
 class _EnvSettings(BaseSettings):
-    """Environment-variable bridge: maps MYAGENT_* vars to AppConfig fields."""
+    """Environment-variable bridge: maps JUSTAGENT_* vars to AppConfig fields.
+
+    For backward compatibility, legacy ``MYAGENT_*`` env vars are also
+    honoured via :func:`_migrate_legacy_env`.
+    """
 
     model_config = SettingsConfigDict(
         env_prefix=f"{ENV_PREFIX}",
@@ -32,7 +36,7 @@ class _EnvSettings(BaseSettings):
     locale: str | None = None
     project_root: str | None = None
 
-    # Nested sections — pydantic-settings handles MYAGENT_CLEAN__TOOLS etc.
+    # Nested sections — pydantic-settings handles JUSTAGENT_CLEAN__TOOLS etc.
     clean: dict[str, Any] | None = None
     commit: dict[str, Any] | None = None
     security: dict[str, Any] | None = None
@@ -56,8 +60,30 @@ def _load_toml(path: Path) -> dict[str, Any]:
         raise ConfigError(f"Failed to load config from {path}: {exc}") from exc
 
 
+def _migrate_legacy_env() -> None:
+    """Copy legacy ``MYAGENT_*`` env vars to ``JUSTAGENT_*`` if not already set.
+
+    This provides backward compatibility for users who configured their
+    environment with the old prefix. Only copies when the new-prefix
+    equivalent is not already present.
+    """
+
+    import os
+
+    legacy_prefix = "MYAGENT_"
+    new_prefix = ENV_PREFIX
+    for key in list(os.environ):
+        if key.startswith(legacy_prefix):
+            new_key = new_prefix + key[len(legacy_prefix) :]
+            if new_key not in os.environ:
+                os.environ[new_key] = os.environ[key]
+                logger.debug("Migrated legacy env var %s -> %s", key, new_key)
+
+
 def _env_settings_dict() -> dict[str, Any]:
     """Load env vars via pydantic-settings and drop None values."""
+
+    _migrate_legacy_env()
     settings = _EnvSettings()
     raw = settings.model_dump()
     return _strip_none(raw)
@@ -127,7 +153,7 @@ def load_config(
 
     Priority (high → low):
         1. CLI overrides
-        2. Environment variables (MYAGENT_*)
+        2. Environment variables (JUSTAGENT_*, legacy MYAGENT_* also supported)
         3. Project-level ``.justagent.toml`` (including team overlay)
         4. Built-in defaults
     """
@@ -146,7 +172,7 @@ def load_config(
     project_cfg = _load_toml(project_config_path)
     merged = _deep_merge(merged, project_cfg)
 
-    # Environment variables (pydantic-settings handles MYAGENT_* natively)
+    # Environment variables (pydantic-settings handles JUSTAGENT_* natively)
     env_cfg = _env_settings_dict()
     merged = _deep_merge(merged, env_cfg)
 
@@ -160,3 +186,10 @@ def load_config(
         return AppConfig.model_validate(merged)
     except ValidationError as exc:
         raise ConfigError(f"Invalid configuration: {exc}") from exc
+
+
+__all__ = [
+    "DEFAULT_CONFIG_NAME",
+    "ENV_PREFIX",
+    "load_config",
+]

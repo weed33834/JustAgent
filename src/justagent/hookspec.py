@@ -16,7 +16,7 @@ hookspec = pluggy.HookspecMarker("justagent")
 hookimpl = pluggy.HookimplMarker("justagent")
 
 
-class MyAgentHookSpec:
+class JustAgentHookSpec:
     """Lifecycle hooks available to plugins."""
 
     @hookspec
@@ -62,3 +62,7 @@ class MyAgentHookSpec:
     @hookspec
     def on_error(self, context: CommandContext, error: Exception) -> FixSuggestion | None:
         """Called when a command raises an error; may return a fix suggestion."""
+
+
+# Backward-compatible alias for any external code still referencing the old name.
+MyAgentHookSpec = JustAgentHookSpec

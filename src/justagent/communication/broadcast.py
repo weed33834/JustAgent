@@ -729,6 +729,7 @@ class BroadcastService:
         self._receipts: dict[str, list[Receipt]] = {}
         self._status: dict[str, BroadcastStatus] = {}
         self._lock = asyncio.Lock()
+        self._reminder_tasks: set[asyncio.Task] = set()
 
     # ------------------------------------------------------------------
     # Parsing
@@ -1013,7 +1014,9 @@ class BroadcastService:
                         )
                         break
 
-        asyncio.create_task(_reminder_loop())
+        task = asyncio.create_task(_reminder_loop())
+        self._reminder_tasks.add(task)
+        task.add_done_callback(self._reminder_tasks.discard)
         logger.info(
             "Reminder loop scheduled for broadcast %s (interval=%ss)",
             broadcast_id,

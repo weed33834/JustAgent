@@ -10,6 +10,7 @@ Reference: Cline's task history and OpenCode's session persistence.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 import uuid
@@ -20,6 +21,12 @@ from typing import Any
 
 from justagent.exceptions import MyAgentError
 from justagent.utils.atomic_write import atomic_write_text
+
+# ---------------------------------------------------------------------------
+# Module logger
+# ---------------------------------------------------------------------------
+
+logger = logging.getLogger("justagent.agent.session")
 
 # ---------------------------------------------------------------------------
 # Module-level named defaults (lambdas can't satisfy mypy defaults)
@@ -287,7 +294,8 @@ class SessionStore:
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 result.append(_session_from_dict(data).metadata)
-            except Exception:  # noqa: BLE001 - skip corrupt files
+            except Exception as exc:  # noqa: BLE001 - skip corrupt files
+                logger.warning("Skipping corrupt session file %s: %s", path.name, exc)
                 continue
         result.sort(key=lambda m: m.updated_at, reverse=True)
         return result
@@ -364,16 +372,19 @@ class SessionStore:
 
 
 def get_session_store(store_dir: Path | None = None) -> SessionStore:
-    """Build a :class:`SessionStore`, honoring the ``MYAGENT_SESSIONS_DIR`` env var.
+    """Build a :class:`SessionStore`, honoring the ``JUSTAGENT_SESSIONS_DIR`` env var.
 
-    Explicit ``store_dir`` wins; otherwise the ``MYAGENT_SESSIONS_DIR``
-    environment variable is consulted (used by tests); otherwise the
-    default ``~/.justagent/sessions`` directory is used.
+    Explicit ``store_dir`` wins; otherwise the ``JUSTAGENT_SESSIONS_DIR``
+    (or legacy ``MYAGENT_SESSIONS_DIR``) environment variable is consulted;
+    otherwise the default ``~/.justagent/sessions`` directory is used.
     """
 
     if store_dir is not None:
         return SessionStore(store_dir)
-    env_dir = os.environ.get("MYAGENT_SESSIONS_DIR")
+    env_dir = (
+        os.environ.get("JUSTAGENT_SESSIONS_DIR")
+        or os.environ.get("MYAGENT_SESSIONS_DIR")
+    )
     if env_dir:
         return SessionStore(Path(env_dir))
     return SessionStore()
