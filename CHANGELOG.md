@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Multi-user accounts & roles.** `justagent web` now supports user accounts
+  (stored in `data/users.json`, default `admin` account auto-created). Roles:
+  `admin` / `editor` / `viewer`. Login at `/api/auth/login` issues a session
+  token; `viewer` is read-only, `editor` can write, `admin` can manage users.
+  `JUSTAGENT_WEB_TOKEN` shared-token auth still works as a fallback.
+
 - **Web UX enhancements (browser-native + external libs).**
   - **Voice input/output**: mic (Web Speech API `SpeechRecognition`) and TTS
     speak (browser `speechSynthesis`) — no backend dependency.

@@ -67,3 +67,12 @@ def test_create_case_via_web(client) -> None:
     )
     assert r.json()["ok"] is True
     assert len(client.get("/api/state").json()["cases"]) == 2
+
+
+def test_login_invalid_returns_401(client) -> None:
+    r = client.post("/api/auth/login", json={"username": "admin", "password": "wrong"})
+    assert r.status_code == 401
+
+
+def test_unknown_route_404(client) -> None:
+    assert client.get("/api/nope").status_code == 404

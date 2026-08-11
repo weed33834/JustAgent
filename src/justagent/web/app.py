@@ -17,7 +17,7 @@ import platform
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from justagent.agent.runtime import AgentRuntime, AgentRuntimeConfig, LLMClient
@@ -134,29 +134,65 @@ def create_app(config: AppConfig) -> FastAPI:
     app = FastAPI(title="JustAgent Web", version="1.0.0")
     state_path = _judicial_state_path(config)
 
-    # Optional bearer-token auth for API endpoints (set JUSTAGENT_WEB_TOKEN).
+    from justagent.web.users import ADMIN_ROLES, WRITE_ROLES, TokenManager, UserStore
+
+    user_store = UserStore()
+    user_store.ensure_admin()
+    tokens = TokenManager()
+    shared_token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
+
+    def _resolve_user(request) -> dict | None:
+        """Resolve a session user from the Authorization header (if any)."""
+        header = request.headers.get("authorization", "")
+        if header.startswith("Bearer "):
+            return tokens.resolve(header[7:])
+        return None
+
+    def _require_write(request) -> None:
+        """Enforce write permission when a session user is present (viewer is read-only)."""
+        user = _resolve_user(request)
+        if user is not None and user.get("role") not in WRITE_ROLES:
+            raise HTTPException(status_code=403, detail=f"{user.get('role')} cannot write")
+
+    @app.post("/api/auth/login")
+    async def login(payload: dict) -> dict:
+        username = (payload.get("username") or "").strip()
+        password = payload.get("password") or ""
+        user = user_store.authenticate(username, password)
+        if user is None:
+            raise HTTPException(status_code=401, detail="invalid credentials")
+        return {"token": tokens.issue(user), "username": user.username, "role": user.role}
+
+    @app.get("/api/auth/users")
+    async def list_users(request: Request) -> dict:
+        user = _resolve_user(request)
+        if not user or user.get("role") not in ADMIN_ROLES:
+            raise HTTPException(status_code=403, detail="admin required")
+        return {"items": user_store.list_users()}
+
+    @app.post("/api/auth/users/role")
+    async def set_user_role(request: Request, payload: dict) -> dict:
+        user = _resolve_user(request)
+        if not user or user.get("role") not in ADMIN_ROLES:
+            raise HTTPException(status_code=403, detail="admin required")
+        ok = user_store.set_role(payload.get("username", ""), payload.get("role", ""), user["role"])
+        return {"ok": ok}
+
     @app.middleware("http")
     async def _auth(request, call_next):
         path = request.url.path
-        if path == "/" or path.startswith("/api/health"):
+        if path in ("/", "/api/health", "/api/auth/login"):
             return await call_next(request)
-        token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
-        if token:
+        # Session user (if any) is resolved lazily by endpoints that need roles.
+        if shared_token:
             header = request.headers.get("authorization", "")
-            if header != f"Bearer {token}":
+            if header != f"Bearer {shared_token}":
                 return JSONResponse(status_code=401, content={"detail": "unauthorized"})
         return await call_next(request)
 
     # Per-session runtimes so the web chat keeps multi-turn conversation memory.
     _runtimes: dict[str, Any] = {}
     _runtimes_lock = asyncio.Lock()
-
-    async def _auth_ok(request) -> bool:
-        token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
-        if not token:
-            return True  # no token configured -> open access
-        header = request.headers.get("authorization", "")
-        return header == f"Bearer {token}"
 
     # -- pages --------------------------------------------------------------
     @app.get("/")
@@ -272,10 +308,11 @@ def create_app(config: AppConfig) -> FastAPI:
         ]}
 
     @app.post("/api/schedule")
-    async def schedule_add(payload: dict) -> dict:
+    async def schedule_add(request: Request, payload: dict) -> dict:
         from justagent.core.project_store import ProjectStore
         from justagent.core.scheduler import Scheduler, ScheduleStore
 
+        _require_write(request)
         name = (payload.get("name") or "").strip()
         schedule_expr = (payload.get("schedule") or "").strip() or "0 9 * * *"
         if not name:
@@ -421,9 +458,10 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"items": _load_judicial(config)["cases"]}
 
     @app.post("/api/judicial/case")
-    async def create_case(payload: dict) -> dict:
+    async def create_case(request: Request, payload: dict) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
 
+        _require_write(request)
         state = _JudicialState.load(state_path)
         case = state.case_manager.create_case(
             case_number=payload.get("case_number") or "",
@@ -484,10 +522,11 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"items": _load_judicial(config)["laws"]}
 
     @app.post("/api/judicial/law")
-    async def add_law(payload: dict) -> dict:
+    async def add_law(request: Request, payload: dict) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
         from justagent.judicial.legal_knowledge import LegalArticle, LegalDomain
 
+        _require_write(request)
         state = _JudicialState.load(state_path)
         article = LegalArticle(
             law_name=payload.get("law_name") or "未命名法律",
@@ -500,10 +539,11 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"ok": True, "id": article.id, "citation": article.citation}
 
     @app.post("/api/judicial/doc")
-    async def generate_doc(payload: dict) -> dict:
+    async def generate_doc(request: Request, payload: dict) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
         from justagent.judicial.document_generator import LegalDocumentGenerator
 
+        _require_write(request)
         state = _JudicialState.load(state_path)
         case = _find_case(state, payload.get("case_id") or "")
         if case is None:

@@ -182,7 +182,7 @@ async function send(){
   const chat=document.getElementById('chat');
   try{
     const res=await fetch('/api/chat/stream',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({message:text, history, session_id:getSession()})});
-    if(res.status===401){ token=prompt('请输入访问令牌（JUSTAGENT_WEB_TOKEN）：')||''; localStorage.setItem('justagent_token',token); bubble.textContent='请重试（已保存令牌）'; return; }
+    if(res.status===401){ await doLogin(); bubble.textContent='已登录，请重发消息'; return; }
     if(!res.ok || !res.body){ const d=await res.json().catch(()=>({})); bubble.textContent=d.reply||('请求失败: '+res.status); return; }
     const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
     while(true){
@@ -200,6 +200,14 @@ async function send(){
   }catch(e){ bubble.textContent='请求失败: '+e; }
 }
 function getSession(){ let s=localStorage.getItem('justagent_session'); if(!s){ s='s'+Date.now()+Math.random().toString(36).slice(2,8); localStorage.setItem('justagent_session',s);} return s; }
+async function doLogin(){
+  const cred=prompt('需要登录。输入 用户名:密码（或直接粘贴访问令牌）：');
+  if(!cred) return;
+  if(cred.indexOf(':')>=0){ const [u,p]=cred.split(':'); const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u.trim(),password:p.trim()})});
+    if(r.ok){ const d=await r.json(); token=d.token; localStorage.setItem('justagent_token',token); addMsg('assistant','已登录为 '+d.username+'（'+d.role+'）'); }
+    else addMsg('assistant','登录失败：'+r.status);
+  } else { token=cred; localStorage.setItem('justagent_token',token); addMsg('assistant','已设置访问令牌'); }
+}
 async function loadSystem(){
   try{
     const doctor=await (await fetch('/api/doctor',{method:'POST'})).json();
