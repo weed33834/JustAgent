@@ -29,6 +29,9 @@ from typing import Any
 
 import typer
 
+from justagent.adapters.providers.unified_gateway import (
+    _PROVIDER_BASE_URLS as _DEFAULT_BASE_URLS,
+)
 from justagent.agent.change_tracker import ChangeTracker
 from justagent.agent.plan_act import AgentMode
 from justagent.agent.runtime import (
@@ -51,9 +54,6 @@ from justagent.agent.runtime import (
 from justagent.agent.session import Session, SessionError, get_session_store
 from justagent.agent.slash_commands import CommandAction, create_default_registry
 from justagent.agent.tools.builtin import make_default_tools
-from justagent.adapters.providers.unified_gateway import (
-    _PROVIDER_BASE_URLS as _DEFAULT_BASE_URLS,
-)
 from justagent.cli.display import RichDisplay
 from justagent.exceptions import MyAgentError
 from justagent.models.config import AppConfig, LlmProvider, Provider
@@ -687,7 +687,10 @@ def agent(
     )
 
     # Build the tool registry and runtime.
-    tools = make_default_tools()
+    # Point the conversational agent at the same persisted judicial state the
+    # CLI uses, so it can manage cases/evidence/laws/documents from the chat.
+    judicial_state = config.project_root / ".justagent" / "judicial_state.json"
+    tools = make_default_tools(str(judicial_state))
     # Create a shared change tracker so both the runtime and the
     # display can access the same instance for the run summary.
     change_tracker = ChangeTracker()

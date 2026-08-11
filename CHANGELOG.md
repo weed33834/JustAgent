@@ -35,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`judicial` agent tool.** The conversational agent can now manage the
+  judicial subsystem directly from the chat interface (no CLI commands):
+  list cases, summarize a case with timeline, list/analyze evidence, browse
+  or search the legal knowledge base, and generate legal documents. The agent
+  is wired to the same persisted judicial state as the CLI
+  (`.justagent/judicial_state.json`).
+- **`judicial case summary`** — concise case overview + chronological timeline.
+- **`judicial evidence export`** — export evidence list + chain analysis to
+  markdown or JSON (for archiving / sharing).
+- **`judicial law export`** — export the legal knowledge base to markdown or
+  JSON (backup / training / sharing).
+
 - **`judicial law list` / `judicial law show`.** Legal professionals can now
   browse the legal knowledge base (list all articles, filter by
   domain/law/status, JSON output) and view a single article's full details by

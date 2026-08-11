@@ -1266,6 +1266,171 @@ def law_show(
     )
 
 
+@case_app.command("summary", help="生成案件摘要与时间轴。")
+def case_summary(
+    ctx: typer.Context,
+    case_id: str = typer.Argument(..., help="案件 ID（支持前缀匹配）"),
+) -> None:
+    """生成案件摘要与按时间排序的时间轴，便于快速掌握案情全貌。"""
+
+    with _state_session(ctx, save=False) as state:
+        case = _require_case(state, case_id)
+        materials = state.case_manager.list_materials(case.id)
+        evidence = state.evidence_chain.list_evidence(case_id=case.id)
+
+    console = get_console()
+    parties_txt = "、".join(
+        f"{p.role.value} {p.name}" for p in case.parties
+    ) or "（暂无当事人）"
+    claims_txt = "；".join(
+        f"{c.description}（金额 {c.amount}）" for c in case.claims
+    ) or "（暂无诉讼请求）"
+
+    overview = (
+        f"[bold]案号:[/bold] {case.case_number or '-'}\n"
+        f"[bold]案由:[/bold] {case.cause_of_action or '-'}\n"
+        f"[bold]法院:[/bold] {case.court or '-'}\n"
+        f"[bold]领域/状态:[/bold] {case.domain or '-'} / {case.status.value}\n"
+        f"[bold]当事人:[/bold] {parties_txt}\n"
+        f"[bold]诉讼请求:[/bold] {claims_txt}\n"
+        f"[bold]材料/证据:[/bold] {len(materials)} 份材料 / {len(evidence)} 项证据\n"
+        f"[bold]时间线事件:[/bold] {len(case.timeline)} 个"
+    )
+    console.print(Panel(overview, title=f"案件摘要 · {case.case_number or case.id[:8]}", border_style="cyan"))
+
+    if case.timeline:
+        ttable = Table(title="时间轴（按时间排序）", border_style="green")
+        ttable.add_column("日期", style="dim")
+        ttable.add_column("类别")
+        ttable.add_column("事件描述")
+        ordered = sorted(case.timeline, key=lambda ev: (ev.timestamp, ev.date))
+        for ev in ordered:
+            ttable.add_row(ev.date or "-", ev.category or "-", _short(ev.description, 60))
+        console.print(ttable)
+    else:
+        console.print("[dim]暂无时间线事件（可用 `judicial case import` 从材料抽取）。[/dim]")
+
+
+@evidence_app.command("export", help="导出证据清单与证据链分析。")
+def evidence_export(
+    ctx: typer.Context,
+    case_id: str = typer.Option("", "--case-id", help="按案件 ID 过滤"),
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="写入文件（markdown）；省略则输出到终端"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
+) -> None:
+    """导出证据清单与证据链分析（适合归档/共享/提交）。"""
+
+    with _state_session(ctx, save=False) as state:
+        evidence = state.evidence_chain.list_evidence(case_id=case_id or "")
+        analysis = None
+        if evidence:
+            try:
+                analysis = state.evidence_chain.analyze(case_id=case_id or "")
+            except Exception:  # noqa: BLE001
+                analysis = None
+
+    if json_output:
+        payload = {
+            "evidence": [
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "type": e.type.value,
+                    "proving_object": e.proving_object or "",
+                    "admissibility": e.admissibility.value,
+                    "probative_strength": e.probative_strength.value,
+                    "case_id": e.case_id or "",
+                }
+                for e in evidence
+            ],
+            "analysis": (
+                {
+                    "completeness_score": analysis.completeness_score,
+                    "contradiction_count": analysis.contradiction_count,
+                    "summary": analysis.summary,
+                }
+                if analysis
+                else None
+            ),
+        }
+        text = json.dumps(payload, ensure_ascii=False, indent=2)
+    else:
+        lines = ["# 证据清单", "", f"共 {len(evidence)} 项证据", ""]
+        for e in evidence:
+            lines.append(f"- **{e.name}**（{e.type.value}）证明对象: {e.proving_object or '-'}")
+            lines.append(f"  可采性: {e.admissibility.value} | 证明力: {e.probative_strength.value}")
+        if analysis:
+            lines += ["", "## 证据链分析", "", analysis.summary or ""]
+        text = "\n".join(lines)
+
+    if output is not None:
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(text, encoding="utf-8")
+            get_console().print(f"[green]✓ 已导出 {len(evidence)} 项证据到 {output}[/green]")
+        except OSError as exc:
+            get_console().print(f"[red]✗ 导出失败：{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+    else:
+        typer.echo(text)
+
+
+@law_app.command("export", help="导出法律知识库。")
+def law_export(
+    ctx: typer.Context,
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="写入文件（markdown）；省略则输出到终端"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
+) -> None:
+    """导出法律知识库中的全部法条（适合备份/共享/培训）。"""
+
+    with _state_session(ctx, save=False) as state:
+        articles = state.knowledge_base.list_articles()
+
+    if json_output:
+        text = json.dumps(
+            [
+                {
+                    "id": a.id,
+                    "citation": a.citation,
+                    "law_name": a.law_name,
+                    "article_number": a.article_number,
+                    "domain": a.domain.value,
+                    "status": a.status.value,
+                    "chapter": a.chapter,
+                    "effective_date": a.effective_date,
+                    "content": a.content,
+                }
+                for a in articles
+            ],
+            ensure_ascii=False,
+            indent=2,
+        )
+    else:
+        lines = ["# 法律知识库", "", f"共 {len(articles)} 条法条", ""]
+        for a in articles:
+            lines.append(f"## {a.citation}")
+            lines.append(f"- 领域: {a.domain.value} | 状态: {a.status.value}")
+            lines.append(f"- 生效日期: {a.effective_date or '-'} | 章节: {a.chapter or '-'}")
+            lines.append(f"- 正文: {a.content}")
+            lines.append("")
+        text = "\n".join(lines)
+
+    if output is not None:
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(text, encoding="utf-8")
+            get_console().print(f"[green]✓ 已导出 {len(articles)} 条法条到 {output}[/green]")
+        except OSError as exc:
+            get_console().print(f"[red]✗ 导出失败：{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+    else:
+        typer.echo(text)
+
+
 # ---------------------------------------------------------------------------
 # Internal renderers
 # ---------------------------------------------------------------------------

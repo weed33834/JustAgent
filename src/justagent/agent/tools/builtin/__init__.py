@@ -17,6 +17,8 @@ Use :func:`make_default_tools` to construct all eight at once.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from justagent.agent.tools.base import Tool
 from justagent.agent.tools.builtin.apply_patch import (
     ApplyPatchInput,
@@ -29,6 +31,10 @@ from justagent.agent.tools.builtin.ask_question import (
 from justagent.agent.tools.builtin.edit import (
     ReplaceInFileInput,
     make_replace_in_file_tool,
+)
+from justagent.agent.tools.builtin.judicial import (
+    JudicialInput,
+    make_judicial_tool,
 )
 from justagent.agent.tools.builtin.read import (
     ReadFileInput,
@@ -52,14 +58,18 @@ from justagent.agent.tools.builtin.write import (
 )
 
 
-def make_default_tools() -> list[Tool]:
-    """Return all eight built-in tools in canonical order.
+def make_default_tools(state_path: str | None = None) -> list[Tool]:
+    """Return all built-in tools in canonical order.
 
     The order matters for prompt-building: tools earlier in the list
     appear earlier in the LLM's system prompt.
+
+    When ``state_path`` (the persisted judicial state file) is given, the
+    ``judicial`` tool is appended so the conversational agent can manage
+    cases / evidence / legal knowledge / documents directly from the chat.
     """
 
-    return [
+    tools = [
         make_read_file_tool(),
         make_write_to_file_tool(),
         make_replace_in_file_tool(),
@@ -69,11 +79,15 @@ def make_default_tools() -> list[Tool]:
         make_web_fetch_tool(),
         make_ask_question_tool(),
     ]
+    if state_path:
+        tools.append(make_judicial_tool(Path(state_path)))
+    return tools
 
 
 __all__ = [
     "ApplyPatchInput",
     "AskQuestionInput",
+    "JudicialInput",
     "ReadFileInput",
     "ReplaceInFileInput",
     "RunCommandInput",
@@ -83,6 +97,7 @@ __all__ = [
     "make_apply_patch_tool",
     "make_ask_question_tool",
     "make_default_tools",
+    "make_judicial_tool",
     "make_read_file_tool",
     "make_replace_in_file_tool",
     "make_run_command_tool",
