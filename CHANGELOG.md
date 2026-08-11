@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web SSE streaming + auth + deployment.**
+  - `/api/chat/stream`: SSE event-streaming chat (assistant deltas, tool
+    start/end, done); frontend uses it with client-side multi-turn history.
+  - **Auth**: set `JUSTAGENT_WEB_TOKEN` to require `Authorization: Bearer
+    <token>` on `/api/*` (the page itself stays open).
+  - **Deployment**: `Dockerfile` builds the web service; run with
+    `docker run -p 8000:8000 -e JUSTAGENT_WEB_TOKEN=... -e OPENAI_API_KEY=...
+    justagent-web`. `.env.example` documents the web env vars.
+
 - **Complete Web backend (1:1 with CLI capabilities).** `justagent web` now
   exposes a full browser console, not just chat + judicial:
   - chat (multi-turn, per-session memory via `continue_run`)

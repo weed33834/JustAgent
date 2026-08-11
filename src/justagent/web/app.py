@@ -12,12 +12,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import platform
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from justagent.agent.runtime import AgentRuntime, AgentRuntimeConfig, LLMClient
 from justagent.agent.tools.builtin import make_default_tools
@@ -132,9 +133,30 @@ def create_app(config: AppConfig) -> FastAPI:
 
     app = FastAPI(title="JustAgent Web", version="1.0.0")
     state_path = _judicial_state_path(config)
+
+    # Optional bearer-token auth for API endpoints (set JUSTAGENT_WEB_TOKEN).
+    @app.middleware("http")
+    async def _auth(request, call_next):
+        path = request.url.path
+        if path == "/" or path.startswith("/api/health"):
+            return await call_next(request)
+        token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
+        if token:
+            header = request.headers.get("authorization", "")
+            if header != f"Bearer {token}":
+                return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+        return await call_next(request)
+
     # Per-session runtimes so the web chat keeps multi-turn conversation memory.
     _runtimes: dict[str, Any] = {}
     _runtimes_lock = asyncio.Lock()
+
+    async def _auth_ok(request) -> bool:
+        token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
+        if not token:
+            return True  # no token configured -> open access
+        header = request.headers.get("authorization", "")
+        return header == f"Bearer {token}"
 
     # -- pages --------------------------------------------------------------
     @app.get("/")
@@ -300,6 +322,66 @@ def create_app(config: AppConfig) -> FastAPI:
             "session_id": session_id,
             "error": result.error or "",
         })
+
+    # -- chat (SSE streaming) -------------------------------------------------
+    @app.post("/api/chat/stream", response_model=None)
+    async def chat_stream(payload: dict) -> StreamingResponse | JSONResponse:
+        message = (payload.get("message") or "").strip()
+        if not message:
+            raise HTTPException(status_code=400, detail="message is required")
+        llm = _build_llm(config)
+        if llm is None:
+            return JSONResponse(status_code=200, content={
+                "reply": "No LLM backend is configured, so the agent cannot chat.",
+                "error": "no_llm",
+            })
+        history = payload.get("history") or []
+        sys_prompt = (
+            "You are JustAgent, an assistant for judicial work. Use the judicial "
+            "tool to manage cases, evidence, legal knowledge and documents. "
+            "Be concise and accurate."
+        )
+        if history:
+            turns = []
+            for h in history[-20:]:
+                role = "用户" if h.get("role") == "user" else "助手"
+                turns.append(f"{role}: {h.get('content', '')}")
+            sys_prompt += "\n\n以下为最近对话上下文：\n" + "\n".join(turns)
+
+        queue: asyncio.Queue = asyncio.Queue()
+
+        async def _emit(event: Any) -> None:
+            await queue.put(event)
+
+        runtime = AgentRuntime(
+            client=llm,
+            tools=make_default_tools(str(state_path)),
+            config=AgentRuntimeConfig(system_prompt=sys_prompt),
+            cwd=str(config.project_root),
+            emit=_emit,
+        )
+        task = asyncio.create_task(runtime.run(message))
+
+        async def _stream():
+            try:
+                while True:
+                    event = await queue.get()
+                    etype = getattr(event, "type", "")
+                    if etype == "assistant_message":
+                        yield f"data: {json.dumps({'type': 'delta', 'content': event.content}, ensure_ascii=False)}\n\n"
+                    elif etype == "tool_started":
+                        yield f"data: {json.dumps({'type': 'tool_start', 'tool': getattr(event, 'tool', '')}, ensure_ascii=False)}\n\n"
+                    elif etype == "tool_finished":
+                        yield f"data: {json.dumps({'type': 'tool_end', 'tool': getattr(event, 'tool', '')}, ensure_ascii=False)}\n\n"
+                    elif etype in ("run_completed", "run_failed", "run_aborted"):
+                        break
+            except Exception:  # noqa: BLE001
+                pass
+            result = await task
+            yield f"data: {json.dumps({'type': 'done', 'content': result.final_content or '(no output)', 'status': result.status, 'error': result.error or ''}, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(_stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     # -- judicial -----------------------------------------------------------
     @app.get("/api/judicial/cases")
