@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`justagent info` command.** Prints a compact environment & project
+  diagnostics summary: version, Python/platform, project root & config path,
+  model backends (with key status), plugin count, and git state. Every section
+  is defensively wrapped so the command never crashes on a missing optional
+  component. Complements `justagent doctor`.
+
 - **`justagent models` command.** Lists every configured model backend
   (provider, model, tier, endpoint, key status) and, with `--check`, runs a
   live connectivity health check. Complements `justagent doctor`.
