@@ -116,6 +116,8 @@
       <div id="sys-tasks"></div>
       <h3>指标</h3>
       <div id="metrics-chart" style="height:220px"></div>
+      <h3>通知</h3>
+      <div id="sys-notify"></div>
     </div>
   </aside>
 
@@ -238,6 +240,10 @@ async function loadSystem(){
     if(window.echarts && evs.length){ const el=document.getElementById('metrics-chart'); const c=echarts.init(el);
       c.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:evs.map(e=>e[0]),axisLabel:{rotate:30,fontSize:9}},yAxis:{type:'value'},series:[{type:'bar',data:evs.map(e=>e[1]),itemStyle:{color:'#6366f1'}}]});
     }
+  }catch(e){}
+  try{
+    const n=await (await fetch('/api/notifications')).json();
+    document.getElementById('sys-notify').innerHTML = n.items.length ? n.items.slice(0,20).map(x=>`<div class="item"><div class="t">${esc(x.kind)} <span class="badge">${new Date(x.ts*1000).toLocaleTimeString()}</span></div><div class="d">${esc(x.message)}</div></div>`).join('') : '<div class="empty">暂无通知</div>';
   }catch(e){}
 }
 function fmtTs(ts){ if(!ts||ts<=0) return 'never'; return new Date(ts*1000).toLocaleString(); }

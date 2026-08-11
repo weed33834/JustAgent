@@ -14,6 +14,7 @@ import asyncio
 import json
 import os
 import platform
+import time
 from pathlib import Path
 from typing import Any
 
@@ -161,6 +162,7 @@ def create_app(config: AppConfig) -> FastAPI:
         user = user_store.authenticate(username, password)
         if user is None:
             raise HTTPException(status_code=401, detail="invalid credentials")
+        _notify("auth", f"用户 {user.username} 登录")
         return {"token": tokens.issue(user), "username": user.username, "role": user.role}
 
     @app.get("/api/auth/users")
@@ -193,6 +195,50 @@ def create_app(config: AppConfig) -> FastAPI:
     # Per-session runtimes so the web chat keeps multi-turn conversation memory.
     _runtimes: dict[str, Any] = {}
     _runtimes_lock = asyncio.Lock()
+
+    # -- notifications ------------------------------------------------------
+    _notifications: list[dict] = []
+    _webhook = os.environ.get("JUSTAGENT_WEBHOOK_URL", "")
+
+    def _notify(kind: str, message: str) -> None:
+        entry = {"ts": time.time(), "kind": kind, "message": message}
+        _notifications.append(entry)
+        del _notifications[:-200]
+        if _webhook:
+            try:
+                import httpx
+
+                httpx.post(_webhook, json=entry, timeout=5)
+            except Exception:  # noqa: BLE001 - webhook is best-effort
+                pass
+
+    @app.get("/api/notifications")
+    async def notifications() -> dict:
+        return {"items": list(reversed(_notifications))}
+
+    @app.post("/api/notifications/test")
+    async def notify_test(request: Request) -> dict:
+        _require_write(request)
+        _notify("info", "测试通知")
+        return {"ok": True}
+
+    # -- uploads ------------------------------------------------------------
+    @app.post("/api/upload")
+    async def upload_file(request: Request) -> dict:
+        from fastapi import UploadFile
+
+        _require_write(request)
+        form = await request.form()
+        file = form.get("file")
+        if not isinstance(file, UploadFile):
+            raise HTTPException(status_code=400, detail="file is required")
+        up_dir = config.project_root / ".justagent" / "uploads"
+        up_dir.mkdir(parents=True, exist_ok=True)
+        safe = (file.filename or "file").replace("/", "_").replace("\\", "_")
+        dest = up_dir / f"{int(time.time())}_{safe}"
+        dest.write_bytes(await file.read())
+        _notify("upload", f"上传附件 {safe}")
+        return {"ok": True, "name": safe, "path": str(dest), "size": dest.stat().st_size}
 
     # -- pages --------------------------------------------------------------
     @app.get("/")
@@ -324,6 +370,7 @@ def create_app(config: AppConfig) -> FastAPI:
             command=str(payload.get("action") or payload.get("command") or ""),
             enabled=bool(payload.get("enabled", True)),
         )
+        _notify("schedule", f"新建定时任务 {task.name}")
         return {"ok": True, "name": task.name, "schedule": task.schedule}
 
     # -- knowledge RAG ------------------------------------------------------
@@ -470,6 +517,7 @@ def create_app(config: AppConfig) -> FastAPI:
             domain=payload.get("domain") or "",
         )
         state.save()
+        _notify("judicial", f"创建案件 {case.case_number or case.id[:8]}")
         return {"ok": True, "id": case.id, "case_number": case.case_number}
 
     @app.get("/api/judicial/case/{case_id}")
@@ -536,6 +584,7 @@ def create_app(config: AppConfig) -> FastAPI:
         )
         state.knowledge_base.add_article(article)
         state.save()
+        _notify("judicial", f"添加法条 {article.citation}")
         return {"ok": True, "id": article.id, "citation": article.citation}
 
     @app.post("/api/judicial/doc")
