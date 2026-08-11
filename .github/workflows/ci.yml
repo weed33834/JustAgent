@@ -18,11 +18,14 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install package and dev dependencies
-        run: pip install -e ".[dev]" pytest pytest-cov pytest-asyncio
+      # The project is a uv workspace (justagent + justagent-sdk); install via
+      # uv so the local justagent-sdk member resolves from the workspace
+      # instead of being fetched (and failing) from PyPI.
+      - name: Install package and dev dependencies (uv workspace)
+        run: uv sync --extra dev
       - name: Run tests (excluding integration)
-        run: pytest -m "not integration" --no-cov
+        run: uv run --no-sync pytest -m "not integration" --no-cov

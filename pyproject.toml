@@ -110,8 +110,8 @@ dev = [
 justagent = "justagent.cli.main:cli_entrypoint"
 
 [project.urls]
-Repository = "https://gitcode.com/badhope/autoship"
-Issues = "https://gitcode.com/badhope/autoship/issues"
+Repository = "https://gitcode.com/badhope/JustAgent"
+Issues = "https://gitcode.com/badhope/JustAgent/issues"
 
 [tool.ruff]
 target-version = "py311"
