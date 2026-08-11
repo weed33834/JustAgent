@@ -24,8 +24,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # The project is a uv workspace (justagent + justagent-sdk); install via
       # uv so the local justagent-sdk member resolves from the workspace
-      # instead of being fetched (and failing) from PyPI.
+      # instead of being fetched (and failing) from PyPI. Retry a few times to
+      # ride out transient PyPI download flakiness.
       - name: Install package and dev dependencies (uv workspace)
-        run: uv sync --extra dev
+        run: |
+          for i in 1 2 3; do
+            if uv sync --extra dev; then
+              echo "uv sync succeeded (attempt $i)"
+              exit 0
+            fi
+            echo "uv sync attempt $i failed — transient network? retrying in 8s..."
+            sleep 8
+          done
+          echo "uv sync failed after 3 attempts"
+          exit 1
       - name: Run tests (excluding integration)
         run: uv run --no-sync pytest -m "not integration" --no-cov
