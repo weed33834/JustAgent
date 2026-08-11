@@ -35,6 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Complete Web backend (1:1 with CLI capabilities).** `justagent web` now
+  exposes a full browser console, not just chat + judicial:
+  - chat (multi-turn, per-session memory via `continue_run`)
+  - judicial (cases list/detail/summary, evidence list/analyze, laws list/add,
+    document generation)
+  - knowledge RAG search, config (redacted), models, metrics, audit, sessions,
+    plugins, doctor diagnostics, system info.
+  Endpoints: `/api/state`, `/api/system`, `/api/doctor`, `/api/config`,
+  `/api/models`, `/api/metrics`, `/api/audit`, `/api/sessions`,
+  `/api/plugins`, `/api/knowledge/search`, `/api/chat`, `/api/judicial/*`,
+  `/api/health`. Web UI gained a "系统" panel for diagnostics/config/models/
+  sessions/plugins.
+
 - **Web interface (`justagent web`).** A browser chat interface (FastAPI +
   uvicorn, already in dependencies). Users can chat with the conversational
   agent (which has the `judicial` tool) and manage cases / evidence / legal

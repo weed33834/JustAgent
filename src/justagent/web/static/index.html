@@ -62,9 +62,10 @@
       <button class="tab" data-panel="cases" onclick="switchTab('cases')">案件</button>
       <button class="tab" data-panel="evidence" onclick="switchTab('evidence')">证据</button>
       <button class="tab" data-panel="laws" onclick="switchTab('laws')">法条</button>
+      <button class="tab" data-panel="system" onclick="switchTab('system')">系统</button>
     </div>
     <div class="panel" id="panel-chat">
-      <p class="hint" style="padding:6px 2px">在右侧对话，或直接管理案件/证据/法条。司法功能无需模型也可用；对话需配置模型后端。</p>
+      <p class="hint" style="padding:6px 2px">在右侧对话，或直接管理案件/证据/法条。司法功能无需模型也可用；对话需配置模型后端，且保持多轮记忆。</p>
       <h3>案件 / 证据 / 法条</h3>
       <div id="mini-list"></div>
     </div>
@@ -95,6 +96,16 @@
       <h3>法律库</h3>
       <div id="law-list"></div>
     </div>
+    <div class="panel" id="panel-system" style="display:none">
+      <h3>诊断</h3>
+      <div id="sys-doctor"></div>
+      <h3>配置 / 模型</h3>
+      <div id="sys-config"></div>
+      <h3>会话</h3>
+      <div id="sys-sessions"></div>
+      <h3>插件</h3>
+      <div id="sys-plugins"></div>
+    </div>
   </aside>
 
   <main class="main">
@@ -118,7 +129,8 @@ function addMsg(role, text){
 }
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===name));
-  ['chat','cases','evidence','laws'].forEach(p=>document.getElementById('panel-'+p).style.display = p===name?'':'none');
+  ['chat','cases','evidence','laws','system'].forEach(p=>document.getElementById('panel-'+p).style.display = p===name?'':'none');
+  if(name==='system') loadSystem();
 }
 function renderMini(){
   const el=document.getElementById('mini-list');
@@ -151,11 +163,33 @@ async function send(){
   const chat=document.getElementById('chat');
   const last=chat.lastElementChild.querySelector('.b');
   try{
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text, session_id:getSession()})});
     const d=await r.json();
     last.textContent = d.reply||'(无输出)';
     await loadState();
   }catch(e){ last.textContent='请求失败: '+e; }
+}
+function getSession(){ let s=localStorage.getItem('justagent_session'); if(!s){ s='s'+Date.now()+Math.random().toString(36).slice(2,8); localStorage.setItem('justagent_session',s);} return s; }
+async function loadSystem(){
+  try{
+    const doctor=await (await fetch('/api/doctor',{method:'POST'})).json();
+    document.getElementById('sys-doctor').innerHTML=doctor.map(c=>`<div class="item"><div class="t">${esc(c.name)} <span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.detail||'')}</div></div>`).join('');
+  }catch(e){ document.getElementById('sys-doctor').innerHTML='<div class="empty">诊断不可用</div>'; }
+  try{
+    const cfg=await (await fetch('/api/config')).json();
+    const models=await (await fetch('/api/models')).json();
+    document.getElementById('sys-config').innerHTML=
+      '<div class="item"><div class="t">配置</div><div class="d">模型后端 '+models.items.length+' 个</div></div>'+
+      models.items.map(m=>`<div class="item"><div class="t">${esc(m.provider)} <span class="badge">${esc(m.model)}</span></div><div class="d">${esc(m.base_url)} · key ${esc(m.key)}</div></div>`).join('');
+  }catch(e){}
+  try{
+    const sess=await (await fetch('/api/sessions')).json();
+    document.getElementById('sys-sessions').innerHTML = sess.items.length ? sess.items.map(s=>`<div class="item"><div class="t">${esc(s.title||s.id.slice(0,8))}</div><div class="d">${esc(s.status)}</div></div>`).join('') : '<div class="empty">暂无会话</div>';
+  }catch(e){}
+  try{
+    const pl=await (await fetch('/api/plugins')).json();
+    document.getElementById('sys-plugins').innerHTML = pl.items.length ? pl.items.map(p=>`<div class="item"><div class="t">${esc(p.name)}</div><div class="d">${esc(p.version)} · ${esc(p.trust)}</div></div>`).join('') : '<div class="empty">暂无插件</div>';
+  }catch(e){}
 }
 async function createCase(){
   const r=await fetch('/api/judicial/case',{method:'POST',headers:{'Content-Type':'application/json'},
