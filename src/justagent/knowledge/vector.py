@@ -48,9 +48,10 @@ import os
 import re
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -878,7 +879,7 @@ class VectorStore(ABC):
         min_score: float,
     ) -> list[SearchResult]:
         """Rank records by score and return :class:`SearchResult` list."""
-        paired = list(zip(scores, records))
+        paired = list(zip(scores, records, strict=False))
         paired.sort(key=lambda pair: pair[0], reverse=True)
         results: list[SearchResult] = []
         for rank, (score, record) in enumerate(paired, start=1):

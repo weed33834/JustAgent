@@ -44,8 +44,7 @@ _PROVIDER_MAP: dict[Provider, str] = {
 # This is the single canonical source of provider -> base URL defaults for
 # the whole project. The CLI command modules (``agent``, ``fix``, ``skill``)
 # import this mapping instead of redefining their own so the values stay in
-# sync. Note that ``UnifiedGateway.__init__`` runs these through
-# :func:`_normalize_base_url` (which appends ``/v1`` for bare roots), so the
+# sync. Note that ``UnifiedGateway.__init__`` runs these through :func:`_normalize_base_url` (which appends ``/v1`` for bare roots), so the
 # values here are intentionally unnormalized.
 _PROVIDER_BASE_URLS: dict[Provider, str] = {
     Provider.OLLAMA: "http://localhost:11434",
@@ -106,6 +105,16 @@ def _classify_error(exc: Exception) -> str:
     return "Upstream error"
 
 
+# Providers that authenticate via an API key. Local/self-hosted backends
+# (Ollama, vLLM, LM Studio, llama.cpp) accept requests without one.
+_KEY_REQUIRED_PROVIDERS: frozenset[Provider] = frozenset(
+    {Provider.OPENAI, Provider.OPENROUTER, Provider.AZURE_OPENAI}
+)
+
+# Placeholder used when no real key is configured.
+_PLACEHOLDER_KEY = "placeholder"
+
+
 class UnifiedGateway(ModelGateway):
     """Single gateway implementation covering all providers via LiteLLM.
 
@@ -121,9 +130,12 @@ class UnifiedGateway(ModelGateway):
             str(cfg.base_url) if cfg.base_url
             else _PROVIDER_BASE_URLS.get(cfg.provider, "")
         )
-        self._api_key = cfg.api_key or "placeholder"
+        self._api_key = cfg.api_key or _PLACEHOLDER_KEY
         self._api_version = cfg.api_version
         self._timeout = cfg.timeout
+        # Remote providers must have a real key; fail fast instead of hanging
+        # on a doomed network call (e.g. ``justagent fix`` with no key).
+        self._key_required = cfg.provider in _KEY_REQUIRED_PROVIDERS
         # One official OpenAI client; base_url pins it to the provider gateway.
         self._client = OpenAI(
             api_key=self._api_key,
@@ -133,10 +145,18 @@ class UnifiedGateway(ModelGateway):
             default_headers={"api-version": self._api_version} if self._api_version else None,
         )
 
+    def _fails_fast(self) -> bool:
+        """True when this backend cannot possibly succeed and should not be
+        queried (remote provider missing an API key)."""
+        return self._key_required and self._api_key == _PLACEHOLDER_KEY
+
     def close(self) -> None:
         """The OpenAI client holds no resources requiring explicit close."""
 
     def health(self) -> bool:
+        if self._fails_fast():
+            logger.info("Skipping health check for %s: no API key set", self._provider.value)
+            return False
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
@@ -151,6 +171,8 @@ class UnifiedGateway(ModelGateway):
             return False
 
     def list_models(self) -> list[str]:
+        if self._fails_fast():
+            return [self._model]
         try:
             listed = self._client.models.list()
             ids = [m.id for m in getattr(listed, "data", []) or []]
@@ -166,6 +188,12 @@ class UnifiedGateway(ModelGateway):
             ) from exc
 
     def chat(self, req: ChatCompletionRequest) -> ChatCompletionResponse:
+        if self._fails_fast():
+            raise ModelGatewayError(
+                f"{self._provider.value} backend requires an API key, "
+                "but none is configured. Set one in the config or via the API key "
+                "environment variable."
+            )
         start = time.time()
         try:
             response = self._client.chat.completions.create(
