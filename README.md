@@ -105,6 +105,45 @@ justagent project add ./case-2026-001
 justagent project run case-2026-001 ship  # run a command in a managed project
 ```
 
+## Web console
+
+`justagent web` starts a browser console covering the full operational surface —
+no CLI needed. Judicial features work without an LLM; chatting needs a
+configured model backend.
+
+```bash
+justagent web                      # http://127.0.0.1:8000
+justagent web --host 0.0.0.0 --port 8000   # expose on a network
+```
+
+Web capabilities:
+- **Chat**: SSE streaming, multi-turn memory, tool calling (incl. the
+  `judicial` tool). Voice input (mic) and TTS speak use the browser Web Speech
+  API.
+- **Judicial**: manage cases / evidence / legal knowledge / documents.
+- **System**: knowledge RAG, config, models, metrics, audit, sessions,
+  plugins, scheduled tasks (ECharts dashboard), diagnostics.
+
+Web backend endpoints (all under `/api`): `chat`, `chat/stream`, `state`,
+`system`, `doctor`, `config`, `models`, `metrics`, `audit`, `sessions`,
+`plugins`, `schedule`, `knowledge/search`, `judicial/*`, `health`.
+
+**Auth**: set `JUSTAGENT_WEB_TOKEN` to require `Authorization: Bearer <token>`
+on `/api/*`.
+
+### Docker deployment
+
+```bash
+docker build -t justagent-web .
+docker run -p 8000:8000 \
+  -e JUSTAGENT_WEB_TOKEN=<token> \
+  -e OPENAI_API_KEY=<key> \
+  justagent-web
+```
+
+Environment variables: `JUSTAGENT_WEB_TOKEN`, `JUSTAGENT_WEB_HOST`,
+`JUSTAGENT_WEB_PORT` (see `.env.example`).
+
 ## Configuration
 
 JustAgent reads `.justagent.toml` from the project root:
