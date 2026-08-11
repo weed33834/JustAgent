@@ -29,7 +29,7 @@ def test_plugin_name_defaults_to_class_name() -> None:
 
 
 def test_hook_decorator_marks_method_as_hookimpl() -> None:
-    assert "myagent_impl" in SamplePlugin.pre_commit.__dict__
+    assert "justagent_impl" in SamplePlugin.pre_commit.__dict__
 
 
 def test_plugin_register_calls_dispatcher_register(mocker) -> None:
