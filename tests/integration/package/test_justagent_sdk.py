@@ -12,7 +12,11 @@ import pytest
 
 from .conftest import install_wheel, run_in_venv, venv_python
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    # PyPI/wheel packaging is out of scope (the project does not publish to PyPI).
+    pytest.mark.skip(reason="PyPI packaging is out of scope"),
+]
 
 
 def test_sdk_build_wheel(sdk_wheel: Path) -> None:

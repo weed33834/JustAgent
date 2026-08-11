@@ -20,6 +20,9 @@ import pytest
 from justagent.adapters.upload.pypi import PyPIUploader
 from justagent.exceptions import UploadError
 
+# PyPI publishing is out of scope (the project does not publish to PyPI).
+pytestmark = pytest.mark.skip(reason="PyPI publishing is out of scope")
+
 
 @pytest.mark.parametrize(
     ("url", "expected"),

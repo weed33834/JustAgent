@@ -100,8 +100,6 @@ dev = [
     "cyclonedx-bom>=4.0.0",
     "pyinstaller>=6.0.0",
     "mkdocs-material>=9.0.0",
-    "build>=1.2.0",
-    "twine>=6.0.0",
     "textual>=0.50.0",
     "justagent-sdk",
 ]

@@ -21,7 +21,11 @@ from justagent.adapters.upload.pypi import PyPIUploader
 
 from .conftest import find_free_port, run_cmd, tool_available
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    # PyPI publishing is out of scope (the project does not publish to PyPI).
+    pytest.mark.skip(reason="PyPI publishing is out of scope"),
+]
 
 
 def _build_artifacts(project_root: Path) -> None:

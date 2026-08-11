@@ -24,7 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of hanging on a doomed network call — e.g. `justagent fix` with no key exits
   cleanly instead of timing out.
 - **Skip PyPI/wheel integration tests.** Distribution to PyPI is out of scope,
-  so the sdist/wheel install tests are skipped (they required network installs).
+  so the sdist/wheel install and PyPI upload tests are skipped (they required
+  network installs and publishing tooling).
+
+### Removed
+
+- **PyPI publishing tooling.** `twine` and `build` dropped from the `dev`
+  extras — the project does not publish to PyPI. PyPI package/upload tests are
+  skipped accordingly.
 
 ### Added
 
