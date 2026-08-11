@@ -134,7 +134,7 @@ Environment variables in config values (`${VAR}`) are expanded at runtime. See `
 
 ## AI backends
 
-JustAgent routes LLM calls through [LiteLLM](https://github.com/BerriAI/litellm), so any provider LiteLLM supports is available without additional configuration — OpenAI, Anthropic, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp, and more than a hundred others. For sensitive judicial data, self-hosted backends (Ollama, vLLM, llama.cpp) keep data on-premises.
+JustAgent routes LLM calls through the official [OpenAI SDK](https://github.com/openai/openai-python). Every supported provider — OpenAI, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp — exposes an OpenAI-compatible endpoint, so a single client with a per-provider base URL covers them all without extra configuration. For sensitive judicial data, self-hosted backends (Ollama, vLLM, llama.cpp) keep data on-premises.
 
 Configure one or more backends in `.justagent.toml`:
 

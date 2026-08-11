@@ -29,7 +29,7 @@ when they are absent:
 * :class:`SentenceTransformersEmbedder` — local sentence-transformers
   model (BGE / M3E etc.), well suited to Chinese legal text.
 * :class:`OpenAIEmbedder` — OpenAI embeddings API accessed via
-  ``litellm`` (supports ``text-embedding-3-small`` and friends).
+  the openai SDK (supports ``text-embedding-3-small`` and friends).
 * :class:`HuggingFaceEmbedder` — Hugging Face Inference API.
 * :class:`EmbedderConfig` / :func:`create_embedder` — Pydantic config
   and a factory that auto-selects a backend by priority.
@@ -330,7 +330,7 @@ class EmbedderProvider(str, Enum):  # noqa: UP042 - match existing codebase styl
             then OpenAI, then the hashing fallback.
         HASHING: Force the zero-dependency :class:`HashingEmbedder`.
         SENTENCE_TRANSFORMERS: Force a local sentence-transformers model.
-        OPENAI: Force the OpenAI embeddings API (via ``litellm``).
+        OPENAI: Force the OpenAI embeddings API (via the openai SDK).
         HUGGINGFACE: Force the Hugging Face Inference API.
     """
 
@@ -466,14 +466,14 @@ class SentenceTransformersEmbedder(EmbeddingProvider):
 
 
 class OpenAIEmbedder(EmbeddingProvider):
-    """Embedder backed by the OpenAI embeddings API via ``litellm``.
+    """Embedder backed by the OpenAI embeddings API (official ``openai`` SDK).
 
     Supports models such as ``text-embedding-3-small`` and
-    ``text-embedding-3-large``. ``litellm`` is imported lazily so the
+    ``text-embedding-3-large``. The ``openai`` client is built lazily so the
     module degrades gracefully when it (or network access) is absent.
 
     The API key may be supplied explicitly or read from the
-    ``OPENAI_API_KEY`` environment variable by ``litellm``.
+    ``OPENAI_API_KEY`` environment variable.
     """
 
     #: Known output dimensions for common OpenAI embedding models,
@@ -506,34 +506,34 @@ class OpenAIEmbedder(EmbeddingProvider):
     # API access
     # ------------------------------------------------------------------
 
-    def _ensure_litellm(self) -> Any:
-        """Lazily import and return the ``litellm`` module."""
+    def _ensure_client(self) -> Any:
+        """Lazily build and return an OpenAI client."""
 
         try:
-            import litellm
+            from openai import OpenAI
         except ImportError as exc:  # pragma: no cover - depends on env
             raise ImportError(
-                "litellm is not installed. "
-                "Install it with: pip install litellm"
+                "The openai package is not installed. "
+                "Install it with: pip install openai"
             ) from exc
-        return litellm
+        return OpenAI(
+            api_key=self._api_key or "placeholder",
+            base_url=self._api_base or None,
+            max_retries=2,
+        )
 
     def _call_api(self, inputs: list[str]) -> list[list[float]]:
         """Call the embeddings API and return embeddings in input order."""
 
-        litellm = self._ensure_litellm()
+        client = self._ensure_client()
         kwargs: dict[str, Any] = {
             "model": self._model,
             "input": inputs,
         }
-        if self._api_key:
-            kwargs["api_key"] = self._api_key
-        if self._api_base:
-            kwargs["api_base"] = self._api_base
         if self._dimensions is not None:
             kwargs["dimensions"] = self._dimensions
 
-        response = litellm.embedding(**kwargs)
+        response = client.embeddings.create(**kwargs)
         data = getattr(response, "data", None)
         if data is None and isinstance(response, dict):
             data = response.get("data", [])
@@ -664,7 +664,7 @@ def create_embedder(
        is importable **and** a ``model_name`` is configured.
     2. :class:`OpenAIEmbedder` — when an API key is available (from
        ``config.api_key`` or the ``OPENAI_API_KEY`` environment variable)
-       and ``litellm`` is importable.
+       and the openai SDK is importable.
     3. :class:`HashingEmbedder` — the always-available zero-dependency
        fallback (via :func:`create_default_embedder`).
 
@@ -725,7 +725,7 @@ def create_embedder(
         )
 
     api_key = cfg.api_key or os.environ.get("OPENAI_API_KEY", "")
-    if api_key and _can_import("litellm"):
+    if api_key and _can_import("openai"):
         logger.info("Auto-selected OpenAI embedder (%s)", cfg.model_name or "text-embedding-3-small")
         return OpenAIEmbedder(
             cfg.model_name or "text-embedding-3-small",

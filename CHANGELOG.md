@@ -10,3 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial public release.
+
+### Changed
+
+- **LLM gateway: LiteLLM → official OpenAI SDK.** All supported providers
+  (OpenAI, Azure, OpenRouter, Ollama, vLLM, LM Studio, llama.cpp) expose
+  OpenAI-compatible endpoints, so the heavy `litellm` dependency is replaced
+  by the lighter official `openai` client with a per-provider `base_url`.
+  Affects `unified_gateway.py`, `agent/runtime.py`, `knowledge/vector.py`;
+  drops `litellm` from `pyproject.toml`, adds `openai`.

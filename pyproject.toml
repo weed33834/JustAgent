@@ -29,7 +29,6 @@ keywords = [
     "rag",
     "knowledge-management",
     "local-ai",
-    "litellm",
     "mcp",
 ]
 classifiers = [
@@ -59,7 +58,7 @@ dependencies = [
     "packaging>=24.2.0",
     "cryptography>=44.0.0",
     "tomli-w>=1.2.0",
-    "litellm>=1.60.0",
+    "openai>=1.40.0",
     "structlog>=25.1.0",
     # Safe expression evaluation (replaces eval() in workflow engine)
     "simpleeval>=1.0.0",

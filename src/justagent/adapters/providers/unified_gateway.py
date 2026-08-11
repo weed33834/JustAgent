@@ -1,9 +1,11 @@
-"""Unified model gateway using LiteLLM for 100+ provider support.
+"""Unified model gateway backed by the OpenAI SDK.
 
-Replaces the previous openai SDK direct calls with litellm.completion,
-which provides unified API, automatic retry, load balancing, and fallback
-across Ollama, vLLM, LM Studio, llama.cpp, OpenAI, OpenRouter, Azure,
-and any OpenAI-compatible third-party gateway (Sub2API, OneAPI, NewAPI, etc.).
+All supported providers (Ollama, vLLM, LM Studio, llama.cpp, OpenAI,
+OpenRouter, Azure) expose OpenAI-compatible endpoints, so a single official
+``openai`` client with a per-provider ``base_url`` covers every backend —
+no LiteLLM indirection needed. This is lighter, installs cleanly, and keeps
+the full tool-call / usage / streaming surface.
+
 To use a custom gateway, set provider=openai with a custom base_url.
 """
 
@@ -14,7 +16,7 @@ import re
 import time
 from typing import Any, cast
 
-import litellm
+from openai import OpenAI
 
 from justagent.adapters.model_gateway import (
     ChatCompletionRequest,
@@ -122,23 +124,24 @@ class UnifiedGateway(ModelGateway):
         self._api_key = cfg.api_key or "placeholder"
         self._api_version = cfg.api_version
         self._timeout = cfg.timeout
-        self._litellm_provider = _PROVIDER_MAP.get(cfg.provider, "openai")
-        litellm.drop_params = True
-        litellm.suppress_debug_info = True
+        # One official OpenAI client; base_url pins it to the provider gateway.
+        self._client = OpenAI(
+            api_key=self._api_key,
+            base_url=self._base_url or None,
+            timeout=self._timeout,
+            max_retries=2,
+            default_headers={"api-version": self._api_version} if self._api_version else None,
+        )
 
     def close(self) -> None:
-        """LiteLLM does not maintain persistent client handles to close."""
+        """The OpenAI client holds no resources requiring explicit close."""
 
     def health(self) -> bool:
         try:
-            response = litellm.completion(
-                model=f"{self._litellm_provider}/{self._model}",
+            response = self._client.chat.completions.create(
+                model=self._model,
                 messages=[{"role": "user", "content": "ping"}],
                 max_tokens=1,
-                api_base=self._base_url or None,
-                api_key=self._api_key,
-                api_version=self._api_version,
-                timeout=min(self._timeout or 10, 10),
             )
             return bool(response and response.choices)
         except Exception:
@@ -149,14 +152,13 @@ class UnifiedGateway(ModelGateway):
 
     def list_models(self) -> list[str]:
         try:
-            return cast(
-                list[str],
-                litellm.get_model_list(
-                    custom_llm_provider=self._litellm_provider,
-                    api_base=self._base_url or None,
-                    api_key=self._api_key,
-                ),
-            )
+            listed = self._client.models.list()
+            ids = [m.id for m in getattr(listed, "data", []) or []]
+            if not ids:
+                # Some OpenAI-compatible servers lack GET /models; fall back to the
+                # configured model so callers still have a usable list.
+                return [self._model]
+            return cast(list[str], ids)
         except Exception as exc:
             raise ModelGatewayError(
                 f"Failed to list models from {self._provider.value}: "
@@ -166,15 +168,11 @@ class UnifiedGateway(ModelGateway):
     def chat(self, req: ChatCompletionRequest) -> ChatCompletionResponse:
         start = time.time()
         try:
-            response = litellm.completion(
-                model=f"{self._litellm_provider}/{self._model}",
+            response = self._client.chat.completions.create(
+                model=self._model,
                 messages=[{"role": m.role, "content": m.content} for m in req.messages],
                 temperature=req.temperature if req.temperature is not None else 0.7,
                 max_tokens=req.max_tokens if req.max_tokens is not None else 512,
-                api_base=self._base_url or None,
-                api_key=self._api_key,
-                api_version=self._api_version,
-                timeout=self._timeout,
             )
         except Exception as exc:
             raise ModelGatewayError(

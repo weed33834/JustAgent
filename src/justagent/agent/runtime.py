@@ -264,10 +264,15 @@ class LLMClient:
         :class:`asyncio.CancelledError` is raised.
         """
 
-        import litellm
+        from openai import AsyncOpenAI
 
-        litellm.drop_params = True
-        litellm.suppress_debug_info = True
+        client = AsyncOpenAI(
+            api_key=self._api_key or "placeholder",
+            base_url=self._base_url or None,
+            timeout=self._timeout,
+            max_retries=2,
+            default_headers={"api-version": self._api_version} if self._api_version else None,
+        )
 
         messages = [m.to_dict() for m in request.messages]
         tools_schema = [
@@ -282,28 +287,18 @@ class LLMClient:
             for tool in request.tools
         ]
 
-        model_str = (
-            f"{self._provider}/{self._model}"
-            if self._provider and "/" not in self._model
-            else self._model
-        )
-
         kwargs: dict[str, Any] = {
-            "model": model_str,
+            "model": self._model,
             "messages": messages,
             "temperature": request.temperature,
-            "api_base": self._base_url,
-            "api_key": self._api_key,
-            "api_version": self._api_version,
-            "timeout": self._timeout,
             "tools": tools_schema if tools_schema else None,
             "tool_choice": "auto" if tools_schema else None,
         }
-        # Strip None values — LiteLLM prefers absent over None.
+        # Strip None values — the OpenAI SDK prefers absent over None.
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
         start = time.time()
-        coro = litellm.acompletion(**kwargs)
+        coro = client.chat.completions.create(**kwargs)
 
         if abort is not None:
             done, pending = await asyncio.wait(
@@ -323,7 +318,7 @@ class LLMClient:
 
     @staticmethod
     def _parse_response(response: Any, latency_ms: float) -> LLMResponse:
-        """Convert a LiteLLM response into :class:`LLMResponse`."""
+        """Convert an OpenAI SDK response into :class:`LLMResponse`."""
 
         choice = response.choices[0]
         msg = choice.message

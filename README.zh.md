@@ -133,7 +133,7 @@ threshold = "medium"
 
 ## AI 后端
 
-JustAgent 通过 [LiteLLM](https://github.com/BerriAI/litellm) 路由 LLM 调用，LiteLLM 支持的任何提供商都无需额外配置即可使用——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp 等一百余家。对于敏感的司法数据，可使用自托管后端（Ollama、vLLM、llama.cpp）保证数据不出域。
+JustAgent 通过官方 [OpenAI SDK](https://github.com/openai/openai-python) 路由 LLM 调用。所有受支持的提供商——OpenAI、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp——都暴露 OpenAI 兼容端点，因此一个客户端配合按提供商设置的 base URL 即可全部覆盖，无需额外配置。对于敏感的司法数据，可使用自托管后端（Ollama、vLLM、llama.cpp）保证数据不出域。
 
 在 `.justagent.toml` 中配置一个或多个后端：
 

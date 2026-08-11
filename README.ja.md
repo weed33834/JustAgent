@@ -133,7 +133,7 @@ threshold = "medium"
 
 ## AI バックエンド
 
-JustAgent は [LiteLLM](https://github.com/BerriAI/litellm) 経由で LLM 呼び出しをルーティングします。LiteLLM が対応するすべてのプロバイダーを追加設定なしで利用できます——OpenAI、Anthropic、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp など 100 社以上。機密性の高い司法データには、セルフホストバックエンド（Ollama、vLLM、llama.cpp）でデータを域内に留めることができます。
+JustAgent は公式 [OpenAI SDK](https://github.com/openai/openai-python) 経由で LLM 呼び出しをルーティングします。サポートするすべてのプロバイダー（OpenAI、Ollama、OpenRouter、Azure、vLLM、LM Studio、llama.cpp）は OpenAI 互換エンドポイントを公開しており、プロバイダーごとの base URL を設定した単一クライアントで追加設定なしにすべてをカバーできます。機密性の高い司法データには、セルフホストバックエンド（Ollama、vLLM、llama.cpp）でデータを域内に留めることができます。
 
 `.justagent.toml` で1つ以上のバックエンドを設定：
 
