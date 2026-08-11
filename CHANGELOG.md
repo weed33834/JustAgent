@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web interface (`justagent web`).** A browser chat interface (FastAPI +
+  uvicorn, already in dependencies). Users can chat with the conversational
+  agent (which has the `judicial` tool) and manage cases / evidence / legal
+  knowledge / documents through the web — no CLI commands needed. Judicial
+  features work without an LLM; chatting needs a configured model backend.
+  Endpoints: `/api/chat`, `/api/state`, `/api/judicial/case|law|doc`, `/api/health`.
+
 - **`judicial` agent tool.** The conversational agent can now manage the
   judicial subsystem directly from the chat interface (no CLI commands):
   list cases, summarize a case with timeline, list/analyze evidence, browse

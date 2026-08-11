@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JustAgent Web</title>
+<style>
+  :root {
+    --bg: #f6f8fc; --surface: #fff; --border: #e6e8f2; --text: #1b2333;
+    --text2: #5c6476; --text3: #96a0b4; --primary: #6366f1; --primary-bg: #eef2ff;
+    --grad: linear-gradient(135deg,#6366f1,#8b5cf6); --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+  .wrap { display: flex; height: 100vh; }
+  .sidebar { width: 300px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden; }
+  .brand { display:flex; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px solid var(--border); }
+  .logo { width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800; }
+  .brand h1 { font-size:16px; font-weight:700; }
+  .brand small { color: var(--text3); font-size:11px; display:block; }
+  .tabs { display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--border); }
+  .tab { flex:1; padding:8px; border:none; background:transparent; color:var(--text2);
+    border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600; transition:.15s; }
+  .tab.active { background: var(--primary-bg); color: var(--primary); }
+  .panel { flex:1; overflow:auto; padding:12px; }
+  .panel h3 { font-size:13px; color:var(--text2); margin:10px 2px 8px; }
+  .item { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .item .t { font-weight:600; font-size:13px; }
+  .item .d { color:var(--text2); font-size:12px; margin-top:2px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:20px; font-size:11px; background:var(--primary-bg); color:var(--primary); margin-left:6px; }
+  .main { flex:1; display:flex; flex-direction:column; }
+  .chat-head { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface); font-weight:600; }
+  .chat { flex:1; overflow:auto; padding:20px; }
+  .msg { display:flex; gap:10px; margin-bottom:16px; max-width:82%; }
+  .msg.user { flex-direction:row-reverse; margin-left:auto; }
+  .msg .av { width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0; }
+  .msg .b { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 14px; font-size:13.5px; line-height:1.6; white-space:pre-wrap; }
+  .msg.user .b { background:var(--grad); color:#fff; border:none; }
+  .inputbar { padding:14px 20px; border-top:1px solid var(--border); background:var(--surface); display:flex; gap:10px; }
+  .inputbar textarea { flex:1; border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:14px; resize:none; font-family:inherit; outline:none; }
+  .inputbar textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(99,102,241,.18); }
+  .send { width:44px; height:44px; border:none; border-radius:12px; background:var(--grad); color:#fff; font-size:16px; cursor:pointer; }
+  .form { display:flex; flex-direction:column; gap:8px; }
+  .form input, .form textarea, .form select { border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; }
+  .btn { background:var(--primary); color:#fff; border:none; border-radius:8px; padding:8px; font-size:13px; cursor:pointer; font-weight:600; }
+  .hint { color:var(--text3); font-size:11.5px; margin-top:4px; }
+  .empty { color:var(--text3); font-size:12.5px; text-align:center; padding:20px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">J</div>
+      <div><h1>JustAgent</h1><small>司法 AI 智能体平台 · Web</small></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-panel="chat" onclick="switchTab('chat')">对话</button>
+      <button class="tab" data-panel="cases" onclick="switchTab('cases')">案件</button>
+      <button class="tab" data-panel="evidence" onclick="switchTab('evidence')">证据</button>
+      <button class="tab" data-panel="laws" onclick="switchTab('laws')">法条</button>
+    </div>
+    <div class="panel" id="panel-chat">
+      <p class="hint" style="padding:6px 2px">在右侧对话，或直接管理案件/证据/法条。司法功能无需模型也可用；对话需配置模型后端。</p>
+      <h3>案件 / 证据 / 法条</h3>
+      <div id="mini-list"></div>
+    </div>
+    <div class="panel" id="panel-cases" style="display:none">
+      <h3>新建案件</h3>
+      <div class="form">
+        <input id="c-no" placeholder="案号，如（2026）京01民初1号" />
+        <input id="c-cause" placeholder="案由" />
+        <input id="c-court" placeholder="法院" />
+        <button class="btn" onclick="createCase()">创建案件</button>
+      </div>
+      <h3>案件列表</h3>
+      <div id="case-list"></div>
+    </div>
+    <div class="panel" id="panel-evidence" style="display:none">
+      <h3>证据列表</h3>
+      <div id="evidence-list"></div>
+    </div>
+    <div class="panel" id="panel-laws" style="display:none">
+      <h3>添加法条</h3>
+      <div class="form">
+        <input id="l-name" placeholder="法律名称" />
+        <input id="l-article" placeholder="条号，如 第一百四十三条" />
+        <textarea id="l-content" placeholder="法条正文" rows="2"></textarea>
+        <select id="l-domain"><option value="civil">民事</option><option value="criminal">刑事</option><option value="administrative">行政</option></select>
+        <button class="btn" onclick="addLaw()">添加法条</button>
+      </div>
+      <h3>法律库</h3>
+      <div id="law-list"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-head">JustAgent 对话</div>
+    <div class="chat" id="chat"></div>
+    <div class="inputbar">
+      <textarea id="input" rows="1" placeholder="问任何事，如：列出所有案件 / 为案件生成证据清单 / 检索法条…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+      <button class="send" onclick="send()">➤</button>
+    </div>
+  </main>
+</div>
+<script>
+let state = { cases: [], evidence: [], laws: [] };
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function addMsg(role, text){
+  const chat=document.getElementById('chat');
+  const m=document.createElement('div'); m.className='msg '+role;
+  m.innerHTML = '<div class="av">'+(role==='user'?'我':'J')+'</div><div class="b">'+esc(text)+'</div>';
+  chat.appendChild(m); chat.scrollTop=chat.scrollHeight;
+}
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===name));
+  ['chat','cases','evidence','laws'].forEach(p=>document.getElementById('panel-'+p).style.display = p===name?'':'none');
+}
+function renderMini(){
+  const el=document.getElementById('mini-list');
+  if(!state.cases.length && !state.evidence.length && !state.laws.length){ el.innerHTML='<div class="empty">暂无数据</div>'; return; }
+  el.innerHTML='';
+  if(state.cases.length) el.innerHTML+='<div class="item"><div class="t">案件 '+state.cases.length+'</div></div>';
+  if(state.evidence.length) el.innerHTML+='<div class="item"><div class="t">证据 '+state.evidence.length+'</div></div>';
+  if(state.laws.length) el.innerHTML+='<div class="item"><div class="t">法条 '+state.laws.length+'</div></div>';
+}
+function renderCases(){
+  const el=document.getElementById('case-list');
+  el.innerHTML = state.cases.length ? state.cases.map(c=>`<div class="item"><div class="t">${esc(c.case_number||c.id.slice(0,8))}<span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.cause)} · ${esc(c.court)} · ${c.parties} 当事人 · ${c.timeline} 时间线</div></div>`).join('') : '<div class="empty">暂无案件</div>';
+}
+function renderEvidence(){
+  const el=document.getElementById('evidence-list');
+  el.innerHTML = state.evidence.length ? state.evidence.map(e=>`<div class="item"><div class="t">${esc(e.name)}<span class="badge">${esc(e.admissible)}</span></div><div class="d">${esc(e.type)} · 证明力: ${esc(e.strength)}</div></div>`).join('') : '<div class="empty">暂无证据</div>';
+}
+function renderLaws(){
+  const el=document.getElementById('law-list');
+  el.innerHTML = state.laws.length ? state.laws.map(l=>`<div class="item"><div class="t">${esc(l.citation)}</div><div class="d">${esc(l.law_name)} · ${esc(l.domain)} · ${esc(l.status)}</div></div>`).join('') : '<div class="empty">暂无法条</div>';
+}
+async function loadState(){
+  try{ state = await (await fetch('/api/state')).json(); }catch(e){ state={cases:[],evidence:[],laws:[]}; }
+  renderMini(); renderCases(); renderEvidence(); renderLaws();
+}
+async function send(){
+  const input=document.getElementById('input'); const text=input.value.trim(); if(!text) return;
+  input.value=''; addMsg('user', text);
+  addMsg('assistant','思考中…');
+  const chat=document.getElementById('chat');
+  const last=chat.lastElementChild.querySelector('.b');
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const d=await r.json();
+    last.textContent = d.reply||'(无输出)';
+    await loadState();
+  }catch(e){ last.textContent='请求失败: '+e; }
+}
+async function createCase(){
+  const r=await fetch('/api/judicial/case',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({case_number:val('c-no'),cause:val('c-cause'),court:val('c-court')})});
+  const d=await r.json(); await loadState(); addMsg('assistant', d.ok?('已创建案件 '+d.case_number):('创建失败: '+d.error));
+}
+async function addLaw(){
+  const r=await fetch('/api/judicial/law',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({law_name:val('l-name'),article_number:val('l-article'),content:val('l-content'),domain:val('l-domain')})});
+  const d=await r.json(); await loadState(); addMsg('assistant', d.ok?('已添加法条 '+d.citation):('添加失败: '+d.error));
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+window.onload=()=>{ loadState(); addMsg('assistant','你好，我是 JustAgent。我可以帮你管理案件、证据、法条，生成法律文书。直接说需求即可。'); };
+</script>
+</body>
+</html>
