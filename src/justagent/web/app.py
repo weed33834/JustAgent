@@ -257,6 +257,38 @@ def create_app(config: AppConfig) -> FastAPI:
             for p in PluginRegistry().list()
         ]}
 
+    # -- schedule ------------------------------------------------------------
+    @app.get("/api/schedule")
+    async def schedule() -> dict:
+        from justagent.core.project_store import ProjectStore
+        from justagent.core.scheduler import Scheduler, ScheduleStore
+
+        scheduler = Scheduler(store=ScheduleStore(), project_store=ProjectStore())
+        return {"items": [
+            {"name": t.name, "schedule": t.schedule, "enabled": t.enabled,
+             "last_run": t.last_run, "next_run": t.next_run,
+             "created_at": t.created_at}
+            for t in scheduler.list_tasks()
+        ]}
+
+    @app.post("/api/schedule")
+    async def schedule_add(payload: dict) -> dict:
+        from justagent.core.project_store import ProjectStore
+        from justagent.core.scheduler import Scheduler, ScheduleStore
+
+        name = (payload.get("name") or "").strip()
+        schedule_expr = (payload.get("schedule") or "").strip() or "0 9 * * *"
+        if not name:
+            raise HTTPException(status_code=400, detail="name is required")
+        scheduler = Scheduler(store=ScheduleStore(), project_store=ProjectStore())
+        task = scheduler.add_task(
+            name=name,
+            schedule=schedule_expr,
+            command=str(payload.get("action") or payload.get("command") or ""),
+            enabled=bool(payload.get("enabled", True)),
+        )
+        return {"ok": True, "name": task.name, "schedule": task.schedule}
+
     # -- knowledge RAG ------------------------------------------------------
     @app.post("/api/knowledge/search")
     async def knowledge_search(payload: dict) -> dict:

@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JustAgent Web</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <style>
   :root {
     --bg: #f6f8fc; --surface: #fff; --border: #e6e8f2; --text: #1b2333;
@@ -105,6 +106,16 @@
       <div id="sys-sessions"></div>
       <h3>插件</h3>
       <div id="sys-plugins"></div>
+      <h3>定时任务</h3>
+      <div class="form">
+        <input id="t-name" placeholder="任务名" />
+        <input id="t-cron" placeholder="Cron，如 0 9 * * *" value="0 9 * * *" />
+        <input id="t-cmd" placeholder="命令，如 justagent judicial case list" />
+        <button class="btn" onclick="addTask()">新建任务</button>
+      </div>
+      <div id="sys-tasks"></div>
+      <h3>指标</h3>
+      <div id="metrics-chart" style="height:220px"></div>
     </div>
   </aside>
 
@@ -112,6 +123,9 @@
     <div class="chat-head">JustAgent 对话</div>
     <div class="chat" id="chat"></div>
     <div class="inputbar">
+      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="pickFile()" title="上传附件">📎</button>
+      <button class="send" style="width:auto;padding:0 12px;font-size:13px" id="micBtn" onclick="toggleVoice()" title="语音输入">🎤</button>
+      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="speakLast()" title="朗读回复">🔊</button>
       <textarea id="input" rows="1" placeholder="问任何事，如：列出所有案件 / 为案件生成证据清单 / 检索法条…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
       <button class="send" onclick="send()">➤</button>
     </div>
@@ -206,6 +220,34 @@ async function loadSystem(){
     const pl=await (await fetch('/api/plugins')).json();
     document.getElementById('sys-plugins').innerHTML = pl.items.length ? pl.items.map(p=>`<div class="item"><div class="t">${esc(p.name)}</div><div class="d">${esc(p.version)} · ${esc(p.trust)}</div></div>`).join('') : '<div class="empty">暂无插件</div>';
   }catch(e){}
+  try{
+    const tk=await (await fetch('/api/schedule')).json();
+    document.getElementById('sys-tasks').innerHTML = tk.items.length ? tk.items.map(t=>`<div class="item"><div class="t">${esc(t.name)} <span class="badge">${t.enabled?'启用':'停用'}</span></div><div class="d">${esc(t.schedule)} · 上次 ${fmtTs(t.last_run)}</div></div>`).join('') : '<div class="empty">暂无定时任务</div>';
+  }catch(e){ document.getElementById('sys-tasks').innerHTML='<div class="empty">定时任务不可用</div>'; }
+  try{
+    const m=await (await fetch('/api/metrics')).json();
+    const evs=Object.entries(m.events||{}).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if(window.echarts && evs.length){ const el=document.getElementById('metrics-chart'); const c=echarts.init(el);
+      c.setOption({tooltip:{trigger:'axis'},xAxis:{type:'category',data:evs.map(e=>e[0]),axisLabel:{rotate:30,fontSize:9}},yAxis:{type:'value'},series:[{type:'bar',data:evs.map(e=>e[1]),itemStyle:{color:'#6366f1'}}]});
+    }
+  }catch(e){}
+}
+function fmtTs(ts){ if(!ts||ts<=0) return 'never'; return new Date(ts*1000).toLocaleString(); }
+function pickFile(){ const f=document.createElement('input'); f.type='file'; f.onchange=()=>{ const file=f.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ const text=file.name+'\n'+r.result.slice(0,4000); const inp=document.getElementById('input'); inp.value=(inp.value+' [附件 '+file.name+']').trim(); }; r.readAsText(file); }; f.click(); }
+let recognizing=false; let recognition=null;
+function toggleVoice(){ if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){ alert('当前浏览器不支持语音输入'); return; }
+  if(recognizing){ recognition&&recognition.stop(); recognizing=false; document.getElementById('micBtn').textContent='🎤'; return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; recognition=new SR(); recognition.lang='zh-CN'; recognition.interimResults=false;
+  recognition.onresult=(e)=>{ const t=e.results[0][0].transcript; const inp=document.getElementById('input'); inp.value=(inp.value+' '+t).trim(); };
+  recognition.onend=()=>{ recognizing=false; document.getElementById('micBtn').textContent='🎤'; };
+  recognition.onerror=()=>{ recognizing=false; document.getElementById('micBtn').textContent='🎤'; };
+  recognition.start(); recognizing=true; document.getElementById('micBtn').textContent='⏺';
+}
+function speak(text){ if('speechSynthesis' in window){ window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; window.speechSynthesis.speak(u); } }
+function speakLast(){ const ms=document.querySelectorAll('.msg.assistant .b'); if(ms.length) speak(ms[ms.length-1].textContent); }
+async function addTask(){
+  const r=await fetch('/api/schedule',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({name:val('t-name'),schedule:val('t-cron'),command:val('t-cmd')})});
+  const d=await r.json(); loadSystem(); addMsg('assistant', d.ok?('已新建定时任务 '+d.name):('失败: '+(d.detail||d.error||'')));
 }
 async function createCase(){
   const r=await fetch('/api/judicial/case',{method:'POST',headers:{'Content-Type':'application/json'},

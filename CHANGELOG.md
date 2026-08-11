@@ -35,6 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Web UX enhancements (browser-native + external libs).**
+  - **Voice input/output**: mic (Web Speech API `SpeechRecognition`) and TTS
+    speak (browser `speechSynthesis`) — no backend dependency.
+  - **Metrics dashboard**: ECharts (CDN) bar chart of audit event counts.
+  - **Schedule panel**: list & create scheduled tasks via `/api/schedule`.
+  - **File attachment**: attach a file from the chat bar (content shown to the
+    agent, which can read it via its tools).
+
 - **Web SSE streaming + auth + deployment.**
   - `/api/chat/stream`: SSE event-streaming chat (assistant deltas, tool
     start/end, done); frontend uses it with client-side multi-turn history.
