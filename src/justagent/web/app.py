@@ -497,7 +497,39 @@ def create_app(config: AppConfig) -> FastAPI:
             yield f"data: {json.dumps({'type': 'done', 'content': result.final_content or '(no output)', 'status': result.status, 'error': result.error or ''}, ensure_ascii=False)}\n\n"
 
         return StreamingResponse(_stream(), media_type="text/event-stream",
-                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+    # -- vision (multimodal image analysis) ----------------------------------
+    @app.post("/api/vision")
+    async def vision(payload: dict) -> dict:
+        llm = _build_llm(config)
+        if llm is None:
+            return {"ok": False, "error": "no_llm", "reply": "未配置模型后端，无法进行图像分析。"}
+        prompt = (payload.get("prompt") or "").strip() or "请描述这张图片并提取其中的关键信息。"
+        image = payload.get("image") or ""  # data URL or base64
+        if not image:
+            return {"ok": False, "error": "no_image", "reply": "未提供图片。"}
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=llm._api_key or "placeholder",
+            base_url=llm._base_url or None,
+            max_retries=2,
+        )
+        content: list[dict] = [{"type": "text", "text": prompt}]
+        if image.startswith("data:"):
+            content.append({"type": "image_url", "image_url": {"url": image}})
+        else:
+            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}})
+        try:
+            resp = client.chat.completions.create(
+                model=llm._model,
+                messages=[{"role": "user", "content": content}],
+                max_tokens=512,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": "vision_error", "reply": f"图像分析失败：{exc}"}
+        return {"ok": True, "reply": resp.choices[0].message.content or ""}
 
     # -- judicial -----------------------------------------------------------
     @app.get("/api/judicial/cases")

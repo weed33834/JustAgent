@@ -119,14 +119,17 @@ justagent web --host 0.0.0.0 --port 8000   # expose on a network
 Web capabilities:
 - **Chat**: SSE streaming, multi-turn memory, tool calling (incl. the
   `judicial` tool). Voice input (mic) and TTS speak use the browser Web Speech
-  API.
+  API. **Image recognition** via `/api/vision` (OpenAI multimodal content
+  blocks) — upload a picture and ask about it.
 - **Judicial**: manage cases / evidence / legal knowledge / documents.
 - **System**: knowledge RAG, config, models, metrics, audit, sessions,
-  plugins, scheduled tasks (ECharts dashboard), diagnostics.
+  plugins, scheduled tasks (ECharts dashboard), diagnostics, notifications,
+  file upload.
 
-Web backend endpoints (all under `/api`): `chat`, `chat/stream`, `state`,
-`system`, `doctor`, `config`, `models`, `metrics`, `audit`, `sessions`,
-`plugins`, `schedule`, `knowledge/search`, `judicial/*`, `health`.
+Web backend endpoints (all under `/api`): `chat`, `chat/stream`, `vision`,
+`state`, `system`, `doctor`, `config`, `models`, `metrics`, `audit`,
+`sessions`, `plugins`, `schedule`, `knowledge/search`, `judicial/*`,
+`notifications`, `upload`, `auth/*`, `health`.
 
 **Auth**: set `JUSTAGENT_WEB_TOKEN` to require `Authorization: Bearer <token>`
 on `/api/*`.

@@ -122,10 +122,16 @@
   </aside>
 
   <main class="main">
-    <div class="chat-head">JustAgent 对话</div>
+    <div class="chat-head">JustAgent 对话
+      <span style="float:right">
+        <button class="send" style="width:auto;padding:2px 10px;font-size:12px" onclick="loadState();addMsg('assistant','已刷新')">🔄 刷新</button>
+        <button class="send" style="width:auto;padding:2px 10px;font-size:12px" onclick="logout()">🚪 登出</button>
+      </span>
+    </div>
     <div class="chat" id="chat"></div>
     <div class="inputbar">
       <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="pickFile()" title="上传附件">📎</button>
+      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="pickImage()" title="图像识别">🖼️</button>
       <button class="send" style="width:auto;padding:0 12px;font-size:13px" id="micBtn" onclick="toggleVoice()" title="语音输入">🎤</button>
       <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="speakLast()" title="朗读回复">🔊</button>
       <textarea id="input" rows="1" placeholder="问任何事，如：列出所有案件 / 为案件生成证据清单 / 检索法条…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
@@ -176,9 +182,18 @@ async function loadState(){
   try{ state = await (await fetch('/api/state')).json(); }catch(e){ state={cases:[],evidence:[],laws:[]}; }
   renderMini(); renderCases(); renderEvidence(); renderLaws();
 }
+async function sendVision(text){
+  const bubble=addMsg('assistant','识别中…');
+  try{
+    const r=await fetch('/api/vision',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({prompt:text||'请描述这张图片并提取关键信息',image:attachedImage})});
+    const d=await r.json(); bubble.textContent=d.reply||'(无输出)';
+    history.push({role:'assistant',content:d.reply||''});
+  }catch(e){ bubble.textContent='识别失败: '+e; }
+}
 async function send(){
   const input=document.getElementById('input'); const text=input.value.trim(); if(!text) return;
   input.value=''; addMsg('user', text); history.push({role:'user', content:text});
+  if(attachedImage){ await sendVision(text); attachedImage=null; return; }
   const bubble=addMsg('assistant','…');
   let reply='';
   const chat=document.getElementById('chat');
@@ -210,6 +225,7 @@ async function doLogin(){
     else addMsg('assistant','登录失败：'+r.status);
   } else { token=cred; localStorage.setItem('justagent_token',token); addMsg('assistant','已设置访问令牌'); }
 }
+function logout(){ token=''; localStorage.removeItem('justagent_token'); addMsg('assistant','已登出'); }
 async function loadSystem(){
   try{
     const doctor=await (await fetch('/api/doctor',{method:'POST'})).json();
@@ -247,6 +263,8 @@ async function loadSystem(){
   }catch(e){}
 }
 function fmtTs(ts){ if(!ts||ts<=0) return 'never'; return new Date(ts*1000).toLocaleString(); }
+let attachedImage=null;
+function pickImage(){ const f=document.createElement('input'); f.type='file'; f.accept='image/*'; f.onchange=()=>{ const file=f.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ attachedImage=r.result; }; r.readAsDataURL(file); addMsg('user','[已附图片，发送后识别]'); }; f.click(); }
 function pickFile(){ const f=document.createElement('input'); f.type='file'; f.onchange=()=>{ const file=f.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ const text=file.name+'\n'+r.result.slice(0,4000); const inp=document.getElementById('input'); inp.value=(inp.value+' [附件 '+file.name+']').trim(); }; r.readAsText(file); }; f.click(); }
 let recognizing=false; let recognition=null;
 function toggleVoice(){ if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){ alert('当前浏览器不支持语音输入'); return; }
