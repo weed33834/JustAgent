@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`judicial law list` / `judicial law show`.** Legal professionals can now
+  browse the legal knowledge base (list all articles, filter by
+  domain/law/status, JSON output) and view a single article's full details by
+  ID or citation — previously the law library only supported add and search.
+
 - **`justagent info` command.** Prints a compact environment & project
   diagnostics summary: version, Python/platform, project root & config path,
   model backends (with key status), plugin count, and git state. Every section

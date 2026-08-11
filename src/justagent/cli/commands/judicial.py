@@ -1156,6 +1156,116 @@ def law_search(
     console.print(table)
 
 
+@law_app.command("list", help="列出法律知识库中的法条。")
+def law_list(
+    ctx: typer.Context,
+    domain: str | None = typer.Option(None, "--domain", help="按法律领域过滤"),
+    law_name: str | None = typer.Option(None, "--law-name", help="按法律名称过滤"),
+    status: str | None = typer.Option(None, "--status", help="按状态过滤（effective/repealed/draft）"),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
+) -> None:
+    """列出法律知识库中的法条（可按领域/法律名/状态过滤）。"""
+
+    domain_filter = (
+        _parse_enum(domain, LegalDomain, "法律领域") if domain is not None else None
+    )
+    status_filter = (
+        _parse_enum(status, ArticleStatus, "法条状态") if status is not None else None
+    )
+
+    with _state_session(ctx, save=False) as state:
+        articles = state.knowledge_base.list_articles(
+            domain=domain_filter, law_name=law_name, status=status_filter
+        )
+
+    if json_output:
+        rows = [
+            {
+                "id": a.id,
+                "citation": a.citation,
+                "law_name": a.law_name,
+                "article_number": a.article_number,
+                "domain": a.domain.value,
+                "status": a.status.value,
+                "content": a.content,
+            }
+            for a in articles
+        ]
+        typer.echo(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+
+    console = get_console()
+    if not articles:
+        console.print("[dim]法律库为空。用 `justagent judicial law add` 添加法条。[/dim]")
+        return
+
+    table = Table(title=f"法律库（共 {len(articles)} 条法条）", border_style="cyan")
+    table.add_column("ID", style="dim")
+    table.add_column("引用", style="white")
+    table.add_column("领域")
+    table.add_column("状态", style="bold")
+    table.add_column("正文预览")
+    for a in articles:
+        status_style = (
+            "green" if a.is_effective
+            else "red" if a.status is ArticleStatus.REPEALED
+            else "yellow"
+        )
+        table.add_row(
+            a.id[:8],
+            a.citation,
+            a.domain.value,
+            Text(a.status.value, style=status_style),
+            _short(a.content, 50),
+        )
+    console.print(table)
+
+
+@law_app.command("show", help="查看单条法条的完整信息。")
+def law_show(
+    ctx: typer.Context,
+    article: str = typer.Argument(..., help="法条 ID 或引用（支持前缀匹配）"),
+) -> None:
+    """查看单条法条的完整信息。"""
+
+    with _state_session(ctx, save=False) as state:
+        target = state.knowledge_base.get_article(article)
+        if target is None:
+            matches = [
+                a
+                for a in state.knowledge_base.list_articles()
+                if a.id.startswith(article) or article in a.citation
+            ]
+            if len(matches) == 1:
+                target = matches[0]
+            elif len(matches) > 1:
+                raise typer.BadParameter(
+                    f"匹配到多条法条：{', '.join(m.citation for m in matches)}"
+                )
+        if target is None:
+            raise typer.BadParameter(f"未找到法条：{article}")
+
+    console = get_console()
+    status_style = (
+        "green" if target.is_effective
+        else "red" if target.status is ArticleStatus.REPEALED
+        else "yellow"
+    )
+    console.print(
+        Panel(
+            f"[bold]{target.citation}[/bold]\n"
+            f"法律名称: {target.law_name}\n"
+            f"条号: {target.article_number}\n"
+            f"领域: {target.domain.value} | 状态: [{status_style}]{target.status.value}[/{status_style}]\n"
+            f"章节: {target.chapter or '-'} | 生效日期: {target.effective_date or '-'}\n"
+            f"关键词: {', '.join(target.keywords) if target.keywords else '-'}\n\n"
+            f"{target.content}",
+            title="法条详情",
+            border_style="cyan",
+        )
+    )
+
+
 # ---------------------------------------------------------------------------
 # Internal renderers
 # ---------------------------------------------------------------------------
