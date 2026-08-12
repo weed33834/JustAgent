@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 
 from justagent.agent.runtime import AgentRuntime, AgentRuntimeConfig, LLMClient
 from justagent.agent.tools.builtin import make_default_tools
@@ -199,6 +199,32 @@ def create_app(config: AppConfig) -> FastAPI:
     # -- notifications ------------------------------------------------------
     _notifications: list[dict] = []
     _webhook = os.environ.get("JUSTAGENT_WEBHOOK_URL", "")
+    _smtp = {
+        "host": os.environ.get("JUSTAGENT_SMTP_HOST", ""),
+        "port": int(os.environ.get("JUSTAGENT_SMTP_PORT", "465") or 465),
+        "user": os.environ.get("JUSTAGENT_SMTP_USER", ""),
+        "password": os.environ.get("JUSTAGENT_SMTP_PASSWORD", ""),
+        "to": os.environ.get("JUSTAGENT_SMTP_TO", ""),
+    }
+
+    def _notify_email(kind: str, message: str) -> None:
+        if not _smtp["host"] or not _smtp["to"]:
+            return
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+
+            body = f"JustAgent 通知 [{kind}]\n\n{message}"
+            msg = MIMEText(body, "plain", "utf-8")
+            msg["Subject"] = f"JustAgent 通知: {kind}"
+            msg["From"] = _smtp["user"] or _smtp["to"]
+            msg["To"] = _smtp["to"]
+            with smtplib.SMTP_SSL(_smtp["host"], _smtp["port"], timeout=10) as s:
+                if _smtp["user"]:
+                    s.login(_smtp["user"], _smtp["password"])
+                s.sendmail(msg["From"], [_smtp["to"]], msg.as_string())
+        except Exception:  # noqa: BLE001 - email is best-effort
+            pass
 
     def _notify(kind: str, message: str) -> None:
         entry = {"ts": time.time(), "kind": kind, "message": message}
@@ -211,6 +237,7 @@ def create_app(config: AppConfig) -> FastAPI:
                 httpx.post(_webhook, json=entry, timeout=5)
             except Exception:  # noqa: BLE001 - webhook is best-effort
                 pass
+        _notify_email(kind, message)
 
     @app.get("/api/notifications")
     async def notifications() -> dict:
@@ -510,6 +537,45 @@ def create_app(config: AppConfig) -> FastAPI:
 
         return StreamingResponse(_stream(), media_type="text/event-stream",
                                   headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+    # -- projects -----------------------------------------------------------
+    @app.get("/api/projects")
+    async def projects() -> dict:
+        from justagent.core.project_store import ProjectStore
+
+        store = ProjectStore()
+        return {"current": str(config.project_root), "items": [
+            {"name": p.name, "path": str(p.path)}
+            for p in store.list_all()
+        ]}
+
+    # -- report (printable HTML) --------------------------------------------
+    @app.get("/api/report", response_class=HTMLResponse)
+    async def report() -> str:
+        data = _load_judicial(config)
+        cases = "".join(
+            f"<h3>{c['case_number'] or c['id'][:8]}</h3>"
+            f"<p>案由：{c['cause']}｜法院：{c['court']}｜状态：{c['status']}｜当事人：{c['parties']}｜时间线：{c['timeline']}</p>"
+            for c in data["cases"]
+        ) or "<p>（暂无案件）</p>"
+        evidence = "".join(
+            f"<li>{e['name']}（{e['type']}）可采性：{e['admissible']} 证明力：{e['strength']}</li>"
+            for e in data["evidence"]
+        ) or "<li>（暂无证据）</li>"
+        laws = "".join(
+            f"<li>{law['citation']}（{law['domain']}）</li>"
+            for law in data["laws"]
+        ) or "<li>（暂无法条）</li>"
+        return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>JustAgent 司法报表</title>
+        <style>body{{font-family:sans-serif;padding:24px;color:#1b2333}} h1{{color:#6366f1}}
+        h2{{border-bottom:1px solid #e6e8f2;padding-bottom:4px}} li{{margin:4px 0}}
+        .meta{{color:#96a0b4;font-size:12px}} </style></head><body>
+        <h1>JustAgent 司法报表</h1>
+        <p class="meta">项目：{config.project_root}｜生成于 {time.strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <h2>案件（{len(data['cases'])}）</h2>{cases}
+        <h2>证据（{len(data['evidence'])}）</h2><ul>{evidence}</ul>
+        <h2>法条（{len(data['laws'])}）</h2><ul>{laws}</ul>
+        </body></html>"""
 
     # -- vision (multimodal image analysis) ----------------------------------
     @app.post("/api/vision")

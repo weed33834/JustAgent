@@ -80,6 +80,7 @@
       </div>
       <h3>案件列表</h3>
       <button class="btn" style="margin-bottom:8px" onclick="exportState()">⬇ 导出司法状态</button>
+      <button class="btn" style="margin-bottom:8px" onclick="window.open('/api/report','_blank')">📄 导出报表(HTML)</button>
       <div id="case-list"></div>
     </div>
     <div class="panel" id="panel-evidence" style="display:none">
@@ -122,6 +123,12 @@
       <div id="sys-tasks"></div>
       <h3>指标</h3>
       <div id="metrics-chart" style="height:220px"></div>
+      <h3>案件分布</h3>
+      <div id="cases-chart" style="height:200px"></div>
+      <h3>法条分布</h3>
+      <div id="laws-chart" style="height:200px"></div>
+      <h3>项目</h3>
+      <div id="sys-projects"></div>
       <h3>通知</h3>
       <div id="sys-notify"></div>
       <h3>审计</h3>
@@ -274,6 +281,19 @@ async function loadSystem(){
     const a=await (await fetch('/api/audit')).json();
     document.getElementById('sys-audit').innerHTML = a.items.length ? a.items.slice(0,20).map(x=>`<div class="item"><div class="t">${esc(x.event||x.action||'')}</div><div class="d">${esc((x.trace_id||'').slice(0,8))} · ${esc((x.ts||'').toString().slice(0,19))}</div></div>`).join('') : '<div class="empty">暂无审计</div>';
   }catch(e){ document.getElementById('sys-audit').innerHTML='<div class="empty">审计不可用</div>'; }
+  try{
+    const st=await (await fetch('/api/state')).json();
+    if(window.echarts){
+      const byStatus={}; st.cases.forEach(c=>byStatus[c.status]=(byStatus[c.status]||0)+1);
+      const sEl=document.getElementById('cases-chart'); if(Object.keys(byStatus).length) echarts.init(sEl).setOption({series:[{type:'pie',radius:'60%',data:Object.entries(byStatus).map(([n,v])=>({name:n,value:v}))}]});
+      const byDomain={}; st.laws.forEach(l=>byDomain[l.domain]=(byDomain[l.domain]||0)+1);
+      const lEl=document.getElementById('laws-chart'); if(Object.keys(byDomain).length){ const dom=Object.entries(byDomain); echarts.init(lEl).setOption({tooltip:{},xAxis:{type:'category',data:dom.map(d=>d[0])},yAxis:{type:'value'},series:[{type:'bar',data:dom.map(d=>d[1]),itemStyle:{color:'#8b5cf6'}}]}); }
+    }
+  }catch(e){}
+  try{
+    const pr=await (await fetch('/api/projects')).json();
+    document.getElementById('sys-projects').innerHTML = '<div class="item"><div class="t">当前项目</div><div class="d">'+esc(pr.current)+'</div></div>'+(pr.items.length?pr.items.map(p=>`<div class="item"><div class="t">${esc(p.name)}</div><div class="d">${esc(p.path)}</div></div>`).join(''):'');
+  }catch(e){ document.getElementById('sys-projects').innerHTML='<div class="empty">项目不可用</div>'; }
 }
 function fmtTs(ts){ if(!ts||ts<=0) return 'never'; return new Date(ts*1000).toLocaleString(); }
 let attachedImage=null;

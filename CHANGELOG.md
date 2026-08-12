@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Email notifications + reports + more charts + projects.**
+  - Email notifications via stdlib `smtplib` (SMTP_SSL) with
+    `JUSTAGENT_SMTP_*` env vars.
+  - `/api/report` returns a printable HTML judicial summary (browser can
+    print / save as PDF).
+  - `/api/projects` lists managed projects + current project root.
+  - System panel gained case-by-status pie, law-by-domain bar charts and a
+    projects section.
+
 - **Full frontend panel coverage of web endpoints.** Every backend capability
   now has a UI entry: audit log panel, legal knowledge search, evidence-chain
   analysis button, document generation per case, judicial state export
