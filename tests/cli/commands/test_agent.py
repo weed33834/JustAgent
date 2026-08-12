@@ -125,9 +125,9 @@ class TestAgentHelpSmoke:
         assert "--yolo" in out
         assert "--json" in out
         assert "--max-iterations" in out
-        assert "--api-key" in result.output
-        assert "--base-url" in result.output
-        assert "--model" in result.output
+        assert "--api-key" in out
+        assert "--base-url" in out
+        assert "--model" in out
 
 
 # ---------------------------------------------------------------------------

@@ -118,7 +118,7 @@ class TestInteractiveFlag:
         assert result.exit_code == 0
         out = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
         assert "--interactive" in out
-        assert "-i" in result.output
+        assert "-i" in out
 
     def test_interactive_flag_short_form_accepted(self, tmp_path: Path, monkeypatch) -> None:
         """``-i`` should be accepted and enter the REPL (which immediately
