@@ -14,6 +14,7 @@ These tests cover:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -118,11 +119,12 @@ class TestAgentHelpSmoke:
     def test_agent_help_lists_options(self) -> None:
         result = runner.invoke(app, ["agent", "--help"])
         assert result.exit_code == 0
-        assert "--mode" in result.output
-        assert "--plan" in result.output
-        assert "--yolo" in result.output
-        assert "--json" in result.output
-        assert "--max-iterations" in result.output
+        out = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert "--mode" in out
+        assert "--plan" in out
+        assert "--yolo" in out
+        assert "--json" in out
+        assert "--max-iterations" in out
         assert "--api-key" in result.output
         assert "--base-url" in result.output
         assert "--model" in result.output

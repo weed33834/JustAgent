@@ -48,4 +48,6 @@ jobs:
           echo "uv sync failed after 5 attempts"
           exit 1
       - name: Run tests (excluding integration)
+        env:
+          COLUMNS: "200"
         run: uv run --no-sync pytest -m "not integration" --no-cov

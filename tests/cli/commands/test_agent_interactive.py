@@ -14,6 +14,7 @@ Covers:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -115,7 +116,8 @@ class TestInteractiveFlag:
     def test_help_lists_interactive_flag(self) -> None:
         result = runner.invoke(app, ["agent", "--help"])
         assert result.exit_code == 0
-        assert "--interactive" in result.output
+        out = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert "--interactive" in out
         assert "-i" in result.output
 
     def test_interactive_flag_short_form_accepted(self, tmp_path: Path, monkeypatch) -> None:

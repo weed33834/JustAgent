@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -222,4 +223,5 @@ class TestSessionRegistration:
     def test_agent_help_lists_resume_flag(self) -> None:
         result = runner.invoke(app, ["agent", "--help"])
         assert result.exit_code == 0
-        assert "--resume" in result.output
+        out = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert "--resume" in out
