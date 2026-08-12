@@ -22,13 +22,22 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
+      # Restore the uv dependency cache so unchanged deps don't need PyPI again.
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
       # The project is a uv workspace (justagent + justagent-sdk); install via
       # uv so the local justagent-sdk member resolves from the workspace
-      # instead of being fetched (and failing) from PyPI. Retry a few times to
-      # ride out transient PyPI download flakiness.
+      # instead of being fetched (and failing) from PyPI. Use a mirror for
+      # download robustness and retry a few times to ride out transient
+      # network flakiness.
       - name: Install package and dev dependencies (uv workspace)
+        env:
+          UV_DEFAULT_INDEX: https://mirrors.aliyun.com/pypi/simple/
         run: |
-          for i in 1 2 3; do
+          for i in 1 2 3 4 5; do
             if uv sync --extra dev; then
               echo "uv sync succeeded (attempt $i)"
               exit 0
@@ -36,7 +45,7 @@ jobs:
             echo "uv sync attempt $i failed — transient network? retrying in 8s..."
             sleep 8
           done
-          echo "uv sync failed after 3 attempts"
+          echo "uv sync failed after 5 attempts"
           exit 1
       - name: Run tests (excluding integration)
         run: uv run --no-sync pytest -m "not integration" --no-cov
