@@ -38,7 +38,7 @@ jobs:
           UV_DEFAULT_INDEX: https://mirrors.aliyun.com/pypi/simple/
         run: |
           for i in 1 2 3 4 5; do
-            if uv sync --extra dev; then
+            if uv sync --extra dev --extra web; then
               echo "uv sync succeeded (attempt $i)"
               exit 0
             fi
