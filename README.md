@@ -1,10 +1,41 @@
-# JustAgent: Judicial AI Agent Platform
+# ⚖️ JustAgent: Judicial AI Agent Platform
+
+<p align="center">
+  <img src="assets/logo.png" alt="JustAgent Logo" width="120" />
+</p>
+
+<p align="center">
+  <a href="https://gitcode.com/badhope/JustAgent"><img alt="GitCode" src="https://img.shields.io/badge/GitCode-JustAgent-6366f1"></a>
+  <a href="https://github.com/weed33834/JustAgent"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-JustAgent-8b5cf6"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+  <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB"></a>
+  <a href="https://fastapi.tiangolo.com/"><img alt="Web" src="https://img.shields.io/badge/Web-FastAPI%20Console-10b981"></a>
+  <img alt="Tests" src="https://img.shields.io/badge/tests-2739%20passed-brightgreen">
+</p>
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 > **Intelligence for Justice** — empowering judicial authorities with intelligent, auditable automation.
 
+**Keywords**: judicial AI · legal-tech · AI agent · legal document generation · evidence review · case management · legal knowledge base (RAG) · multi-agent · CLI + Web console · LLM · FastAPI · Docker · 司法智能体 · 法律科技
+
 JustAgent is a judicial AI agent platform that assists judicial organs and government departments by automating judicial workflows. It organizes case materials, reviews evidence, and generates legal documents through a multi-agent collaboration loop — with permission controls on every action and full audit persistence for every conversation.
+
+## Screenshots & Demo
+
+<p align="center">
+  <img src="assets/shot-chat.png" alt="Chat" width="32%" />
+  <img src="assets/shot-ai.png" alt="AI reply" width="32%" />
+  <img src="assets/shot-cases.png" alt="Cases" width="32%" />
+  <img src="assets/shot-system.png" alt="System console" width="49%" />
+  <img src="assets/demo.gif" alt="Live demo (animated)" width="49%" />
+</p>
+
+<details><summary>▶ Watch the demo video</summary>
+<p>
+<video controls width="100%" src="assets/demo.mp4"></video>
+</p>
+</details>
 
 ## What it does
 

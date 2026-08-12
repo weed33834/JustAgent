@@ -30,6 +30,11 @@ keywords = [
     "knowledge-management",
     "local-ai",
     "mcp",
+    "legal-tech",
+    "multi-agent",
+    "web-console",
+    "fastapi",
+    "docker",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
