@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Runtime project/workspace switching.** The web can now switch between
+  managed projects at runtime: a sidebar dropdown selects the active project,
+  and all judicial endpoints resolve the state from that project
+  (`X-JustAgent-Project` header → `<project>/.justagent/judicial_state.json`).
+  `POST /api/projects` registers a project. Verified: two projects keep
+  independent state.
+
 - **Email notifications + reports + more charts + projects.**
   - Email notifications via stdlib `smtplib` (SMTP_SSL) with
     `JUSTAGENT_SMTP_*` env vars.

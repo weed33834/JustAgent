@@ -33,10 +33,18 @@ def _judicial_state_path(config: AppConfig) -> Path:
     return config.project_root / ".justagent" / "judicial_state.json"
 
 
+def _state_path_for(root: Path) -> Path:
+    return root / ".justagent" / "judicial_state.json"
+
+
 def _load_judicial(config: AppConfig) -> dict:
+    return _load_judicial_for(config.project_root)
+
+
+def _load_judicial_for(root: Path) -> dict:
     from justagent.cli.commands.judicial import _JudicialState
 
-    state = _JudicialState.load(_judicial_state_path(config))
+    state = _JudicialState.load(_state_path_for(root))
     return {
         "cases": [
             {
@@ -134,6 +142,23 @@ def create_app(config: AppConfig) -> FastAPI:
 
     app = FastAPI(title="JustAgent Web", version="1.0.0")
     state_path = _judicial_state_path(config)
+
+    def _resolve_project(request: Request) -> Path:
+        """Resolve the active project root from the X-JustAgent-Project header."""
+        name = request.headers.get("x-justagent-project", "").strip()
+        if name:
+            try:
+                from justagent.core.project_store import ProjectStore
+
+                proj = ProjectStore().get(name)
+                if proj is not None:
+                    return Path(proj.path)
+            except Exception:  # noqa: BLE001 - fall back to default
+                pass
+        return config.project_root
+
+    def _project_state(request: Request) -> Path:
+        return _state_path_for(_resolve_project(request))
 
     from justagent.web.users import ADMIN_ROLES, WRITE_ROLES, TokenManager, UserStore
 
@@ -277,8 +302,8 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/state")
-    async def get_state() -> dict:
-        return _load_judicial(config)
+    async def get_state(request: Request) -> dict:
+        return _load_judicial_for(_resolve_project(request))
 
     # -- system / diagnostics ----------------------------------------------
     @app.get("/api/system")
@@ -549,6 +574,23 @@ def create_app(config: AppConfig) -> FastAPI:
             for p in store.list_all()
         ]}
 
+    @app.post("/api/projects")
+    async def project_add(request: Request, payload: dict) -> dict:
+        from justagent.core.project_store import ProjectStore
+
+        _require_write(request)
+        name = (payload.get("name") or "").strip()
+        path = (payload.get("path") or "").strip()
+        if not name or not path:
+            raise HTTPException(status_code=400, detail="name and path are required")
+        root = Path(path).expanduser().resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        from justagent.core.project_store import ManagedProject
+
+        ProjectStore().add(ManagedProject(name=name, path=str(root), added_at=time.time()))
+        _notify("project", f"添加项目 {name}")
+        return {"ok": True, "name": name, "path": str(root)}
+
     # -- report (printable HTML) --------------------------------------------
     @app.get("/api/report", response_class=HTMLResponse)
     async def report() -> str:
@@ -611,15 +653,15 @@ def create_app(config: AppConfig) -> FastAPI:
 
     # -- judicial -----------------------------------------------------------
     @app.get("/api/judicial/cases")
-    async def list_cases() -> dict:
-        return {"items": _load_judicial(config)["cases"]}
+    async def list_cases(request: Request) -> dict:
+        return {"items": _load_judicial_for(_resolve_project(request))["cases"]}
 
     @app.post("/api/judicial/case")
     async def create_case(request: Request, payload: dict) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
 
         _require_write(request)
-        state = _JudicialState.load(state_path)
+        state = _JudicialState.load(_project_state(request))
         case = state.case_manager.create_case(
             case_number=payload.get("case_number") or "",
             cause_of_action=payload.get("cause") or "",
@@ -631,10 +673,10 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"ok": True, "id": case.id, "case_number": case.case_number}
 
     @app.get("/api/judicial/case/{case_id}")
-    async def case_detail(case_id: str) -> dict:
+    async def case_detail(request: Request, case_id: str) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
 
-        state = _JudicialState.load(state_path)
+        state = _JudicialState.load(_project_state(request))
         case = _find_case(state, case_id)
         if case is None:
             raise HTTPException(status_code=404, detail="case not found")
@@ -654,14 +696,14 @@ def create_app(config: AppConfig) -> FastAPI:
         }
 
     @app.get("/api/judicial/evidence")
-    async def list_evidence() -> dict:
-        return {"items": _load_judicial(config)["evidence"]}
+    async def list_evidence(request: Request) -> dict:
+        return {"items": _load_judicial_for(_resolve_project(request))["evidence"]}
 
     @app.post("/api/judicial/evidence/analyze")
-    async def analyze_evidence(payload: dict) -> dict:
+    async def analyze_evidence(request: Request, payload: dict) -> dict:
         from justagent.cli.commands.judicial import _JudicialState
 
-        state = _JudicialState.load(state_path)
+        state = _JudicialState.load(_project_state(request))
         try:
             result = state.evidence_chain.analyze(case_id=payload.get("case_id") or "")
             return {
@@ -676,8 +718,8 @@ def create_app(config: AppConfig) -> FastAPI:
                     "contradiction_count": 0, "gaps": [], "summary": f"分析不可用: {exc}"}
 
     @app.get("/api/judicial/laws")
-    async def list_laws() -> dict:
-        return {"items": _load_judicial(config)["laws"]}
+    async def list_laws(request: Request) -> dict:
+        return {"items": _load_judicial_for(_resolve_project(request))["laws"]}
 
     @app.post("/api/judicial/law")
     async def add_law(request: Request, payload: dict) -> dict:
@@ -685,7 +727,7 @@ def create_app(config: AppConfig) -> FastAPI:
         from justagent.judicial.legal_knowledge import LegalArticle, LegalDomain
 
         _require_write(request)
-        state = _JudicialState.load(state_path)
+        state = _JudicialState.load(_project_state(request))
         article = LegalArticle(
             law_name=payload.get("law_name") or "未命名法律",
             article_number=payload.get("article_number") or "",
@@ -703,7 +745,7 @@ def create_app(config: AppConfig) -> FastAPI:
         from justagent.judicial.document_generator import LegalDocumentGenerator
 
         _require_write(request)
-        state = _JudicialState.load(state_path)
+        state = _JudicialState.load(_project_state(request))
         case = _find_case(state, payload.get("case_id") or "")
         if case is None:
             return {"ok": False, "error": "case not found"}

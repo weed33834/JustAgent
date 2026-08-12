@@ -122,14 +122,17 @@ Web capabilities:
   API. **Image recognition** via `/api/vision` (OpenAI multimodal content
   blocks) — upload a picture and ask about it.
 - **Judicial**: manage cases / evidence / legal knowledge / documents.
+  **Project switching**: pick a managed project from the sidebar dropdown; all
+  judicial operations then target that project's state
+  (`X-JustAgent-Project` header → `<project>/.justagent/judicial_state.json`).
 - **System**: knowledge RAG, config, models, metrics, audit, sessions,
-  plugins, scheduled tasks (ECharts dashboard), diagnostics, notifications,
-  file upload.
+  plugins, scheduled tasks (ECharts dashboard), diagnostics, notifications
+  (webhook/email), file upload, printable report (`/api/report`).
 
 Web backend endpoints (all under `/api`): `chat`, `chat/stream`, `vision`,
 `state`, `system`, `doctor`, `config`, `models`, `metrics`, `audit`,
 `sessions`, `plugins`, `schedule`, `knowledge/search`, `judicial/*`,
-`notifications`, `upload`, `auth/*`, `health`.
+`notifications`, `upload`, `projects`, `auth/*`, `health`.
 
 **Auth**: set `JUSTAGENT_WEB_TOKEN` to require `Authorization: Bearer <token>`
 on `/api/*`.
