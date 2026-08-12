@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Full frontend panel coverage of web endpoints.** Every backend capability
+  now has a UI entry: audit log panel, legal knowledge search, evidence-chain
+  analysis button, document generation per case, judicial state export
+  (JSON), and session delete. (All 30+ `/api` endpoints are reachable from the
+  browser.)
+
+- **Multimodal image recognition.** `/api/vision` uses OpenAI multimodal
+  content blocks to analyze images (needs a vision-capable model); the chat
+  bar has an image button.
+
 - **Multi-user accounts & roles.** `justagent web` now supports user accounts
   (stored in `data/users.json`, default `admin` account auto-created). Roles:
   `admin` / `editor` / `viewer`. Login at `/api/auth/login` issues a session

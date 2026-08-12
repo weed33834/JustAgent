@@ -79,6 +79,7 @@
         <button class="btn" onclick="createCase()">创建案件</button>
       </div>
       <h3>案件列表</h3>
+      <button class="btn" style="margin-bottom:8px" onclick="exportState()">⬇ 导出司法状态</button>
       <div id="case-list"></div>
     </div>
     <div class="panel" id="panel-evidence" style="display:none">
@@ -95,6 +96,11 @@
         <button class="btn" onclick="addLaw()">添加法条</button>
       </div>
       <h3>法律库</h3>
+      <div class="form">
+        <input id="ks-q" placeholder="检索法条，如 民事法律行为" />
+        <button class="btn" onclick="searchLaw()">检索</button>
+      </div>
+      <div id="law-search"></div>
       <div id="law-list"></div>
     </div>
     <div class="panel" id="panel-system" style="display:none">
@@ -118,6 +124,8 @@
       <div id="metrics-chart" style="height:220px"></div>
       <h3>通知</h3>
       <div id="sys-notify"></div>
+      <h3>审计</h3>
+      <div id="sys-audit"></div>
     </div>
   </aside>
 
@@ -168,11 +176,11 @@ function renderMini(){
 }
 function renderCases(){
   const el=document.getElementById('case-list');
-  el.innerHTML = state.cases.length ? state.cases.map(c=>`<div class="item"><div class="t">${esc(c.case_number||c.id.slice(0,8))}<span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.cause)} · ${esc(c.court)} · ${c.parties} 当事人 · ${c.timeline} 时间线</div></div>`).join('') : '<div class="empty">暂无案件</div>';
+  el.innerHTML = state.cases.length ? state.cases.map(c=>`<div class="item"><div class="t">${esc(c.case_number||c.id.slice(0,8))}<span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.cause)} · ${esc(c.court)} · ${c.parties} 当事人 · ${c.timeline} 时间线</div><button class="btn" style="margin-top:6px" onclick="generateDoc('${c.id}')">生成证据清单</button></div>`).join('') : '<div class="empty">暂无案件</div>';
 }
 function renderEvidence(){
   const el=document.getElementById('evidence-list');
-  el.innerHTML = state.evidence.length ? state.evidence.map(e=>`<div class="item"><div class="t">${esc(e.name)}<span class="badge">${esc(e.admissible)}</span></div><div class="d">${esc(e.type)} · 证明力: ${esc(e.strength)}</div></div>`).join('') : '<div class="empty">暂无证据</div>';
+  el.innerHTML = state.evidence.length ? state.evidence.map(e=>`<div class="item"><div class="t">${esc(e.name)}<span class="badge">${esc(e.admissible)}</span></div><div class="d">${esc(e.type)} · 证明力: ${esc(e.strength)}</div></div>`).join('') + '<button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>' : '<div class="empty">暂无证据</div><button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>';
 }
 function renderLaws(){
   const el=document.getElementById('law-list');
@@ -216,6 +224,7 @@ async function send(){
     }
   }catch(e){ bubble.textContent='请求失败: '+e; }
 }
+async function delSession(id){ const r=await fetch('/api/sessions/'+id,{method:'DELETE',headers:authHeaders()}); loadSystem(); addMsg('assistant', r.ok?'已删除会话':'删除失败'); }
 function getSession(){ let s=localStorage.getItem('justagent_session'); if(!s){ s='s'+Date.now()+Math.random().toString(36).slice(2,8); localStorage.setItem('justagent_session',s);} return s; }
 async function doLogin(){
   const cred=prompt('需要登录。输入 用户名:密码（或直接粘贴访问令牌）：');
@@ -240,7 +249,7 @@ async function loadSystem(){
   }catch(e){}
   try{
     const sess=await (await fetch('/api/sessions')).json();
-    document.getElementById('sys-sessions').innerHTML = sess.items.length ? sess.items.map(s=>`<div class="item"><div class="t">${esc(s.title||s.id.slice(0,8))}</div><div class="d">${esc(s.status)}</div></div>`).join('') : '<div class="empty">暂无会话</div>';
+    document.getElementById('sys-sessions').innerHTML = sess.items.length ? sess.items.map(s=>`<div class="item"><div class="t">${esc(s.title||s.id.slice(0,8))} <span class="badge">${esc(s.status)}</span></div><div class="d">${esc(s.id.slice(0,8))}</div><button class="btn" style="margin-top:6px" onclick="delSession('${s.id}')">删除</button></div>`).join('') : '<div class="empty">暂无会话</div>';
   }catch(e){}
   try{
     const pl=await (await fetch('/api/plugins')).json();
@@ -261,6 +270,10 @@ async function loadSystem(){
     const n=await (await fetch('/api/notifications')).json();
     document.getElementById('sys-notify').innerHTML = n.items.length ? n.items.slice(0,20).map(x=>`<div class="item"><div class="t">${esc(x.kind)} <span class="badge">${new Date(x.ts*1000).toLocaleTimeString()}</span></div><div class="d">${esc(x.message)}</div></div>`).join('') : '<div class="empty">暂无通知</div>';
   }catch(e){}
+  try{
+    const a=await (await fetch('/api/audit')).json();
+    document.getElementById('sys-audit').innerHTML = a.items.length ? a.items.slice(0,20).map(x=>`<div class="item"><div class="t">${esc(x.event||x.action||'')}</div><div class="d">${esc((x.trace_id||'').slice(0,8))} · ${esc((x.ts||'').toString().slice(0,19))}</div></div>`).join('') : '<div class="empty">暂无审计</div>';
+  }catch(e){ document.getElementById('sys-audit').innerHTML='<div class="empty">审计不可用</div>'; }
 }
 function fmtTs(ts){ if(!ts||ts<=0) return 'never'; return new Date(ts*1000).toLocaleString(); }
 let attachedImage=null;
@@ -280,6 +293,28 @@ function speakLast(){ const ms=document.querySelectorAll('.msg.assistant .b'); i
 async function addTask(){
   const r=await fetch('/api/schedule',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({name:val('t-name'),schedule:val('t-cron'),command:val('t-cmd')})});
   const d=await r.json(); loadSystem(); addMsg('assistant', d.ok?('已新建定时任务 '+d.name):('失败: '+(d.detail||d.error||'')));
+}
+async function searchLaw(){
+  const q=val('ks-q'); if(!q) return;
+  const r=await fetch('/api/knowledge/search',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({query:q,top_k:6})});
+  const d=await r.json();
+  document.getElementById('law-search').innerHTML = d.hits.length ? d.hits.map(h=>`<div class="item"><div class="t">${esc(h.citation)} <span class="badge">${h.score.toFixed(2)}</span></div><div class="d">${esc(h.content||'')}</div></div>`).join('') : '<div class="empty">无结果</div>';
+}
+async function analyzeEvidence(caseId){
+  const r=await fetch('/api/judicial/evidence/analyze',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({case_id:caseId||''})});
+  const d=await r.json();
+  addMsg('assistant','证据链分析：完整度 '+d.completeness_score+'，矛盾 '+d.contradiction_count+' 处\n'+(d.summary||''));
+}
+async function generateDoc(caseId){
+  const r=await fetch('/api/judicial/doc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},authHeaders()),body:JSON.stringify({case_id:caseId,doc_type:'evidence_list'})});
+  const d=await r.json();
+  addMsg('assistant', d.ok?('已生成文书：\n'+(d.content||'').slice(0,1500)):('生成失败: '+(d.error||'')));
+}
+async function exportState(){
+  const r=await fetch('/api/state',{headers:authHeaders()}); const d=await r.json();
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='justagent-state.json'; a.click(); URL.revokeObjectURL(a.href);
+  addMsg('assistant','已导出司法状态（JSON）');
 }
 async function createCase(){
   const r=await fetch('/api/judicial/case',{method:'POST',headers:{'Content-Type':'application/json'},

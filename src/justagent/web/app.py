@@ -328,6 +328,18 @@ def create_app(config: AppConfig) -> FastAPI:
             for m in metas
         ]}
 
+    @app.delete("/api/sessions/{session_id}")
+    async def session_delete(request: Request, session_id: str) -> dict:
+        from justagent.agent.session import get_session_store
+
+        _require_write(request)
+        store = get_session_store()
+        ok = store.delete(session_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="session not found")
+        _notify("session", f"删除会话 {session_id[:8]}")
+        return {"ok": True}
+
     # -- plugins ------------------------------------------------------------
     @app.get("/api/plugins")
     async def plugins() -> dict:
