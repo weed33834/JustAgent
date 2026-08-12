@@ -56,4 +56,4 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore
 
 ## License
 
-By contributing, you agree that your work will be licensed under the MIT License.
+By contributing, you agree that your work will be licensed under the Apache-2.0 License.

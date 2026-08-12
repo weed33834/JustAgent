@@ -329,4 +329,4 @@ src/justagent/
 
 ## ライセンス
 
-MIT — [LICENSE](LICENSE) を参照。
+Apache-2.0 — [LICENSE](LICENSE) を参照。
