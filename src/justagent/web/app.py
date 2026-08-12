@@ -652,6 +652,12 @@ def create_app(config: AppConfig) -> FastAPI:
         return {"ok": True, "reply": resp.choices[0].message.content or ""}
 
     # -- judicial -----------------------------------------------------------
+    @app.get("/api/judicial/doc/types")
+    async def doc_types() -> dict:
+        from justagent.judicial.document_generator import LegalDocumentType
+
+        return {"items": [{"id": t.value, "name": t.name} for t in LegalDocumentType]}
+
     @app.get("/api/judicial/cases")
     async def list_cases(request: Request) -> dict:
         return {"items": _load_judicial_for(_resolve_project(request))["cases"]}

@@ -1377,6 +1377,58 @@ def evidence_export(
         typer.echo(text)
 
 
+@app.command("research", help="进行法律研究并生成研究备忘录。")
+def judicial_research(
+    ctx: typer.Context,
+    query: str = typer.Argument(..., help="研究主题或法律问题"),
+    top_k: int = typer.Option(5, "--top-k", help="检索法条数量"),
+    draft: bool = typer.Option(True, "--draft/--no-draft", help="是否尝试用 LLM 撰写备忘录"),
+) -> None:
+    """针对法律问题检索法条并生成研究备忘录（替代人工法律研究）。"""
+
+    console = get_console()
+    with _state_session(ctx, save=False) as state:
+        results = state.knowledge_base.search_articles(query, top_k=top_k)
+
+    if not results:
+        console.print("[red]✗ 未找到相关法条。请先用 `judicial law add` 充实法律库。[/red]")
+        raise typer.Exit(code=1)
+
+    # 1) 检索到的法条
+    citations = [(r.article, r.score) for r in results]
+    lines = [f"# 法律研究备忘录 · {query}", "", f"## 检索到 {len(citations)} 条相关法条", ""]
+    for article, score in citations:
+        lines.append(f"- **{article.citation}**（领域 {article.domain.value}，匹配度 {score:.2f}）")
+        lines.append(f"  正文：{article.content}")
+
+    # 2) LLM 撰写分析（尽力而为；无模型则给出引用式分析）
+    analysis = ""
+    if draft:
+        try:
+            config: AppConfig = ctx.obj["config"]
+            from justagent.adapters.model_gateway import ChatMessage
+            from justagent.cli.commands.fix import _model_router
+
+            router = _model_router(config)
+            evidence_text = "\n".join(f"- {a.citation}: {a.content}" for a, _ in citations)
+            prompt = (
+                f"请针对以下法律问题写一份简明研究备忘录（300字内）：{query}\n"
+                f"可依据的法条：\n{evidence_text}\n"
+                "结构：一、问题；二、法律依据；三、分析；四、结论。"
+            )
+            resp = router.chat([ChatMessage(role="user", content=prompt)], "research")
+            analysis = resp
+            lines.append("", "## 分析（LLM 撰写）", "", analysis)
+        except Exception as exc:  # noqa: BLE001 - 无模型时退化为引用式
+            lines.append("\n## 分析（无 LLM，给出检索提示）\n\n请人工结合上述法条进行论证。"
+                         "可用 `justagent judicial doc generate` 生成正式文书。")
+            if ctx.obj.get("verbose"):
+                console.print(f"[dim]LLM 撰写不可用：{exc}[/dim]")
+
+    text = "\n".join(lines)
+    console.print(text)
+
+
 @law_app.command("export", help="导出法律知识库。")
 def law_export(
     ctx: typer.Context,

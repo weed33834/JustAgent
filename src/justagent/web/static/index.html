@@ -86,6 +86,7 @@
       <h3>案件列表</h3>
       <button class="btn" style="margin-bottom:8px" onclick="exportState()">⬇ 导出司法状态</button>
       <button class="btn" style="margin-bottom:8px" onclick="window.open('/api/report','_blank')">📄 导出报表(HTML)</button>
+      <div style="margin-bottom:8px"><select id="docType" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px"></select></div>
       <div id="case-list"></div>
     </div>
     <div class="panel" id="panel-evidence" style="display:none">
@@ -198,7 +199,12 @@ function renderMini(){
 }
 function renderCases(){
   const el=document.getElementById('case-list');
-  el.innerHTML = state.cases.length ? state.cases.map(c=>`<div class="item"><div class="t">${esc(c.case_number||c.id.slice(0,8))}<span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.cause)} · ${esc(c.court)} · ${c.parties} 当事人 · ${c.timeline} 时间线</div><button class="btn" style="margin-top:6px" onclick="generateDoc('${c.id}')">生成证据清单</button></div>`).join('') : '<div class="empty">暂无案件</div>';
+  el.innerHTML = state.cases.length ? state.cases.map(c=>`<div class="item"><div class="t">${esc(c.case_number||c.id.slice(0,8))}<span class="badge">${esc(c.status)}</span></div><div class="d">${esc(c.cause)} · ${esc(c.court)} · ${c.parties} 当事人 · ${c.timeline} 时间线</div><button class="btn" style="margin-top:6px" onclick="generateDoc('${c.id}')">生成文书</button></div>`).join('') : '<div class="empty">暂无案件</div>';
+}
+async function loadDocTypes(){
+  try{ const r=await (await fetch('/api/judicial/doc/types')).json();
+    document.getElementById('docType').innerHTML=r.items.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  }catch(e){}
 }
 function renderEvidence(){
   const el=document.getElementById('evidence-list');
@@ -341,9 +347,10 @@ async function analyzeEvidence(caseId){
   addMsg('assistant','证据链分析：完整度 '+d.completeness_score+'，矛盾 '+d.contradiction_count+' 处\n'+(d.summary||''));
 }
 async function generateDoc(caseId){
-  const r=await fetch('/api/judicial/doc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},projHeaders()),body:JSON.stringify({case_id:caseId,doc_type:'evidence_list'})});
+  const dt=(document.getElementById('docType')&&document.getElementById('docType').value)||'evidence_list';
+  const r=await fetch('/api/judicial/doc',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},projHeaders()),body:JSON.stringify({case_id:caseId,doc_type:dt})});
   const d=await r.json();
-  addMsg('assistant', d.ok?('已生成文书：\n'+(d.content||'').slice(0,1500)):('生成失败: '+(d.error||'')));
+  addMsg('assistant', d.ok?('已生成《'+dt+'》：\n'+(d.content||'').slice(0,1500)):('生成失败: '+(d.error||'')));
 }
 async function exportState(){
   const r=await fetch('/api/state',{headers:projHeaders()}); const d=await r.json();
@@ -362,7 +369,7 @@ async function addLaw(){
   const d=await r.json(); await loadState(); addMsg('assistant', d.ok?('已添加法条 '+d.citation):('添加失败: '+d.error));
 }
 function val(id){ return document.getElementById(id).value.trim(); }
-window.onload=()=>{ loadState(); loadProjects(); addMsg('assistant','你好，我是 JustAgent。我可以帮你管理案件、证据、法条，生成法律文书。直接说需求即可。'); };
+window.onload=()=>{ loadState(); loadProjects(); loadDocTypes(); addMsg('assistant','你好，我是 JustAgent。我可以帮你管理案件、证据、法条，生成法律文书。直接说需求即可。'); };
 </script>
 </body>
 </html>

@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Legal research memo (`judicial research`).** Given a legal question, it
+  retrieves relevant articles from the legal knowledge base and drafts a
+  structured research memo (issue → legal basis → analysis → conclusion),
+  using the LLM when a backend is configured (graceful fallback otherwise).
+  This showcases the judicial positioning — automating legal research.
+- **Web doc-type selector.** `/api/judicial/doc/types` lists all legal
+  document templates; the web lets you pick a type and generate it for any
+  case.
+
 - **Runtime project/workspace switching.** The web can now switch between
   managed projects at runtime: a sidebar dropdown selects the active project,
   and all judicial endpoints resolve the state from that project
