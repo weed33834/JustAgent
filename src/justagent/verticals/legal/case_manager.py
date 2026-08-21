@@ -51,7 +51,7 @@ from justagent.knowledge.document import (
 )
 from justagent.utils import now
 
-logger = logging.getLogger("justagent.judicial.case_manager")
+logger = logging.getLogger("justagent.verticals.legal.case_manager")
 
 
 # ---------------------------------------------------------------------------

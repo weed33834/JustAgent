@@ -13,8 +13,8 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from justagent.cli.commands import judicial
 from justagent.models.config import AppConfig
+from justagent.verticals.legal import cli as legal_cli
 from justagent.web.app import create_app
 from justagent.web.users import PBKDF2_ITERATIONS, UserStore
 
@@ -35,7 +35,7 @@ def _make_state(tmp_path: Path) -> None:
         "verbose": False,
         "audit_logger": MagicMock(),
     }
-    judicial.case_create(
+    legal_cli.case_create(
         ctx,
         case_number="（2026）京01民初1号",
         cause="买卖合同纠纷",

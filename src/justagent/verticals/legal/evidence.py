@@ -50,7 +50,7 @@ from justagent.knowledge.graph import (
 )
 from justagent.utils import now
 
-logger = logging.getLogger("justagent.judicial.evidence")
+logger = logging.getLogger("justagent.verticals.legal.evidence")
 
 
 # ---------------------------------------------------------------------------

@@ -64,10 +64,10 @@ class Permission(str, Enum):  # noqa: UP042 - match existing codebase style
         DELEGATE: Grant a subset of one's own permissions to others.
         SHARE: Share a resource with other users.
         EXPORT: Export / download a resource outside the platform.
-        REVIEW: Review / examine a resource (judicial context: 审查).
-        SEAL: Affix an official seal (judicial context: 盖章).
-        ARCHIVE: File a resource into archival storage (judicial context: 归档).
-        SERVE: Serve / deliver a legal document (judicial context: 送达).
+        REVIEW: Review / examine a resource.
+        SEAL: Affix an official seal.
+        ARCHIVE: File a resource into archival storage.
+        SERVE: Serve / deliver a legal document.
     """
 
     READ = "read"

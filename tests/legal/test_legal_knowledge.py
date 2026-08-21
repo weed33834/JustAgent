@@ -1,5 +1,5 @@
 """Tests for the legal knowledge base module
-(justagent.judicial.legal_knowledge)."""
+(justagent.verticals.legal.legal_knowledge)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,12 @@ import threading
 
 import pytest
 
-from justagent.judicial.legal_knowledge import (
+from justagent.knowledge.graph import EntityType, KnowledgeGraph
+from justagent.knowledge.vector import (
+    HashingEmbedder,
+    InMemoryVectorStore,
+)
+from justagent.verticals.legal.legal_knowledge import (
     ArticleSearchResult,
     ArticleStatus,
     CaseLevel,
@@ -19,12 +24,6 @@ from justagent.judicial.legal_knowledge import (
     LegalKnowledgeBase,
     LegalKnowledgeError,
 )
-from justagent.knowledge.graph import EntityType, KnowledgeGraph
-from justagent.knowledge.vector import (
-    HashingEmbedder,
-    InMemoryVectorStore,
-)
-
 
 # ---------------------------------------------------------------------------
 # Helpers

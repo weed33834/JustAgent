@@ -1,22 +1,21 @@
-"""JustAgent — judicial AI agent platform.
+"""JustAgent — an auditable multi-agent platform.
 
-JustAgent is an intelligent platform for judicial services, providing:
-  - Case material organization (案件材料梳理)
-  - Evidence review & chain analysis (证据审查)
-  - Legal document generation (法律文书生成)
-  - Judicial workflow automation (司法流程自动化)
-  - Legal knowledge base (法条库, 类案库)
-  - Enterprise-grade security & compliance (加密, RBAC, DLP, 审计)
-  - Multi-agent orchestration (多智能体协作)
+The engine provides:
+  - Iterative tool-calling agent loop with Plan/Act modes
+  - Permission engine (allow / deny / ask) and shell safety
+  - Checkpoints (shadow git), session persistence, audit logging
+  - MCP client, subagents, context engineering, compaction
+  - Multi-agent orchestration primitives
 
-Intelligence for Justice.
+Vertical applications (e.g. the bundled legal vertical) live in
+``justagent.verticals`` and register via entry points — see
+DESIGN.dual-track.zh.md for the layering rules.
 """
 
-__version__ = "3.0.1"
+__version__ = "3.1.0"
 
-# Judicial and enterprise module version markers.
-JUDICIAL_MODULES = [
-    "judicial",
+# Optional engine capability modules (feature-detection for integrations).
+CAPABILITY_MODULES = [
     "knowledge",
     "communication",
     "resources",

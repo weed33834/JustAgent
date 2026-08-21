@@ -3,7 +3,7 @@
 This package provides four integrated subsystems that together deliver
 the core judicial AI capabilities of the platform:
 
-* **Case Management** (:mod:`justagent.judicial.case_manager`) —
+* **Case Management** (:mod:`justagent.verticals.legal.case_manager`) —
   structured case files with parties, facts, evidence references,
   disputed issues, claims, and a chronological timeline. Multi-format
   material import (PDF, Word, Excel, PPT, Markdown, HTML, plain text)
@@ -11,7 +11,7 @@ the core judicial AI capabilities of the platform:
   rule-based structured extraction (parties, claims, facts, timeline)
   and context assembly for downstream document generation.
 
-* **Evidence Review** (:mod:`justagent.judicial.evidence`) —
+* **Evidence Review** (:mod:`justagent.verticals.legal.evidence`) —
   evidence modelling across the seven statutory categories (documentary,
   physical, testimony, expert opinion, inspection record, audio-visual,
   electronic data), with legality (admissibility) checks, relevance
@@ -21,7 +21,7 @@ the core judicial AI capabilities of the platform:
   evidence-chain representation.
 
 * **Legal Document Generation**
-  (:mod:`justagent.judicial.document_generator`) — generates formal
+  (:mod:`justagent.verticals.legal.document_generator`) — generates formal
   legal documents (indictments, defense statements, judgments, rulings,
   mediation agreements, agency opinions, legal opinions, evidence
   lists, cross-examination opinions) from case context, evidence
@@ -31,7 +31,7 @@ the core judicial AI capabilities of the platform:
   Integrates with :class:`~justagent.knowledge.rag.RAGPipeline` and
   uses LangChain prompt templates (lazy import with fallback).
 
-* **Legal Knowledge Base** (:mod:`justagent.judicial.legal_knowledge`)
+* **Legal Knowledge Base** (:mod:`justagent.verticals.legal.legal_knowledge`)
   — stores statutory articles and precedent cases, supporting semantic
   and keyword search, similar-case retrieval, and legal-concept
   explanation. Integrates with
@@ -43,7 +43,7 @@ the core judicial AI capabilities of the platform:
 All subsystems use Pydantic v2 for data models, are thread-safe
 (``threading.RLock``), provide async variants (``asyncio.to_thread``)
 for integration with the async orchestration layer, and follow the
-``justagent.judicial.<submodule>`` logging namespace. External
+``justagent.verticals.legal.<submodule>`` logging namespace. External
 frameworks (LangChain prompt templates) are used via lazy imports with
 graceful fallback, avoiding hard dependencies.
 
@@ -74,7 +74,7 @@ Architecture overview::
 
 Quick start::
 
-    from justagent.judicial import (
+    from justagent.verticals.legal import (
         # Case management
         CaseManager, CaseFile, Party, PartyRole, CaseStatus,
         Claim, FactElement, DisputedIssue, TimelineEvent,
@@ -134,7 +134,7 @@ from __future__ import annotations
 
 import logging
 
-from justagent.judicial.case_manager import (
+from justagent.verticals.legal.case_manager import (
     CaseContext,
     CaseFile,
     CaseManager,
@@ -149,7 +149,7 @@ from justagent.judicial.case_manager import (
     PartyRole,
     TimelineEvent,
 )
-from justagent.judicial.document_generator import (
+from justagent.verticals.legal.document_generator import (
     CitationVerification,
     DocumentGenerationError,
     GeneratedDocument,
@@ -160,7 +160,7 @@ from justagent.judicial.document_generator import (
     LegalDocumentTemplateManager,
     LegalDocumentType,
 )
-from justagent.judicial.evidence import (
+from justagent.verticals.legal.evidence import (
     Admissibility,
     ChainAnalysisResult,
     Evidence,
@@ -173,7 +173,7 @@ from justagent.judicial.evidence import (
     ProbativeStrength,
     ReviewResult,
 )
-from justagent.judicial.legal_knowledge import (
+from justagent.verticals.legal.legal_knowledge import (
     ArticleSearchResult,
     ArticleStatus,
     CaseLevel,
@@ -186,7 +186,7 @@ from justagent.judicial.legal_knowledge import (
     LegalKnowledgeError,
 )
 
-logger = logging.getLogger("justagent.judicial")
+logger = logging.getLogger("justagent.verticals.legal")
 
 __all__ = [
     # case_manager.py

@@ -51,7 +51,7 @@ judicial features (same persisted state as the CLI).
 
 
 def _load_state(state_path: Path):
-    from justagent.cli.commands.judicial import _JudicialState
+    from justagent.verticals.legal.cli import _JudicialState
 
     return _JudicialState.load(state_path)
 
@@ -128,7 +128,7 @@ def _run(action: str, args: JudicialInput, state_path: Path) -> str:
         )
 
     if action == "generate_doc":
-        from justagent.judicial.document_generator import LegalDocumentGenerator
+        from justagent.verticals.legal.document_generator import LegalDocumentGenerator
 
         case = _find_case(state, case_id)
         if case is None:
@@ -161,7 +161,7 @@ def _parse_domain(value: str | None):
     if value is None:
         return None
     try:
-        from justagent.judicial.legal_knowledge import LegalDomain
+        from justagent.verticals.legal.legal_knowledge import LegalDomain
 
         return LegalDomain(value)
     except Exception:  # noqa: BLE001
@@ -193,3 +193,11 @@ def make_judicial_tool(state_path: Path | None = None) -> Tool:
 
 
 __all__ = ["JudicialInput", "make_judicial_tool"]
+
+def make_legal_tool(state_root: Path | None = None) -> Tool:
+    """Entry-point factory for the ``justagent.tools`` group.
+
+    Receives the project root and derives the persisted state path from it.
+    """
+    resolved = Path(state_root) / ".justagent" / "judicial_state.json" if state_root else None
+    return make_judicial_tool(resolved)

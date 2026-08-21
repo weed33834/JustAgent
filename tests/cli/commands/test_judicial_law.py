@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from justagent.cli.commands import judicial
 from justagent.models.config import AppConfig
+from justagent.verticals.legal import cli as judicial
 
 
 @pytest.fixture

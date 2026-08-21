@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from justagent.cli.commands import judicial
 from justagent.models.config import AppConfig
+from justagent.verticals.legal import cli as judicial
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def _add_law(ctx: MagicMock) -> None:
 
 
 def test_case_summary_outputs_overview(jctx, capsys) -> None:
-    from justagent.cli.commands.judicial import _JudicialState, _state_path
+    from justagent.verticals.legal.cli import _JudicialState, _state_path
 
     _create_case(jctx)
     capsys.readouterr()

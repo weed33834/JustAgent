@@ -99,7 +99,7 @@ def register(parent: typer.Typer) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Context accessors — defensive like judicial.py (build fallbacks when ctx.obj
+# Context accessors — defensive like the other command modules (build fallbacks when ctx.obj
 # is missing keys, e.g. when a command is invoked directly in tests).
 # ---------------------------------------------------------------------------
 

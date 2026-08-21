@@ -1,10 +1,9 @@
 """Tests for the legal document generation module
-(justagent.judicial.document_generator)."""
+(justagent.verticals.legal.document_generator)."""
 
 from __future__ import annotations
 
 import threading
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,13 +13,13 @@ from justagent.adapters.model_gateway import (
     ChatCompletionResponse,
     ModelGateway,
 )
-from justagent.judicial.case_manager import (
+from justagent.verticals.legal.case_manager import (
     CaseManager,
     Claim,
     Party,
     PartyRole,
 )
-from justagent.judicial.document_generator import (
+from justagent.verticals.legal.document_generator import (
     CitationVerification,
     DocumentGenerationError,
     GeneratedDocument,
@@ -31,14 +30,13 @@ from justagent.judicial.document_generator import (
     LegalDocumentTemplateManager,
     LegalDocumentType,
 )
-from justagent.judicial.evidence import Evidence, EvidenceChain, EvidenceType
-from justagent.judicial.legal_knowledge import (
+from justagent.verticals.legal.evidence import Evidence, EvidenceChain, EvidenceType
+from justagent.verticals.legal.legal_knowledge import (
     ArticleStatus,
     LegalArticle,
     LegalDomain,
     LegalKnowledgeBase,
 )
-
 
 # ---------------------------------------------------------------------------
 # Mock gateway

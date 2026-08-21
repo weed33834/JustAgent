@@ -11,6 +11,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  layer-check:
+    name: Layer check (engine knows nothing about verticals)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Engine/vertical layering rules
+        run: bash scripts/layer-check.sh
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
