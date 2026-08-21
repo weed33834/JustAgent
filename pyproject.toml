@@ -61,6 +61,7 @@ dependencies = [
     "pydantic-settings>=2.7.0",
     "psutil>=6.1.0",
     "packaging>=24.2.0",
+    "croniter>=2.0.0",
     "cryptography>=44.0.0",
     "tomli-w>=1.2.0",
     "openai>=1.40.0",

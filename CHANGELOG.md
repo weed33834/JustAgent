@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scheduler: hand-rolled cron engine replaced with `croniter`.** The
+  ~120-line custom field-matcher and minute-by-minute next-run scan are gone;
+  cron semantics (including weekday-7 aliasing and impossible-date detection)
+  now come from the battle-tested `croniter` library. `ScheduleParser`
+  public API and persisted task shape are unchanged.
 - **README repositioning (M3, en/zh/ja).** Lead narrative is now the engine —
   "an auditable multi-agent platform" (permission-checked actions, shadow-git
   checkpoints, audit logging) — with JustAgent Legal presented as a bundled

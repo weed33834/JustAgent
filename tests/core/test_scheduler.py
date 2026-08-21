@@ -22,7 +22,6 @@ from justagent.core.scheduler import (
     ScheduleStore,
     ScheduleType,
     TaskRunResult,
-    _cron_field_matches,
 )
 from justagent.models.project import ManagedProject
 
@@ -390,38 +389,25 @@ class TestScheduleParserCron:
         with pytest.raises(SchedulerError):
             ScheduleParser().parse("60 * * * *")
 
-    # Field matching
-    def test_match_star(self) -> None:
-        assert _cron_field_matches("*", 5, 0, 59) is True
-
-    def test_match_literal(self) -> None:
-        assert _cron_field_matches("5", 5, 0, 59) is True
-        assert _cron_field_matches("5", 6, 0, 59) is False
-
-    def test_match_range(self) -> None:
-        assert _cron_field_matches("1-5", 3, 0, 59) is True
-        assert _cron_field_matches("1-5", 6, 0, 59) is False
-
-    def test_match_step(self) -> None:
-        assert _cron_field_matches("*/15", 0, 0, 59) is True
-        assert _cron_field_matches("*/15", 15, 0, 59) is True
-        assert _cron_field_matches("*/15", 30, 0, 59) is True
-        assert _cron_field_matches("*/15", 7, 0, 59) is False
-
-    def test_match_range_step(self) -> None:
-        assert _cron_field_matches("1-30/2", 1, 0, 59) is True
-        assert _cron_field_matches("1-30/2", 3, 0, 59) is True
-        assert _cron_field_matches("1-30/2", 31, 0, 59) is False
-
-    def test_match_comma_list(self) -> None:
-        assert _cron_field_matches("1,3,5", 1, 0, 59) is True
-        assert _cron_field_matches("1,3,5", 5, 0, 59) is True
-        assert _cron_field_matches("1,3,5", 2, 0, 59) is False
+    # Field matching is delegated to ``croniter``; next-run semantics below.
 
     @freeze_time("2025-06-15 12:00:00", tz_offset=0)
     def test_next_run_every_5_minutes(self) -> None:
         ts = ScheduleParser().next_run("*/5 * * * *")
         expected = datetime(2025, 6, 15, 12, 5, 0, tzinfo=UTC).timestamp()
+        assert ts == pytest.approx(expected, abs=1.0)
+
+    @freeze_time("2025-06-15 12:00:00", tz_offset=0)
+    def test_next_run_comma_list(self) -> None:
+        ts = ScheduleParser().next_run("5,35 * * * *")
+        expected = datetime(2025, 6, 15, 12, 5, 0, tzinfo=UTC).timestamp()
+        assert ts == pytest.approx(expected, abs=1.0)
+
+    @freeze_time("2025-06-15 12:00:00", tz_offset=0)
+    def test_next_run_weekday_field(self) -> None:
+        # 2025-06-15 is a Sunday (cron weekday 0); next Mon 09:00 is the 16th.
+        ts = ScheduleParser().next_run("0 9 * * 1")
+        expected = datetime(2025, 6, 16, 9, 0, 0, tzinfo=UTC).timestamp()
         assert ts == pytest.approx(expected, abs=1.0)
 
     @freeze_time("2025-06-15 12:00:00", tz_offset=0)

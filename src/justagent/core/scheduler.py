@@ -13,7 +13,6 @@ Reference: crontab(5) format.
 
 from __future__ import annotations
 
-import calendar
 import json
 import re
 import subprocess
@@ -34,7 +33,6 @@ DEFAULT_SCHEDULE_STORE_PATH = Path.home() / ".justagent" / "schedules.json"
 _TASK_TIMEOUT_SECONDS = 1800
 
 #: Upper bound for the cron next-run scan: 366 days in minutes.
-_CRON_SCAN_LIMIT_MINUTES = 366 * 24 * 60
 
 
 class SchedulerError(MyAgentError):
@@ -302,8 +300,8 @@ def _parse_cron_expression(text: str) -> dict[str, str]:
 def _validate_cron_field(field: str, min_val: int, max_val: int, name: str) -> None:
     """Reject obviously invalid literals like ``60`` in a minute field.
 
-    Range/step syntax is checked loosely here; full matching happens in
-    :func:`_cron_field_matches`.
+    Range/step syntax is checked loosely here; matching and next-run computation
+    are handled by `croniter`.
     """
     for part in field.split(","):
         token = part.strip()
@@ -338,87 +336,28 @@ def _validate_cron_field(field: str, min_val: int, max_val: int, name: str) -> N
         raise SchedulerError(f"invalid cron token in {name} field: {field!r}")
 
 
-def _cron_field_matches(field: str, value: int, min_val: int, max_val: int) -> bool:
-    """Check if a cron field matches ``value``.
-
-    Supports ``*``, ``N``, ``N-M``, ``*/S``, ``N-M/S``, and ``N,M,K``.
-    """
-    for raw_part in field.split(","):
-        part = raw_part.strip()
-        if not part:
-            continue
-        step = 1
-        range_token = part
-        if "/" in part:
-            range_token, step_str = part.split("/", 1)
-            if not step_str.isdigit():
-                continue
-            step = int(step_str)
-            if step <= 0:
-                continue
-        if range_token in ("", "*"):
-            lo, hi = min_val, max_val
-        elif "-" in range_token:
-            lo_str, hi_str = range_token.split("-", 1)
-            if not (lo_str.isdigit() and hi_str.isdigit()):
-                continue
-            lo, hi = int(lo_str), int(hi_str)
-            # weekday 7 is shorthand for Sunday (0); allow either.
-            if hi == 7 and min_val == 0 and max_val == 6:
-                hi = 6
-        else:
-            if not range_token.isdigit():
-                continue
-            n = int(range_token)
-            if n == 7 and min_val == 0 and max_val == 6:
-                n = 0
-            if step > 1:
-                # ``N/S`` is non-standard but tolerable: treat as N..max/S.
-                lo, hi = n, max_val
-            else:
-                if value == n:
-                    return True
-                continue
-        if lo <= value <= hi and (value - lo) % step == 0:
-            return True
-    return False
-
-
 def _next_cron(base: float, params: dict[str, str]) -> float:
-    """Scan forward minute-by-minute to find the next cron match.
+    """Compute the next fire time for a cron expression via ``croniter``.
 
-    Raises :class:`SchedulerError` if no match is found within
-    :data:`_CRON_SCAN_LIMIT_MINUTES` (covers impossible expressions like
-    ``0 0 30 2 *``).
+    ``params`` holds the five raw cron fields (minute/hour/day/month/weekday)
+    as produced by :func:`_parse_cron_expression`. Raises
+    :class:`SchedulerError` for expressions that can never match (e.g.
+    ``0 0 30 2 *``) or are otherwise invalid.
     """
-    start = datetime.fromtimestamp(base)
-    # Truncate to the start of the next minute.
-    candidate = start.replace(second=0, microsecond=0) + timedelta(minutes=1)
-    weekday_field = params["weekday"]
-    for _ in range(_CRON_SCAN_LIMIT_MINUTES):
-        if (
-            _cron_field_matches(params["minute"], candidate.minute, 0, 59)
-            and _cron_field_matches(params["hour"], candidate.hour, 0, 23)
-            and _cron_field_matches(params["day"], candidate.day, 1, 31)
-            and _cron_field_matches(params["month"], candidate.month, 1, 12)
-            and _cron_field_matches(
-                weekday_field,
-                _python_to_cron_weekday(candidate.weekday()),
-                0,
-                6,
-            )
-            and calendar.monthrange(candidate.year, candidate.month)[1] >= candidate.day
-        ):
-            return candidate.timestamp()
-        candidate = candidate + timedelta(minutes=1)
-    raise SchedulerError(
-        f"no cron match within {_CRON_SCAN_LIMIT_MINUTES} minutes for {params!r}"
-    )
+    try:
+        from croniter import croniter
+    except ImportError as exc:
+        raise SchedulerError(
+            "cron schedules require the 'croniter' package (pip install croniter)"
+        ) from exc
 
-
-def _python_to_cron_weekday(python_weekday: int) -> int:
-    """Convert Python ``date.weekday()`` (Mon=0..Sun=6) to cron (Sun=0..Sat=6)."""
-    return (python_weekday + 1) % 7
+    expr = "{minute} {hour} {day} {month} {weekday}".format(**params)
+    start = datetime.fromtimestamp(base).replace(second=0, microsecond=0)
+    try:
+        iterator = croniter(expr, start)
+        return float(iterator.get_next())
+    except ValueError as exc:
+        raise SchedulerError(f"cron expression never matches: {expr!r} ({exc})") from exc
 
 
 # ---------------------------------------------------------------------------
