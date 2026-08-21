@@ -12,7 +12,7 @@ from pathlib import Path
 
 import typer
 
-from justagent.core.cache import DiskCache
+from justagent.core.cache import Cache
 from justagent.core.config_center import load_config
 from justagent.core.i18n import I18n, get_i18n, get_i18n_from_ctx
 from justagent.core.model_router import ModelRouter
@@ -179,7 +179,7 @@ def check_directories(config: AppConfig, i18n: I18n) -> CheckResult:
 def check_cache(config: AppConfig) -> CheckResult:
     i18n = get_i18n()
     try:
-        cache = DiskCache(cache_dir=config.cache.dir)
+        cache = Cache(cache_dir=config.cache.dir)
         cache.set("__doctor_probe__", "ok", ttl=10)
         value = cache.get("__doctor_probe__")
         cache.invalidate("__doctor_probe__")

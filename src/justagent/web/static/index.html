@@ -164,6 +164,13 @@
 let state = { cases: [], evidence: [], laws: [] };
 let history = [];
 let token = localStorage.getItem('justagent_token') || '';
+// Default-deny auth: attach the credential to every request automatically.
+const _origFetch = window.fetch.bind(window);
+window.fetch = function(input, init){
+  init = Object.assign({}, init||{});
+  if(token) init.headers = Object.assign({'Authorization':'Bearer '+token}, init.headers||{});
+  return _origFetch(input, init);
+};
 let projectSel = '';
 function authHeaders(){ return token ? { 'Authorization': 'Bearer '+token } : {}; }
 function projHeaders(){ const h=authHeaders(); if(projectSel) h['X-JustAgent-Project']=projectSel; return h; }

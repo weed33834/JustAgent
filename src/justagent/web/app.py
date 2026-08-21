@@ -137,7 +137,7 @@ def _get_metrics(config: AppConfig) -> dict:
     return {"events": counts, "total": sum(counts.values())}
 
 
-def create_app(config: AppConfig) -> FastAPI:
+def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     """Create the FastAPI application bound to a project config."""
 
     app = FastAPI(title="JustAgent Web", version="1.0.0")
@@ -166,6 +166,8 @@ def create_app(config: AppConfig) -> FastAPI:
     user_store.ensure_admin()
     tokens = TokenManager()
     shared_token = os.environ.get("JUSTAGENT_WEB_TOKEN", "")
+    if not no_auth:
+        no_auth = os.environ.get("JUSTAGENT_WEB_NO_AUTH", "") not in ("", "0")
 
     def _resolve_user(request) -> dict | None:
         """Resolve a session user from the Authorization header (if any)."""
@@ -175,8 +177,12 @@ def create_app(config: AppConfig) -> FastAPI:
         return None
 
     def _require_write(request) -> None:
-        """Enforce write permission when a session user is present (viewer is read-only)."""
-        user = _resolve_user(request)
+        """403 for session users without write role.
+
+        Anonymous requests never reach endpoints (middleware default-deny);
+        shared-token and --no-auth requests carry full access.
+        """
+        user = getattr(request.state, "user", None)
         if user is not None and user.get("role") not in WRITE_ROLES:
             raise HTTPException(status_code=403, detail=f"{user.get('role')} cannot write")
 
@@ -208,13 +214,17 @@ def create_app(config: AppConfig) -> FastAPI:
     @app.middleware("http")
     async def _auth(request, call_next):
         path = request.url.path
-        if path in ("/", "/api/health", "/api/auth/login"):
+        if no_auth or path in ("/", "/api/health", "/api/auth/login"):
             return await call_next(request)
-        # Session user (if any) is resolved lazily by endpoints that need roles.
-        if shared_token:
-            header = request.headers.get("authorization", "")
-            if header != f"Bearer {shared_token}":
-                return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+        header = request.headers.get("authorization", "")
+        # Shared deployment token grants full access (operator-level credential).
+        if shared_token and header == f"Bearer {shared_token}":
+            return await call_next(request)
+        # Otherwise a valid session issued by /api/auth/login is required.
+        session = tokens.resolve(header[7:]) if header.startswith("Bearer ") else None
+        if session is None:
+            return JSONResponse(status_code=401, content={"detail": "unauthorized"})
+        request.state.user = session
         return await call_next(request)
 
     # Per-session runtimes so the web chat keeps multi-turn conversation memory.
@@ -798,9 +808,9 @@ def _redact(data: Any) -> None:
             _redact(item)
 
 
-def run(config: AppConfig, host: str = "127.0.0.1", port: int = 8000) -> None:
+def run(config: AppConfig, host: str = "127.0.0.1", port: int = 8000, *, no_auth: bool = False) -> None:
     """Start the JustAgent web server."""
     import uvicorn
 
-    app = create_app(config)
+    app = create_app(config, no_auth=no_auth)
     uvicorn.run(app, host=host, port=port)

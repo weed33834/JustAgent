@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Web console: enforced authentication (default-deny).** All `/api/*` endpoints
+  now require a credential — either the `JUSTAGENT_WEB_TOKEN` shared token or a
+  session issued via `/api/auth/login`. Previously, an unset
+  `JUSTAGENT_WEB_TOKEN` left every endpoint anonymous. An explicit escape hatch
+  (`justagent web --no-auth`, or env `JUSTAGENT_WEB_NO_AUTH=1`) restores the old
+  behavior for local development and prints a red warning.
+- **Web console: PBKDF2 password hashing.** User passwords are now hashed with
+  PBKDF2-HMAC-SHA256 at 600k iterations (was: a single HMAC-SHA256 pass).
+  Legacy hashes verify transparently and are re-hashed on the next successful
+  login — no password reset required.
+- **Web console: persistent sessions.** Session tokens are stored in
+  `~/.justagent/web_sessions.json` (atomic writes), so browser sessions survive
+  process restarts. Write failures degrade to memory-only mode.
+
+### Fixed
+
+- **`doctor` crashed on import.** v3.0.2 renamed the cache class (`DiskCache`
+  → `Cache`) but missed `cli/commands/doctor.py`; `justagent doctor` failed to
+  load.
+- **`core.cache.Cache` was uninstantiable with defaults.** The diskcache
+  backend received an invalid `eviction_policy="LRU"` (KeyError); corrected to
+  `least-recently-used`.
+- **`core.cache.Cache.invalidate()` raised TypeError.** diskcache's `delete()`
+  takes no `ignore_missing` argument; invalidating a missing key is now a true
+  no-op as documented.
+- **CI action bumps.** `actions/cache` 4→6 (#5), `astral-sh/setup-uv` 5→7 (#4).
+
 ### Added
 
 - Initial public release.
