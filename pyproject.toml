@@ -69,6 +69,7 @@ dependencies = [
     "simpleeval>=1.0.0",
     # Chinese text segmentation for judicial NLP
     "jieba>=0.42.1",
+    "diskcache",
 ]
 
 [project.optional-dependencies]
