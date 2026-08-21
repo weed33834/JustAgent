@@ -1,6 +1,6 @@
 """Enterprise security module for the JustAgent platform.
 
-This package provides six integrated security subsystems that together
+This package provides four integrated security subsystems that together
 deliver enterprise-grade protection for a local-first AI agent platform:
 
 * **Encryption** (:mod:`justagent.security.encryption`) — authenticated
@@ -13,12 +13,6 @@ deliver enterprise-grade protection for a local-first AI agent platform:
   inheritance, built-in system roles (admin, editor, viewer) and
   structured access decisions for audit logging.
 
-* **SSO** (:mod:`justagent.security.sso`) — single sign-on integration
-  for SAML, OIDC, LDAP and SCIM protocols. Token validation uses lazy
-  imports for protocol-specific libraries (PyJWT, signxml) so the module
-  works out-of-the-box with pre-parsed tokens for testing. Supports
-  auto-provisioning of users and email domain allow-listing.
-
 * **Data Protection** (:mod:`justagent.security.data_protection`) — Data
   Loss Prevention with regex-based PII scanning (email, phone, SSN,
   credit card, IP, passport, bank account, ID card, address), sensitivity
@@ -30,13 +24,6 @@ deliver enterprise-grade protection for a local-first AI agent platform:
   CCPA. Includes data access and retention checks, and a thread-safe
   append-only audit trail with SHA-256 hash chaining for tamper
   evidence.
-
-* **Judicial Security** (:mod:`justagent.security.judicial_security`)
-  — judicial-specific extensions for PRC (China) practice: case
-  classification (案件密级管理) with PUBLIC/INTERNAL/SECRET/CONFIDENTIAL
-  tiers, a judicial audit logger subclassing the compliance audit trail,
-  and a tamper-evident evidence chain (证据链完整性保护) with SHA-256
-  hash verification.
 
 All subsystems use Pydantic v2 for data models, are thread-safe
 (``threading.Lock`` / ``threading.RLock``), and follow the
@@ -53,23 +40,10 @@ Architecture overview::
              |                         |
              v                         v
     +-------------------+     +-------------------+
-    |  Data Protection  |     |       SSO         |
-    |  (DLPScanner,     |     |  (SSOManager,     |
-    |   DataSanitizer)  |     |   TokenPayload)   |
+    |  Data Protection  |     |   Compliance      |
+    |  (DLPScanner,     |     |  (ComplianceChecker,|
+    |   DataSanitizer)  |     |   AuditTrailManager)|
     +-------------------+     +-------------------+
-             |                         |
-             v                         v
-    +-------------------------------------------+
-    |              Compliance                    |
-    |  (ComplianceChecker, AuditTrailManager)   |
-    +-------------------------------------------+
-             |
-             v
-    +-------------------------------------------+
-    |           Judicial Security               |
-    |  (CaseSecurity, JudicialAuditLogger,      |
-    |   EvidenceChainSecurity)                  |
-    +-------------------------------------------+
 
 Quick start::
 
@@ -78,14 +52,10 @@ Quick start::
         KeyManager, EncryptionEngine, EncryptionAlgorithm,
         # RBAC
         RBACEngine, Permission, ResourceType, User,
-        # SSO
-        SSOManager, SSOConfig, SSOProvider, SSOProtocol,
         # Data Protection
         DLPScanner, DataSanitizer, PIIType,
         # Compliance
         ComplianceChecker, AuditTrailManager, ComplianceFramework,
-        # Judicial Security
-        CaseSecurity, JudicialSecurityLevel, EvidenceChainSecurity,
     )
 
     # --- Encryption ---
@@ -98,14 +68,6 @@ Quick start::
     rbac = RBACEngine()
     rbac.register_user(User(username="alice", roles=[rbac.ADMIN_ROLE]))
     assert rbac.check_access("alice", ResourceType.DOCUMENT, Permission.DELETE)
-
-    # --- SSO ---
-    sso = SSOManager(SSOConfig(
-        providers=[SSOProvider(id="okta", name="Okta",
-                                protocol=SSOProtocol.OIDC, enabled=True)],
-        auto_provision=True,
-    ))
-    user = sso.authenticate({"sub": "alice", "iss": "okta"}, provider_id="okta")
 
     # --- Data Protection ---
     scanner = DLPScanner()
@@ -121,14 +83,6 @@ Quick start::
         actor="alice", action="export", resource="records",
         result=AuditResult.SUCCESS,
     ))
-
-    # --- Judicial Security ---
-    cs = CaseSecurity()
-    cs.classify_case("case-001", JudicialSecurityLevel.SECRET,
-                     classified_by="judge_li")
-    ecs = EvidenceChainSecurity()
-    ecs.register_evidence("ev-1", "case-001", b"evidence",
-                          registered_by="officer_zhang")
 """
 
 from __future__ import annotations
@@ -166,16 +120,6 @@ from justagent.security.encryption import (
     KeyManager,
     SecurityError,
 )
-from justagent.security.judicial_security import (
-    CaseClassification,
-    CaseSecurity,
-    CustodyRecord,
-    EvidenceChainSecurity,
-    EvidenceItem,
-    JudicialAuditLogger,
-    JudicialSecurityError,
-    JudicialSecurityLevel,
-)
 from justagent.security.rbac import (
     AccessDecision,
     Permission,
@@ -185,14 +129,6 @@ from justagent.security.rbac import (
     Role,
     User,
     UserStatus,
-)
-from justagent.security.sso import (
-    SSOConfig,
-    SSOError,
-    SSOManager,
-    SSOProtocol,
-    SSOProvider,
-    TokenPayload,
 )
 
 __all__ = [
@@ -216,13 +152,6 @@ __all__ = [
     "Role",
     "User",
     "UserStatus",
-    # sso
-    "SSOConfig",
-    "SSOError",
-    "SSOManager",
-    "SSOProtocol",
-    "SSOProvider",
-    "TokenPayload",
     # data protection
     "DLPAction",
     "DLPError",
@@ -242,13 +171,4 @@ __all__ = [
     "ComplianceRule",
     "PolicyDecision",
     "Severity",
-    # judicial security
-    "CaseClassification",
-    "CaseSecurity",
-    "CustodyRecord",
-    "EvidenceChainSecurity",
-    "EvidenceItem",
-    "JudicialAuditLogger",
-    "JudicialSecurityError",
-    "JudicialSecurityLevel",
 ]
