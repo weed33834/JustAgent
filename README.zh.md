@@ -1,10 +1,10 @@
-# JustAgent - 司法智能体平台
+# JustAgent：可审计的多智能体平台
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-> **Intelligence for Justice —— 智能赋能司法**
+> **每一次操作都有权限控制，每一次变更都有检查点，每一步都留痕可审计。**
 
-JustAgent 是一个司法智能体平台，辅助甚至自动化完成司法机关的职责，智能化司法流程。它通过多智能体协作循环完成案件材料梳理、证据审查、法律文书生成——每个操作都带权限控制，每个对话都可全程留痕与恢复。
+JustAgent 是一个可审计的多智能体平台，封装为单个 CLI 工具与可选的 Web 控制台。它运行迭代的工具调用循环：LLM 提出动作、经工具执行并验证结果。每个破坏性操作都经过权限引擎，每次文件变更都有检查点，每个对话都可保存与恢复——智能体做过的任何事都可复查、可回滚。在此引擎之上内置首个垂直应用 **JustAgent Legal**（法律垂直）：面向司法与法务团队的案件材料梳理、证据审查与法律文书生成，支持私有化 LLM 部署（数据不出域）。
 
 ## 它做什么
 
@@ -12,11 +12,13 @@ JustAgent 是一个面向司法机关与政府部门的司法智能体平台，�
 
 提供三种模式：
 
-1. **Agent 模式** — 交互式 REPL 或一次性任务。先规划（只读分析案件卷宗），再执行（带权限提示），或启用 Yolo 模式自动批准工具调用。多轮对话跨会话持久化。
-2. **Pipeline 模式** — 可选的 `clean → verify → commit → upload` 快捷方式，用于司法文书的发布流程。
-3. **Project 模式** — 管理多个案件项目，运行跨项目操作。
+1. **Agent 模式** — 交互式 REPL 或一次性任务。先规划（只读分析），再执行（带权限提示），或启用 Yolo 模式自动批准工具调用。多轮对话跨会话持久化。
+2. **Pipeline 模式** — 可选的 `clean → verify → commit → upload` 快捷方式，用于发布流程。
+3. **Project 模式** — 管理多个项目，运行跨项目操作。
 
-## 三大核心功能
+## 内置垂直应用：JustAgent Legal
+
+法律垂直把引擎变成司法工作台：
 
 | 功能 | 说明 |
 |------|------|
@@ -196,7 +198,7 @@ Agent 模式基于迭代的工具调用循环，带安全控制：
 |------|------|
 | `justagent agent` | 交互式 AI 智能体（REPL 或一次性） |
 | `justagent session` | 管理已保存的会话（list / show / resume / delete） |
-| `justagent project` | 管理多个案件项目 |
+| `justagent project` | 管理多个项目 |
 | `justagent init` | 在当前目录初始化 |
 | `justagent clean` | 格式化和 lint 源文件 |
 | `justagent verify` | 运行测试套件和检查 |
@@ -283,7 +285,7 @@ src/justagent/
 │   ├── decision.py      # 决策路由
 │   ├── mesh.py          # 智能体网格
 │   └── workflow.py      # 司法流程编排
-├── knowledge/           # 司法知识层
+├── knowledge/           # 知识层（RAG · 向量 · 图谱 · ETL）
 │   ├── rag.py           # 检索增强生成
 │   ├── vector.py        # 向量存储
 │   ├── graph.py         # 知识图谱
@@ -295,7 +297,7 @@ src/justagent/
 │   ├── meeting.py       # 会议 / 庭审协调
 │   ├── messaging.py     # 消息
 │   └── notification.py  # 通知
-├── security/            # 司法级安全
+├── security/            # 加密 · RBAC · 数据防泄漏
 │   ├── rbac.py          # 基于角色的访问控制
 │   ├── sso.py           # 单点登录
 │   ├── encryption.py    # 加密

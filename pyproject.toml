@@ -8,7 +8,7 @@ packages = ["src/justagent"]
 [project]
 name = "justagent"
 version = "3.1.0"
-description = "JustAgent — judicial AI agent platform: case material organization, evidence review, legal document generation, and judicial workflow automation. Intelligence for Justice."
+description = "JustAgent — an auditable multi-agent platform: permission engine, shadow-git checkpoints, full audit logging, MCP, and a FastAPI web console. Ships JustAgent Legal as its first bundled vertical."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"

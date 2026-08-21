@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **README repositioning (M3, en/zh/ja).** Lead narrative is now the engine —
+  "an auditable multi-agent platform" (permission-checked actions, shadow-git
+  checkpoints, audit logging) — with JustAgent Legal presented as a bundled
+  vertical application. Package description updated to match.
 - **Engine/vertical layering (M2).** The legal domain package moved from
   `justagent/judicial/` to `justagent/verticals/legal/`; its agent tool moved
   out of the engine built-ins (`agent/tools/builtin/judicial.py` →

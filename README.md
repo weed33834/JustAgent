@@ -1,4 +1,4 @@
-# ⚖️ JustAgent: Judicial AI Agent Platform
+# JustAgent: An Auditable Multi-Agent Platform
 
 <p align="center">
   <img src="assets/logo.png" alt="JustAgent Logo" width="120" />
@@ -15,11 +15,13 @@
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-> **Intelligence for Justice** — empowering judicial authorities with intelligent, auditable automation.
+> **Every action permitted. Every change checkpointed. Every step audited.** — a multi-agent engine with permission controls, shadow-git checkpoints, and full audit logging, shipping a legal vertical as its first bundled application.
 
-**Keywords**: judicial AI · legal-tech · AI agent · legal document generation · evidence review · case management · legal knowledge base (RAG) · multi-agent · CLI + Web console · LLM · FastAPI · Docker · 司法智能体 · 法律科技
+**Keywords**: AI agent · coding agent · CLI agent · multi-agent orchestration · MCP · tool calling · permissions · checkpoints · audit log · RAG · FastAPI web console · LLM · Docker · legal-tech (vertical) · 司法智能体（垂直应用）
 
-JustAgent is a judicial AI agent platform that assists judicial organs and government departments by automating judicial workflows. It organizes case materials, reviews evidence, and generates legal documents through a multi-agent collaboration loop — with permission controls on every action and full audit persistence for every conversation.
+JustAgent is an auditable multi-agent platform packaged as a single CLI tool plus an optional web console. It runs an iterative tool-calling loop: the LLM proposes actions, executes them through tools, and verifies the results. Every destructive action passes through a permission engine, every file change is checkpointed, and every conversation can be saved and resumed — so anything the agent does is reviewable and reversible.
+
+On top of this engine ships **JustAgent Legal**, a vertical application for judicial and legal teams: case material organization, evidence review, and legal document generation with on-premises LLM support (data never leaves your deployment).
 
 ## Screenshots & Demo
 
@@ -39,15 +41,15 @@ JustAgent is a judicial AI agent platform that assists judicial organs and gover
 
 ## What it does
 
-JustAgent is a judicial AI agent platform packaged as a single CLI tool. Built for judicial authorities and government departments, it runs an iterative tool-calling loop: the LLM reads case materials, proposes actions, executes them through tools, and verifies the results. Every destructive action passes through a permission engine, and every conversation can be saved and resumed — keeping the judicial process auditable and controllable.
+The engine runs three modes:
 
-Three modes are available:
+1. **Agent mode** — interactive REPL or one-shot task. Plan first (read-only analysis), then act (with permission prompts), or enable Yolo mode to auto-approve tool calls. Multi-turn conversations persist across sessions.
+2. **Pipeline mode** — an optional `clean → verify → commit → upload` shortcut for release workflows.
+3. **Project mode** — manage multiple projects and run cross-project operations.
 
-1. **Agent mode** — interactive REPL or one-shot task. Plan first (read-only analysis of case files), then act (with permission prompts), or enable Yolo mode to auto-approve tool calls. Multi-turn conversations persist across sessions.
-2. **Pipeline mode** — an optional `clean → verify → commit → upload` shortcut for judicial document release workflows.
-3. **Project mode** — manage multiple case projects and run cross-project operations.
+## Bundled vertical: JustAgent Legal
 
-## Core features
+The legal vertical turns the engine into a judicial workbench:
 
 | Feature | Description |
 |---------|-------------|
@@ -56,9 +58,9 @@ Three modes are available:
 | **Legal Document Generation** | Draft indictments, judgments, rulings, and other legal instruments from case context. Apply standardized templates with jurisdiction-aware formatting and clause libraries. |
 | **Judicial Workflow Automation** | Orchestrate multi-step judicial procedures (filing → review → hearing → ruling). Coordinate specialized agents through the orchestration layer with full audit logging. |
 
-## Architecture overview (multi-agent collaboration)
+## Engine architecture
 
-JustAgent coordinates specialized agents through an orchestration layer built on top of a shared knowledge base and a unified permission engine:
+JustAgent coordinates specialized agents through an orchestration layer built on top of a shared knowledge layer and a unified permission engine. Vertical applications plug in via entry points — the engine never imports them directly:
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -81,7 +83,7 @@ JustAgent coordinates specialized agents through an orchestration layer built on
    └──────────────────────────────────────────────────────┘
 ```
 
-Specialized agents share a common knowledge layer (legal corpus, case repository, evidence store) and operate under a unified permission engine with full audit logging. Every agent action is checkpointed and reversible, so the judicial process stays transparent and defensible.
+Specialized agents share a common knowledge layer and operate under a unified permission engine with full audit logging. Every agent action is checkpointed and reversible. See [DESIGN.dual-track.zh.md](DESIGN.dual-track.zh.md) for the engine/vertical layering contract enforced by CI (layer-check).
 
 ## Install
 
@@ -139,7 +141,7 @@ justagent project run case-2026-001 ship  # run a command in a managed project
 ## Web console
 
 `justagent web` starts a browser console covering the full operational surface —
-no CLI needed. Judicial features work without an LLM; chatting needs a
+no CLI needed. The Legal vertical works without an LLM; chatting needs a
 configured model backend.
 
 ```bash
@@ -152,9 +154,9 @@ Web capabilities:
   `judicial` tool). Voice input (mic) and TTS speak use the browser Web Speech
   API. **Image recognition** via `/api/vision` (OpenAI multimodal content
   blocks) — upload a picture and ask about it.
-- **Judicial**: manage cases / evidence / legal knowledge / documents.
+- **Legal vertical**: manage cases / evidence / legal knowledge / documents.
   **Project switching**: pick a managed project from the sidebar dropdown; all
-  judicial operations then target that project's state
+  vertical operations then target that project's state
   (`X-JustAgent-Project` header → `<project>/.justagent/judicial_state.json`).
 - **System**: knowledge RAG, config, models, metrics, audit, sessions,
   plugins, scheduled tasks (ECharts dashboard), diagnostics, notifications
@@ -210,7 +212,7 @@ Environment variables in config values (`${VAR}`) are expanded at runtime. See `
 
 ## AI backends
 
-JustAgent routes LLM calls through the official [OpenAI SDK](https://github.com/openai/openai-python). Every supported provider — OpenAI, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp — exposes an OpenAI-compatible endpoint, so a single client with a per-provider base URL covers them all without extra configuration. For sensitive judicial data, self-hosted backends (Ollama, vLLM, llama.cpp) keep data on-premises.
+JustAgent routes LLM calls through the official [OpenAI SDK](https://github.com/openai/openai-python). Every supported provider — OpenAI, Ollama, OpenRouter, Azure, vLLM, LM Studio, llama.cpp — exposes an OpenAI-compatible endpoint, so a single client with a per-provider base URL covers them all without extra configuration. For sensitive data, self-hosted backends (Ollama, vLLM, llama.cpp) keep data on-premises.
 
 Configure one or more backends in `.justagent.toml`:
 
@@ -249,7 +251,7 @@ Agent mode is built on an iterative tool-calling loop with safety controls:
 | **MCP** | Connect Model Context Protocol servers (stdio / SSE / HTTP) with OAuth support. |
 | **Knowledge layer** | Document processing, ETL, knowledge graph, RAG, and vector storage for case corpora and legal references. |
 | **Orchestration** | Coordinator, decision routing, agent mesh, and workflow engine for multi-agent collaboration. |
-| **Security & compliance** | RBAC, SSO, encryption, data protection, and compliance checks tailored for judicial and government use. |
+| **Security & compliance** | RBAC, SSO, encryption, data protection, and compliance checks. |
 
 ### Slash commands (in interactive REPL)
 
@@ -359,8 +361,8 @@ src/justagent/
 │   ├── coordinator.py   # Agent coordination
 │   ├── decision.py      # Decision routing
 │   ├── mesh.py         # Agent mesh
-│   └── workflow.py     # Judicial workflow orchestration
-├── knowledge/           # Judicial knowledge layer
+│   └── workflow.py     # Workflow orchestration
+├── knowledge/           # Knowledge layer (RAG · vector · graph · ETL)
 │   ├── rag.py          # Retrieval-augmented generation
 │   ├── vector.py       # Vector storage
 │   ├── graph.py        # Knowledge graph
@@ -372,7 +374,7 @@ src/justagent/
 │   ├── meeting.py      # Meeting / hearing coordination
 │   ├── messaging.py    # Messaging
 │   └── notification.py # Notifications
-├── security/           # Judicial-grade security
+├── security/            # Encryption · RBAC · data protection
 │   ├── rbac.py         # Role-based access control
 │   ├── sso.py          # Single sign-on
 │   ├── encryption.py   # Encryption
