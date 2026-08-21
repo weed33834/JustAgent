@@ -12,7 +12,7 @@ JustAgent is an intelligent platform for judicial services, providing:
 Intelligence for Justice.
 """
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 # Judicial and enterprise module version markers.
 JUDICIAL_MODULES = [
@@ -22,5 +22,4 @@ JUDICIAL_MODULES = [
     "resources",
     "security",
     "orchestration",
-    "permissions.enterprise",
 ]

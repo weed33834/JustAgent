@@ -400,22 +400,6 @@ def create_yolo_mode_engine() -> PermissionEngine:
     return PermissionEngine(default_action=PermissionAction.ALLOW)
 
 
-# Re-export enterprise extensions for convenience.
-from justagent.permissions.enterprise import (
-    ClearanceLevel,
-    DataOperation,
-    DataPermission,
-    DataResource,
-    EnterpriseDecision,
-    EnterprisePermissionEngine,
-    HardwareResource,
-    ResourceCriticality,
-    ResourceOperation,
-    ResourcePermission,
-    UserContext,
-    create_enterprise_engine,
-)
-
 __all__ = [
     "PermissionAction",
     "PermissionDecision",
@@ -425,17 +409,4 @@ __all__ = [
     "create_act_mode_engine",
     "create_plan_mode_engine",
     "create_yolo_mode_engine",
-    # Enterprise extensions
-    "ClearanceLevel",
-    "DataOperation",
-    "DataPermission",
-    "DataResource",
-    "EnterpriseDecision",
-    "EnterprisePermissionEngine",
-    "HardwareResource",
-    "ResourceCriticality",
-    "ResourceOperation",
-    "ResourcePermission",
-    "UserContext",
-    "create_enterprise_engine",
 ]
