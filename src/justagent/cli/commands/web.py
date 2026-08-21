@@ -17,12 +17,17 @@ def web(
     ctx: typer.Context,
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host"),
     port: int = typer.Option(8000, "--port", "-p", help="Listen port"),
+    no_auth: bool = typer.Option(False, "--no-auth", help="Disable authentication (local development only)"),
 ) -> None:
     """Start a browser chat interface for JustAgent.
 
     The agent (with the judicial tool) and the judicial dashboard are served
     at http://<host>:<port>/. Judicial features work without an LLM; chatting
     requires a configured model backend.
+
+    Authentication is enforced by default: log in with the admin account
+    (password from JUSTAGENT_WEB_ADMIN_PASSWORD on first start, printed once
+    otherwise), or set JUSTAGENT_WEB_TOKEN for shared-token access.
     """
     config: AppConfig = ctx.obj["config"]
     try:
@@ -32,8 +37,13 @@ def web(
             f"Web support requires fastapi+uvicorn: {exc}"
         ) from exc
 
+    if no_auth:
+        typer.secho(
+            "警告：鉴权已禁用（--no-auth）。仅限本机开发调试，切勿暴露到网络。",
+            fg=typer.colors.RED,
+        )
     typer.secho(
         f"JustAgent Web 已启动：http://{host}:{port}/  (Ctrl+C 退出)",
         fg=typer.colors.GREEN,
     )
-    run(config, host=host, port=port)
+    run(config, host=host, port=port, no_auth=no_auth)

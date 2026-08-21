@@ -22,7 +22,7 @@ class Cache:
         self,
         cache_dir: str | Path | None = None,
         size_limit: int = 2**30,  # 1 GiB
-        eviction_policy: str = "LRU",
+        eviction_policy: str = "least-recently-used",
     ) -> None:
         if cache_dir is None:
             cache_dir = Path.home() / ".cache" / "justagent"
@@ -51,7 +51,7 @@ class Cache:
 
     def invalidate(self, key: str) -> None:
         """使指定的缓存键失效。键不存在时静默跳过。"""
-        self._cache.delete(key, ignore_missing=True)
+        self._cache.delete(key)
 
     def clear(self) -> None:
         """清空所有缓存条目。"""
