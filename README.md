@@ -10,7 +10,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
   <a href="https://www.python.org/"><img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB"></a>
   <a href="https://fastapi.tiangolo.com/"><img alt="Web" src="https://img.shields.io/badge/Web-FastAPI%20Console-10b981"></a>
-  <img alt="Tests" src="https://img.shields.io/badge/tests-2739%20passed-brightgreen">
+  <a href="https://github.com/weed33834/JustAgent/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/weed33834/JustAgent/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
 [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md)
