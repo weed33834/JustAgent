@@ -113,6 +113,12 @@ dev = [
 [project.scripts]
 justagent = "justagent.cli.main:cli_entrypoint"
 
+[project.entry-points."justagent.tools"]
+legal = "justagent.verticals.legal.agent_tool:make_legal_tool"
+
+[project.entry-points."justagent.cli"]
+legal = "justagent.verticals.legal.cli"
+
 [project.urls]
 Repository = "https://gitcode.com/badhope/JustAgent"
 Issues = "https://gitcode.com/badhope/JustAgent/issues"

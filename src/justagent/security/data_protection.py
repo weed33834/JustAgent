@@ -74,7 +74,7 @@ class PIIType(str, Enum):  # noqa: UP042 - match existing codebase style
         NAME: Person names (conservative heuristic).
         CHINESE_ID_CARD: PRC resident identity card numbers (18-digit).
         UNIFIED_SOCIAL_CREDIT_CODE: PRC unified social credit codes.
-        CASE_NUMBER: PRC judicial case numbers (案号).
+        CASE_NUMBER: PRC official case/document numbers (案号).
         BUSINESS_LICENSE: PRC business licence numbers (营业执照号).
     """
 
@@ -306,7 +306,7 @@ def _build_default_rules() -> list[DLPRule]:
             pii_type=PIIType.CASE_NUMBER,
             sensitivity=DataSensitivityLevel.MEDIUM,
             action=DLPAction.AUDIT,
-            description="Detects PRC judicial case numbers, e.g. (2024)京01民初1号.",
+            description="Detects PRC official case numbers, e.g. (2024)京01民初1号.",
         ),
         DLPRule(
             id="default_business_license",

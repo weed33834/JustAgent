@@ -687,10 +687,9 @@ def agent(
     )
 
     # Build the tool registry and runtime.
-    # Point the conversational agent at the same persisted judicial state the
+    # Pass the project root; installed verticals contribute their tools via
     # CLI uses, so it can manage cases/evidence/laws/documents from the chat.
-    judicial_state = config.project_root / ".justagent" / "judicial_state.json"
-    tools = make_default_tools(str(judicial_state))
+    tools = make_default_tools(str(config.project_root))
     # Create a shared change tracker so both the runtime and the
     # display can access the same instance for the run summary.
     change_tracker = ChangeTracker()

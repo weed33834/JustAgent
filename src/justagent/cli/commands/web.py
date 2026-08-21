@@ -21,7 +21,7 @@ def web(
 ) -> None:
     """Start a browser chat interface for JustAgent.
 
-    The agent (with the judicial tool) and the judicial dashboard are served
+    Vertical tools contributed by installed vertical packages and their dashboards are served
     at http://<host>:<port>/. Judicial features work without an LLM; chatting
     requires a configured model backend.
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 import time
+from datetime import UTC
 from pathlib import Path
 
 
@@ -39,14 +40,14 @@ def utcnow() -> str:
     """
     from datetime import datetime, timezone
 
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def sha256_hex(data: str | bytes) -> str:
     """Compute the SHA-256 hex digest of *data*.
 
     Centralised for hash-chain audit logic previously duplicated in
-    ``security/compliance.py``, ``security/judicial_security.py``, and
+    ``security/compliance.py``, ``security/data_protection.py``, and
     ``communication/audit.py``.
     """
     if isinstance(data, str):

@@ -7,7 +7,7 @@ context bundle, evidence review results, and relevant legal articles.
 
 The module integrates with the platform's RAG pipeline
 (:mod:`justagent.knowledge.rag`) to retrieve relevant legal context,
-and with the :class:`~justagent.judicial.legal_knowledge.LegalKnowledgeBase`
+and with the :class:`~justagent.verticals.legal.legal_knowledge.LegalKnowledgeBase`
 to verify that every statute citation in the generated document
 corresponds to a real, in-force article. Prompt rendering uses
 LangChain's ``PromptTemplate`` when available (lazy import with
@@ -49,11 +49,11 @@ from justagent.knowledge.rag import RAGPipeline
 from justagent.utils import now
 
 if TYPE_CHECKING:
-    from justagent.judicial.case_manager import CaseContext, CaseManager
-    from justagent.judicial.evidence import ChainAnalysisResult, EvidenceChain
-    from justagent.judicial.legal_knowledge import LegalKnowledgeBase
+    from justagent.verticals.legal.case_manager import CaseContext, CaseManager
+    from justagent.verticals.legal.evidence import EvidenceChain
+    from justagent.verticals.legal.legal_knowledge import LegalKnowledgeBase
 
-logger = logging.getLogger("justagent.judicial.document_generator")
+logger = logging.getLogger("justagent.verticals.legal.document_generator")
 
 
 # ---------------------------------------------------------------------------
@@ -615,11 +615,11 @@ class LegalDocumentTemplateManager:
 class LegalDocumentGenerator:
     """Generate legal documents from case context, evidence, and law.
 
-    Combines a :class:`~justagent.judicial.case_manager.CaseManager`
+    Combines a :class:`~justagent.verticals.legal.case_manager.CaseManager`
     (for case context), an optional
-    :class:`~justagent.judicial.evidence.EvidenceChain` (for evidence
+    :class:`~justagent.verticals.legal.evidence.EvidenceChain` (for evidence
     analysis), an optional
-    :class:`~justagent.judicial.legal_knowledge.LegalKnowledgeBase`
+    :class:`~justagent.verticals.legal.legal_knowledge.LegalKnowledgeBase`
     (for citation verification), and an optional
     :class:`~justagent.knowledge.rag.RAGPipeline` (for legal-context
     retrieval) to produce a :class:`GeneratedDocument`.
@@ -649,7 +649,7 @@ class LegalDocumentGenerator:
 
     Example::
 
-        >>> from justagent.judicial.case_manager import CaseManager
+        >>> from justagent.verticals.legal.case_manager import CaseManager
         >>> mgr = CaseManager()
         >>> case = mgr.create_case(case_number="(2024)京01民初1号")
         >>> gen = LegalDocumentGenerator(case_manager=mgr)
@@ -862,7 +862,7 @@ class LegalDocumentGenerator:
         """Verify a list of statute citations against the knowledge base.
 
         For each citation, attempts to find a matching
-        :class:`~justagent.judicial.legal_knowledge.LegalArticle` in the
+        :class:`~justagent.verticals.legal.legal_knowledge.LegalArticle` in the
         knowledge base. If no knowledge base is configured, all citations
         are marked as ``is_valid=True`` with a note that verification
         was skipped.

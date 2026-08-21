@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Engine/vertical layering (M2).** The legal domain package moved from
+  `justagent/judicial/` to `justagent/verticals/legal/`; its agent tool moved
+  out of the engine built-ins (`agent/tools/builtin/judicial.py` →
+  `verticals/legal/agent_tool.py`) and its CLI module out of
+  `cli/commands/`. The engine now discovers vertical tools and CLI commands
+  exclusively through `justagent.tools` / `justagent.cli` entry points — it
+  holds zero direct imports or domain vocabulary for any vertical.
+  `web/app.py` remains the single composition root that mounts vertical
+  routes. Tests moved accordingly (`tests/judicial/` → `tests/legal/`).
+- New CI job `layer-check` enforces the boundary: no vertical imports and no
+  legal-domain vocabulary in engine modules (`scripts/layer-check.sh`).
+
 ## [3.1.0] - 2026-08-22
 
 ### Security

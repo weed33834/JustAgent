@@ -10,7 +10,7 @@ The layer is split into four cooperating subsystems:
 * **Evaluation criteria** — :class:`EvaluationCriterion`,
   :class:`CriterionWeight`, and :class:`CriterionSet` define *what* to
   evaluate and how much each dimension matters. Pre-built sets are
-  provided for judicial document generation, evidence review, case
+  provided for domain document generation, review workflows, case
   analysis, coding tasks, and general-purpose chat.
 
 * **Evaluation results** — :class:`EvaluationScore` and
@@ -34,7 +34,7 @@ The layer is split into four cooperating subsystems:
 * **Pipeline & registry** — :class:`EvaluationPipeline` orchestrates
   multiple evaluators with weighted aggregation and configurable
   pass/fail thresholds; :class:`EvaluationRegistry` is a thread-safe
-  store for criterion sets with built-in defaults for the judicial
+  store for criterion sets with built-in defaults for the domain-document
   domain.
 
 All data structures are Pydantic models; all mutable registries are
@@ -52,7 +52,7 @@ Design::
     │  (ModelGateway)      │  (regex / heuristic / ast)    │
     ├──────────────────────┴──────────────────────────────┤
     │               EvaluationRegistry                     │
-    │  criterion sets: judicial / coding / general / ...   │
+    │  criterion sets: document / coding / general / ...   │
     └─────────────────────────────────────────────────────┘
 """
 
@@ -75,8 +75,6 @@ from pydantic import BaseModel, Field, field_validator
 
 if TYPE_CHECKING:
     from justagent.adapters.model_gateway import (
-        ChatCompletionRequest,
-        ChatMessage,
         ModelGateway,
     )
 
@@ -253,7 +251,7 @@ class CriterionSet(BaseModel):
 
     Attributes:
         id: Unique identifier (auto-generated UUID4 hex).
-        name: Human-readable name (e.g. ``"judicial_document"``).
+        name: Human-readable name (e.g. ``"domain_document"``).
         description: What the set is designed for.
         weights: List of :class:`CriterionWeight` entries. The set of
             criteria covered is derived from this list.
@@ -361,8 +359,8 @@ class EvaluationResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _judicial_criterion_set() -> CriterionSet:
-    """Criterion set for judicial document generation.
+def _domain_document_criterion_set() -> CriterionSet:
+    """Criterion set for domain document generation.
 
     Emphasises legal compliance (citation validity, format), accuracy,
     and completeness — the dimensions that matter most for formal legal
@@ -370,8 +368,8 @@ def _judicial_criterion_set() -> CriterionSet:
     """
 
     return CriterionSet(
-        name="judicial_document",
-        description="Criteria for evaluating generated judicial / legal documents.",
+        name="domain_document",
+        description="Criteria for evaluating generated documents.",
         weights=[
             CriterionWeight(criterion=EvaluationCriterion.LEGAL_COMPLIANCE, weight=1.0),
             CriterionWeight(criterion=EvaluationCriterion.ACCURACY, weight=0.9),
@@ -471,7 +469,7 @@ def _default_criterion_sets() -> dict[str, CriterionSet]:
     """Build all built-in default criterion sets keyed by name."""
 
     sets = [
-        _judicial_criterion_set(),
+        _domain_document_criterion_set(),
         _coding_criterion_set(),
         _general_criterion_set(),
         _evidence_review_criterion_set(),
@@ -2357,7 +2355,7 @@ class EvaluationRegistry:
     """Thread-safe registry for evaluation criterion sets.
 
     Manages named :class:`CriterionSet` instances. On construction,
-    registers built-in defaults for judicial document generation,
+    registers built-in defaults for document generation,
     evidence review, case analysis, coding, and general tasks.
 
     Custom sets can be registered to override or supplement the
@@ -2366,10 +2364,10 @@ class EvaluationRegistry:
     Example::
 
         >>> registry = EvaluationRegistry()
-        >>> judicial = registry.get_criterion_set("judicial_document")
-        >>> judicial is not None
+        >>> domain_set = registry.get_criterion_set("domain_document")
+        >>> domain_set is not None
         True
-        >>> "legal_compliance" in [c.value for c in judicial.criteria]
+        >>> "legal_compliance" in [c.value for c in domain_set.criteria]
         True
         >>> registry.register_criterion_set("custom", my_criterion_set)
         >>> "custom" in registry.list_criterion_sets()

@@ -1,14 +1,14 @@
-"""Tests for the case management module (justagent.judicial.case_manager)."""
+"""Tests for the case management module (justagent.verticals.legal.case_manager)."""
 
 from __future__ import annotations
 
 import threading
-import time
 from pathlib import Path
 
 import pytest
 
-from justagent.judicial.case_manager import (
+from justagent.knowledge.document import Document, DocumentParser, DocumentType
+from justagent.verticals.legal.case_manager import (
     CaseContext,
     CaseFile,
     CaseManager,
@@ -23,8 +23,6 @@ from justagent.judicial.case_manager import (
     PartyRole,
     TimelineEvent,
 )
-from justagent.knowledge.document import Document, DocumentParser, DocumentType
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -442,7 +440,7 @@ class TestMaterialImport:
 
     def test_import_bytes(self, manager: CaseManager) -> None:
         case = manager.create_case()
-        data = "原告：张三".encode("utf-8")
+        data = "原告：张三".encode()
         material = manager.import_bytes(
             case.id, data, filename="complaint.txt", material_type=MaterialType.COMPLAINT
         )

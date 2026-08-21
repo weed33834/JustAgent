@@ -12,11 +12,16 @@ Eight tools shipped with justagent, inspired by Cline's
 * :func:`make_web_fetch_tool` — fetch a URL and return markdown.
 * :func:`make_ask_question_tool` — ask the user a clarifying question.
 
-Use :func:`make_default_tools` to construct all eight at once.
+Use :func:`make_default_tools` to construct all eight at once. Tools
+contributed by installed vertical packages (entry-point group
+``justagent.tools``) are appended automatically when a state root is given;
+the engine never imports a vertical directly.
 """
 
 from __future__ import annotations
 
+import warnings
+from importlib.metadata import entry_points
 from pathlib import Path
 
 from justagent.agent.tools.base import Tool
@@ -31,10 +36,6 @@ from justagent.agent.tools.builtin.ask_question import (
 from justagent.agent.tools.builtin.edit import (
     ReplaceInFileInput,
     make_replace_in_file_tool,
-)
-from justagent.agent.tools.builtin.judicial import (
-    JudicialInput,
-    make_judicial_tool,
 )
 from justagent.agent.tools.builtin.read import (
     ReadFileInput,
@@ -58,15 +59,37 @@ from justagent.agent.tools.builtin.write import (
 )
 
 
-def make_default_tools(state_path: str | None = None) -> list[Tool]:
+def vertical_tool_factories() -> list:
+    """Discover tool factories published by vertical packages.
+
+    Verticals register via the ``justagent.tools`` entry-point group; each
+    entry must resolve to a callable ``factory(state_root) -> Tool | None``.
+    A broken vertical logs a warning and is skipped — it can never prevent
+    the agent from starting.
+    """
+    factories = []
+    try:
+        eps = entry_points(group="justagent.tools")
+    except TypeError:  # pragma: no cover - Python 3.9 fallback signature
+        eps = entry_points().get("justagent.tools", [])
+    for ep in eps:
+        try:
+            obj = ep.load()
+            if callable(obj):
+                factories.append(obj)
+        except Exception as exc:  # noqa: BLE001 - broken optional integration
+            warnings.warn(f"Skipping tool entry point {ep.name}: {exc}", RuntimeWarning, stacklevel=2)
+    return factories
+
+
+def make_default_tools(project_root: str | None = None) -> list[Tool]:
     """Return all built-in tools in canonical order.
 
     The order matters for prompt-building: tools earlier in the list
     appear earlier in the LLM's system prompt.
 
-    When ``state_path`` (the persisted judicial state file) is given, the
-    ``judicial`` tool is appended so the conversational agent can manage
-    cases / evidence / legal knowledge / documents directly from the chat.
+    When ``project_root`` is given, tools contributed by installed verticals
+    (entry-point group ``justagent.tools``) are appended after the built-ins.
     """
 
     tools = [
@@ -79,15 +102,22 @@ def make_default_tools(state_path: str | None = None) -> list[Tool]:
         make_web_fetch_tool(),
         make_ask_question_tool(),
     ]
-    if state_path:
-        tools.append(make_judicial_tool(Path(state_path)))
+    if project_root:
+        root = Path(project_root)
+        for factory in vertical_tool_factories():
+            try:
+                tool = factory(root)
+            except Exception as exc:  # noqa: BLE001 - broken optional integration
+                warnings.warn(f"Vertical tool factory {factory} failed: {exc}", RuntimeWarning, stacklevel=2)
+                continue
+            if tool is not None:
+                tools.append(tool)
     return tools
 
 
 __all__ = [
     "ApplyPatchInput",
     "AskQuestionInput",
-    "JudicialInput",
     "ReadFileInput",
     "ReplaceInFileInput",
     "RunCommandInput",
@@ -97,7 +127,6 @@ __all__ = [
     "make_apply_patch_tool",
     "make_ask_question_tool",
     "make_default_tools",
-    "make_judicial_tool",
     "make_read_file_tool",
     "make_replace_in_file_tool",
     "make_run_command_tool",

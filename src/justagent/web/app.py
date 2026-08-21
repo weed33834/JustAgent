@@ -42,7 +42,7 @@ def _load_judicial(config: AppConfig) -> dict:
 
 
 def _load_judicial_for(root: Path) -> dict:
-    from justagent.cli.commands.judicial import _JudicialState
+    from justagent.verticals.legal.cli import _JudicialState
 
     state = _JudicialState.load(_state_path_for(root))
     return {
@@ -450,7 +450,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     # -- knowledge RAG ------------------------------------------------------
     @app.post("/api/knowledge/search")
     async def knowledge_search(payload: dict) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
+        from justagent.verticals.legal.cli import _JudicialState
 
         state = _JudicialState.load(state_path)
         query = (payload.get("query") or "").strip()
@@ -485,7 +485,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         if runtime is None:
             runtime = AgentRuntime(
                 client=llm,
-                tools=make_default_tools(str(state_path)),
+                tools=make_default_tools(str(config.project_root)),
                 config=AgentRuntimeConfig(system_prompt=(
                     "You are JustAgent, an assistant for judicial work. Use the "
                     "judicial tool to manage cases, evidence, legal knowledge and "
@@ -545,7 +545,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
         runtime = AgentRuntime(
             client=llm,
-            tools=make_default_tools(str(state_path)),
+            tools=make_default_tools(str(config.project_root)),
             config=AgentRuntimeConfig(system_prompt=sys_prompt),
             cwd=str(config.project_root),
             emit=_emit,
@@ -664,7 +664,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     # -- judicial -----------------------------------------------------------
     @app.get("/api/judicial/doc/types")
     async def doc_types() -> dict:
-        from justagent.judicial.document_generator import LegalDocumentType
+        from justagent.verticals.legal.document_generator import LegalDocumentType
 
         return {"items": [{"id": t.value, "name": t.name} for t in LegalDocumentType]}
 
@@ -674,7 +674,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
     @app.post("/api/judicial/case")
     async def create_case(request: Request, payload: dict) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
+        from justagent.verticals.legal.cli import _JudicialState
 
         _require_write(request)
         state = _JudicialState.load(_project_state(request))
@@ -690,7 +690,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
     @app.get("/api/judicial/case/{case_id}")
     async def case_detail(request: Request, case_id: str) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
+        from justagent.verticals.legal.cli import _JudicialState
 
         state = _JudicialState.load(_project_state(request))
         case = _find_case(state, case_id)
@@ -717,7 +717,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
     @app.post("/api/judicial/evidence/analyze")
     async def analyze_evidence(request: Request, payload: dict) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
+        from justagent.verticals.legal.cli import _JudicialState
 
         state = _JudicialState.load(_project_state(request))
         try:
@@ -739,8 +739,8 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
     @app.post("/api/judicial/law")
     async def add_law(request: Request, payload: dict) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
-        from justagent.judicial.legal_knowledge import LegalArticle, LegalDomain
+        from justagent.verticals.legal.cli import _JudicialState
+        from justagent.verticals.legal.legal_knowledge import LegalArticle, LegalDomain
 
         _require_write(request)
         state = _JudicialState.load(_project_state(request))
@@ -757,8 +757,8 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
     @app.post("/api/judicial/doc")
     async def generate_doc(request: Request, payload: dict) -> dict:
-        from justagent.cli.commands.judicial import _JudicialState
-        from justagent.judicial.document_generator import LegalDocumentGenerator
+        from justagent.verticals.legal.cli import _JudicialState
+        from justagent.verticals.legal.document_generator import LegalDocumentGenerator
 
         _require_write(request)
         state = _JudicialState.load(_project_state(request))

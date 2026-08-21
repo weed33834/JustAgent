@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from justagent.agent.tools.builtin.judicial import JudicialInput, _run, make_judicial_tool
-from justagent.cli.commands import judicial
 from justagent.models.config import AppConfig
+from justagent.verticals.legal import cli as judicial
+from justagent.verticals.legal.agent_tool import JudicialInput, _run, make_judicial_tool
 
 
 @pytest.fixture

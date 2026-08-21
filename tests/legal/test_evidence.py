@@ -1,4 +1,4 @@
-"""Tests for the evidence review module (justagent.judicial.evidence)."""
+"""Tests for the evidence review module (justagent.verticals.legal.evidence)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,8 @@ import threading
 
 import pytest
 
-from justagent.judicial.evidence import (
+from justagent.knowledge.graph import KnowledgeGraph
+from justagent.verticals.legal.evidence import (
     Admissibility,
     ChainAnalysisResult,
     Evidence,
@@ -19,8 +20,6 @@ from justagent.judicial.evidence import (
     ProbativeStrength,
     ReviewResult,
 )
-from justagent.knowledge.graph import KnowledgeGraph
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

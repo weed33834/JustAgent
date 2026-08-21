@@ -1,7 +1,7 @@
 """``justagent judicial`` command — litigation case management, evidence review,
 legal document generation, and statute knowledge base.
 
-Exposes the :mod:`justagent.judicial` package through the CLI:
+Exposes the :mod:`justagent.verticals.legal` package through the CLI:
 
 * ``justagent judicial case``     — create / list / show / import case files.
 * ``justagent judicial evidence`` — add / list / review / analyze evidence.
@@ -39,7 +39,8 @@ from rich.table import Table
 from rich.text import Text
 
 from justagent.cli.display import get_console
-from justagent.judicial.case_manager import (
+from justagent.models.config import AppConfig
+from justagent.verticals.legal.case_manager import (
     CaseFile,
     CaseManager,
     CaseManagerError,
@@ -47,14 +48,14 @@ from justagent.judicial.case_manager import (
     CaseStatus,
     MaterialType,
 )
-from justagent.judicial.document_generator import (
+from justagent.verticals.legal.document_generator import (
     DocumentGenerationError,
     GeneratedDocument,
     LegalDocumentGenerator,
     LegalDocumentTemplateManager,
     LegalDocumentType,
 )
-from justagent.judicial.evidence import (
+from justagent.verticals.legal.evidence import (
     Admissibility,
     ChainAnalysisResult,
     Evidence,
@@ -67,7 +68,7 @@ from justagent.judicial.evidence import (
     ProbativeStrength,
     ReviewResult,
 )
-from justagent.judicial.legal_knowledge import (
+from justagent.verticals.legal.legal_knowledge import (
     ArticleStatus,
     LegalArticle,
     LegalCase,
@@ -75,7 +76,6 @@ from justagent.judicial.legal_knowledge import (
     LegalKnowledgeBase,
     LegalKnowledgeError,
 )
-from justagent.models.config import AppConfig
 
 # ---------------------------------------------------------------------------
 # Typer sub-apps

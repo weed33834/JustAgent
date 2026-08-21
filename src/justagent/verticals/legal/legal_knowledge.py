@@ -58,7 +58,7 @@ from justagent.knowledge.vector import (
 )
 from justagent.utils import now
 
-logger = logging.getLogger("justagent.judicial.legal_knowledge")
+logger = logging.getLogger("justagent.verticals.legal.legal_knowledge")
 
 
 # ---------------------------------------------------------------------------
@@ -367,7 +367,7 @@ class LegalKnowledgeBase:
     Example::
 
         >>> from justagent.knowledge.vector import InMemoryVectorStore
-        >>> from justagent.judicial.legal_knowledge import (
+        >>> from justagent.verticals.legal.legal_knowledge import (
         ...     LegalKnowledgeBase, LegalArticle, LegalDomain,
         ... )
         >>> kb = LegalKnowledgeBase(vector_store=InMemoryVectorStore())
