@@ -48,6 +48,13 @@ All checks must pass before a PR is reviewed.
 
 Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 
+## Changelog
+
+Every PR that changes user-facing behavior must add an entry to the
+`## [Unreleased]` section of `CHANGELOG.md` (Keep a Changelog format:
+Added / Changed / Deprecated / Removed / Fixed / Security). PRs without a
+changelog entry will not be merged, except for typo/docs-only changes.
+
 ## Testing
 
 - Unit tests go in `tests/unit/`.
