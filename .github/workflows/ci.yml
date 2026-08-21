@@ -24,7 +24,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # Restore the uv dependency cache so unchanged deps don't need PyPI again.
       - name: Cache uv dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/uv
           key: uv-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
