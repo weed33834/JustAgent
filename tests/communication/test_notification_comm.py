@@ -164,6 +164,5 @@ class TestChannels:
         assert rec.status is DeliveryStatus.SENT
         # login/send_message are recorded on the context-manager child mock
         assert smtp.mock_calls, 'SMTP was never constructed'
-        cm_calls = [c for c in smtp.mock_calls if '.login' in c[0]]
         assert any('.login' in c[0] for c in smtp.mock_calls), smtp.mock_calls
         assert any('.send_message' in c[0] for c in smtp.mock_calls), smtp.mock_calls

@@ -232,8 +232,12 @@ class TestETLPipeline:
         assert result.documents == []
 
     def test_sync_all_covers_every_source(self, tmp_path: Path) -> None:
-        d1 = tmp_path / "d1"; d1.mkdir(); (d1 / "a.md").write_text("x", encoding="utf-8")
-        d2 = tmp_path / "d2"; d2.mkdir(); (d2 / "b.md").write_text("y", encoding="utf-8")
+        d1 = tmp_path / "d1"
+        d1.mkdir()
+        (d1 / "a.md").write_text("x", encoding="utf-8")
+        d2 = tmp_path / "d2"
+        d2.mkdir()
+        (d2 / "b.md").write_text("y", encoding="utf-8")
         p = ETLPipeline()
         p.register_source(FilesystemSource("one", d1))
         p.register_source(FilesystemSource("two", d2))
