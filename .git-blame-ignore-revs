@@ -3,3 +3,6 @@
 
 # style: apply ruff format to src and tests (format-only, AST-verified)
 bb78bfe75fb854f06592c6ec5ecfc4617745d513
+
+# same change, squashed to main:
+8bcf0eca17eb3baef2b0f2d90efb841a2321eaba
