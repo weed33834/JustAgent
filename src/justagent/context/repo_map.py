@@ -181,8 +181,7 @@ _CAPTURE_KINDS: dict[str, SymbolKind] = {
 #: One query per grammar; capture names must exist in :data:`_CAPTURE_KINDS`.
 _TS_QUERIES: dict[str, str] = {
     "python": (
-        "(class_definition name: (identifier) @cls)"
-        "(function_definition name: (identifier) @fn)"
+        "(class_definition name: (identifier) @cls)(function_definition name: (identifier) @fn)"
     ),
     "javascript": (
         "(function_declaration name: (identifier) @fn)"

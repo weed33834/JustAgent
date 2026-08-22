@@ -364,7 +364,7 @@ def _domain_document_criterion_set() -> CriterionSet:
 
     Emphasises legal compliance (citation validity, format), accuracy,
     and completeness — the dimensions that matter most for formal legal
-    documents such as indictments, judgments, and legal opinions.
+    documents such as formal filings, rulings, and professional opinions.
     """
 
     return CriterionSet(

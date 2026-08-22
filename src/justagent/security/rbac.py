@@ -98,7 +98,7 @@ class ResourceType(str, Enum):  # noqa: UP042
         CONFIG: System and project configuration.
         USER: User accounts and profiles.
         REPORT: Generated reports and analytics.
-        CASE_FILE: Judicial case files (案卷).
+        CASE_FILE: Official case files (案卷).
         EVIDENCE: Evidence materials (证据).
         LEGAL_DOCUMENT: Legal documents / instruments (法律文书).
         COURT_RECORD: Court trial transcripts (庭审笔录).
