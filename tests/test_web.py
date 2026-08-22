@@ -48,7 +48,9 @@ def _make_state(tmp_path: Path) -> None:
 
 @pytest.fixture
 def client(tmp_path: Path, monkeypatch, isolated_stores):
-    monkeypatch.setenv("JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json"))
+    monkeypatch.setenv(
+        "JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json")
+    )
     _make_state(tmp_path)
     config = AppConfig(project_root=tmp_path)
     return TestClient(create_app(config, no_auth=True))
@@ -57,7 +59,9 @@ def client(tmp_path: Path, monkeypatch, isolated_stores):
 @pytest.fixture
 def secure_client(tmp_path: Path, monkeypatch, isolated_stores):
     """Auth-enforced app with a known admin password."""
-    monkeypatch.setenv("JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json"))
+    monkeypatch.setenv(
+        "JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json")
+    )
     _make_state(tmp_path)
     monkeypatch.setenv("JUSTAGENT_WEB_ADMIN_PASSWORD", "test-admin-pass")
     config = AppConfig(project_root=tmp_path)
@@ -107,6 +111,20 @@ def test_login_invalid_returns_401(client) -> None:
     assert r.status_code == 401
 
 
+def test_evidence_audit_endpoint(client) -> None:
+    """POST /api/judicial/evidence/audit returns verdict + coverage."""
+    state = client.get("/api/state").json()
+    assert state["cases"], "fixture must have created a case"
+    r = client.post("/api/judicial/evidence/audit", json={"case_id": ""})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["verdict"] in ("通过", "有瑕疵", "严重缺陷")
+    assert "custody_issues" in body and "claim_coverage" in body
+    # Unknown case id → 404.
+    r2 = client.post("/api/judicial/evidence/audit", json={"case_id": "zzz-not-exist"})
+    assert r2.status_code == 404
+
+
 def test_unknown_route_404(client) -> None:
     assert client.get("/api/nope").status_code == 404
 
@@ -142,7 +160,9 @@ def test_viewer_role_is_read_only(secure_client, isolated_stores, monkeypatch) -
         "created_at": 0.0,
     }
     users_file.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    r = secure_client.post("/api/auth/login", json={"username": "viewer1", "password": "viewer-pass"})
+    r = secure_client.post(
+        "/api/auth/login", json={"username": "viewer1", "password": "viewer-pass"}
+    )
     token = r.json()["token"]
     read = secure_client.get("/api/state", headers={"Authorization": f"Bearer {token}"})
     assert read.status_code == 200
@@ -155,7 +175,9 @@ def test_viewer_role_is_read_only(secure_client, isolated_stores, monkeypatch) -
 
 
 def test_shared_token_grants_full_access(tmp_path: Path, monkeypatch, isolated_stores) -> None:
-    monkeypatch.setenv("JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json"))
+    monkeypatch.setenv(
+        "JUSTAGENT_JUDICIAL_STATE", str(tmp_path / ".justagent" / "judicial_state.json")
+    )
     _make_state(tmp_path)
     monkeypatch.setenv("JUSTAGENT_WEB_TOKEN", "shared-secret")
     config = AppConfig(project_root=tmp_path)
@@ -181,8 +203,16 @@ def test_legacy_hash_verifies_and_migrates(isolated_stores) -> None:
     salt = secrets.token_hex(8)
     digest = hmac.new(salt.encode(), b"old-pw", "sha256").hexdigest()
     users_file.write_text(
-        json.dumps({"admin": {"username": "admin", "role": "admin",
-                              "password_hash": f"{salt}${digest}", "created_at": 0.0}}),
+        json.dumps(
+            {
+                "admin": {
+                    "username": "admin",
+                    "role": "admin",
+                    "password_hash": f"{salt}${digest}",
+                    "created_at": 0.0,
+                }
+            }
+        ),
         encoding="utf-8",
     )
     store = UserStore(path=users_file)

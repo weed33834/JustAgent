@@ -58,7 +58,9 @@ from justagent.verticals.legal.document_generator import (
 from justagent.verticals.legal.evidence import (
     Admissibility,
     ChainAnalysisResult,
+    ChainAuditResult,
     Evidence,
+    EvidenceAuditor,
     EvidenceChain,
     EvidenceError,
     EvidenceRelation,
@@ -185,10 +187,7 @@ def _state_path(ctx: typer.Context) -> Path:
     judicial_state.json``.
     """
 
-    env = (
-        os.environ.get("JUSTAGENT_JUDICIAL_STATE")
-        or os.environ.get("MYAGENT_JUDICIAL_STATE")
-    )
+    env = os.environ.get("JUSTAGENT_JUDICIAL_STATE") or os.environ.get("MYAGENT_JUDICIAL_STATE")
     if env:
         return Path(env).expanduser()
     config = _get_config(ctx)
@@ -237,9 +236,7 @@ class _JudicialState:
         data = self._snapshot()
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(
-                json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
+            self.path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         except OSError as exc:
             get_console().print(
                 f"[red]✗ 无法保存司法状态文件 {self.path}：{exc}[/red]", style="red"
@@ -292,9 +289,7 @@ class _JudicialState:
         for raw in data.get("articles", []):
             article = LegalArticle.model_validate(raw)
             kb._articles[article.id] = article
-            key = LegalKnowledgeBase._article_key(
-                article.law_name, article.article_number
-            )
+            key = LegalKnowledgeBase._article_key(article.law_name, article.article_number)
             kb._article_number_index[key] = article.id
 
         for raw in data.get("legal_cases", []):
@@ -304,9 +299,7 @@ class _JudicialState:
 
 
 @contextmanager
-def _state_session(
-    ctx: typer.Context, *, save: bool = True
-) -> Iterator[_JudicialState]:
+def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_JudicialState]:
     """Load state, yield it, and persist on exit (unless dry-run or read-only).
 
     Args:
@@ -371,9 +364,7 @@ def _parse_enum(value: str, enum_cls: type[Any], label: str) -> Any:
         return enum_cls(value)
     except ValueError:
         valid = ", ".join(str(m.value) for m in enum_cls)
-        raise typer.BadParameter(
-            f"无效的 {label}：{value!r}（可选值：{valid}）"
-        ) from None
+        raise typer.BadParameter(f"无效的 {label}：{value!r}（可选值：{valid}）") from None
 
 
 # ---------------------------------------------------------------------------
@@ -471,14 +462,10 @@ def case_list(
 ) -> None:
     """列出所有案件卷宗，可按状态或案由过滤。"""
 
-    status_filter = (
-        _parse_enum(status, CaseStatus, "状态") if status is not None else None
-    )
+    status_filter = _parse_enum(status, CaseStatus, "状态") if status is not None else None
 
     with _state_session(ctx, save=False) as state:
-        cases = state.case_manager.list_cases(
-            status=status_filter, cause_of_action=cause
-        )
+        cases = state.case_manager.list_cases(status=status_filter, cause_of_action=cause)
 
     if json_output:
         rows = [
@@ -564,7 +551,9 @@ def case_show(
         f"[bold]更新时间:[/bold] {_format_ts(case.updated_at)}\n"
         f"[bold]描述:[/bold]     {description}"
     )
-    console.print(Panel(header, title=f"案件 {case.case_number or case.id[:8]}", border_style="cyan"))
+    console.print(
+        Panel(header, title=f"案件 {case.case_number or case.id[:8]}", border_style="cyan")
+    )
 
     # Parties
     if case.parties:
@@ -822,8 +811,10 @@ def evidence_list(
 
     for e in evidence:
         adm_style = (
-            "green" if e.admissibility is Admissibility.ADMISSIBLE
-            else "red" if e.admissibility is Admissibility.INADMISSIBLE
+            "green"
+            if e.admissibility is Admissibility.ADMISSIBLE
+            else "red"
+            if e.admissibility is Admissibility.INADMISSIBLE
             else "yellow"
         )
         ps_style = {
@@ -894,6 +885,119 @@ def evidence_analyze(
     _print_chain_analysis(result, contradictions)
 
 
+def _audit_report_markdown(audit: ChainAuditResult) -> str:
+    """Render a :class:`ChainAuditResult` as a markdown report."""
+    lines = [
+        f"# 证据链审计报告（案件 {audit.case_id}）",
+        "",
+        f"- **审计结论**: {audit.verdict}",
+        f"- **完整度**: {audit.chain.completeness_score:.1%}"
+        f"（{audit.chain.admissible_evidence}/{audit.chain.total_evidence} 项可采信）",
+        f"- **矛盾**: {len(audit.chain.contradictions)} 处；**缺口**: {len(audit.chain.gaps)} 处",
+        "",
+    ]
+    for title, items in (
+        ("保管链条问题", audit.custody_issues),
+        ("时间线问题", audit.timeline_issues),
+        ("同源佐证警告", audit.independence_warnings),
+    ):
+        lines.append(f"## {title}（{len(items)}）")
+        if items:
+            lines.extend(f"- {item}" for item in items)
+        else:
+            lines.append("- 无")
+        lines.append("")
+    if audit.claim_coverage:
+        lines.append(
+            f"## 诉讼请求覆盖（{sum(c.covered for c in audit.claim_coverage)}/{len(audit.claim_coverage)} 已覆盖）"
+        )
+        for c in audit.claim_coverage:
+            mark = "✅" if c.covered else "❌"
+            lines.append(f"- {mark} {c.claim_description}" + (f"——{c.note}" if c.note else ""))
+        lines.append("")
+    lines.append(f"> {audit.summary}")
+    return "\n".join(lines)
+
+
+@evidence_app.command("audit", help="全面审计案件证据链（保管/时间线/独立性/诉请覆盖）。")
+def evidence_audit(
+    ctx: typer.Context,
+    case_id: str = typer.Argument(..., help="案件 ID（支持前缀匹配）"),
+    fmt: str = typer.Option("rich", "--format", "-f", help="输出格式：rich/json/markdown"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="写入文件；省略则输出到终端"),
+) -> None:
+    """运行确定性证据链审计，无需 LLM。
+
+    覆盖四类检查：保管链条完整性、时间线一致性、同源佐证识别、
+    诉讼请求-证据覆盖映射。结论分 通过 / 有瑕疵 / 严重缺陷 三档。
+    """
+    with _state_session(ctx, save=False) as state:
+        case = _require_case(state, case_id)
+        filing_date = ""
+        for event in case.timeline:
+            if getattr(event, "description", "") == "立案":
+                filing_date = getattr(event, "date", "")
+                break
+        auditor = EvidenceAuditor(state.evidence_chain)
+        try:
+            audit = auditor.audit_case(case.id, claims=list(case.claims), filing_date=filing_date)
+        except EvidenceError as exc:
+            get_console().print(f"[red]✗ 审计失败：{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+
+    _audit(
+        ctx,
+        "judicial.evidence.audit",
+        {"case_id": audit.case_id, "verdict": audit.verdict},
+    )
+
+    if output is not None or fmt in ("json", "markdown"):
+        payload = (
+            audit.model_dump_json(indent=2) if fmt == "json" else _audit_report_markdown(audit)
+        )
+        if output is not None:
+            output.write_text(payload, encoding="utf-8")
+            get_console().print(f"[green]✓ 审计报告已写入 {output}[/green]")
+        else:
+            get_console().print(payload)
+        return
+
+    # rich 输出
+    console = get_console()
+    color = {"通过": "green", "有瑕疵": "yellow"}.get(audit.verdict, "red")
+    console.print(
+        Panel.fit(
+            f"[bold {color}]审计结论：{audit.verdict}[/bold {color}]   "
+            f"完整度 {audit.chain.completeness_score:.1%}",
+            title=f"证据链审计 · {case.case_number or audit.case_id[:8]}",
+        )
+    )
+    issue_groups = (
+        ("保管链条", audit.custody_issues),
+        ("时间线", audit.timeline_issues),
+        ("同源佐证", audit.independence_warnings),
+    )
+    for title, items in issue_groups:
+        console.print(f"\n[bold]{title}（{len(items)}）[/bold]")
+        for item in items:
+            console.print(f"  • {item}")
+    if audit.claim_coverage:
+        covered = sum(c.covered for c in audit.claim_coverage)
+        console.print(f"\n[bold]诉讼请求覆盖（{covered}/{len(audit.claim_coverage)}）[/bold]")
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("状态")
+        table.add_column("诉讼请求")
+        table.add_column("支持证据数")
+        for c in audit.claim_coverage:
+            table.add_row(
+                "✅" if c.covered else "❌",
+                c.claim_description,
+                str(len(c.supporting_evidence_ids)),
+            )
+        console.print(table)
+    console.print(f"\n[dim]{audit.summary}[/dim]")
+
+
 # ---------------------------------------------------------------------------
 # Document commands
 # ---------------------------------------------------------------------------
@@ -910,12 +1014,8 @@ def doc_generate(
         "cross_examination_opinion）",
     ),
     title: str | None = typer.Option(None, "--title", help="文书标题"),
-    output: Path | None = typer.Option(
-        None, "--output", "-o", help="将生成的文书文本写入指定文件"
-    ),
-    no_verify: bool = typer.Option(
-        False, "--no-verify", help="跳过法条引用校验"
-    ),
+    output: Path | None = typer.Option(None, "--output", "-o", help="将生成的文书文本写入指定文件"),
+    no_verify: bool = typer.Option(False, "--no-verify", help="跳过法条引用校验"),
 ) -> None:
     """根据案件上下文与模板生成法律文书。
 
@@ -1082,8 +1182,7 @@ def law_add(
     )
 
     get_console().print(
-        f"[green]✓[/green] 已添加法条 [bold]{article.citation}[/bold]"
-        f"（ID: {article.id}）"
+        f"[green]✓[/green] 已添加法条 [bold]{article.citation}[/bold]（ID: {article.id}）"
     )
 
 
@@ -1098,9 +1197,7 @@ def law_search(
 ) -> None:
     """按语义相似度与关键词重叠检索法律法条。"""
 
-    domain_filter = (
-        _parse_enum(domain, LegalDomain, "法律领域") if domain is not None else None
-    )
+    domain_filter = _parse_enum(domain, LegalDomain, "法律领域") if domain is not None else None
 
     with _state_session(ctx, save=False) as state:
         results = state.knowledge_base.search_articles(
@@ -1142,8 +1239,10 @@ def law_search(
 
     for r in results:
         status_style = (
-            "green" if r.article.is_effective
-            else "red" if r.article.status is ArticleStatus.REPEALED
+            "green"
+            if r.article.is_effective
+            else "red"
+            if r.article.status is ArticleStatus.REPEALED
             else "yellow"
         )
         table.add_row(
@@ -1161,17 +1260,15 @@ def law_list(
     ctx: typer.Context,
     domain: str | None = typer.Option(None, "--domain", help="按法律领域过滤"),
     law_name: str | None = typer.Option(None, "--law-name", help="按法律名称过滤"),
-    status: str | None = typer.Option(None, "--status", help="按状态过滤（effective/repealed/draft）"),
+    status: str | None = typer.Option(
+        None, "--status", help="按状态过滤（effective/repealed/draft）"
+    ),
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
 ) -> None:
     """列出法律知识库中的法条（可按领域/法律名/状态过滤）。"""
 
-    domain_filter = (
-        _parse_enum(domain, LegalDomain, "法律领域") if domain is not None else None
-    )
-    status_filter = (
-        _parse_enum(status, ArticleStatus, "法条状态") if status is not None else None
-    )
+    domain_filter = _parse_enum(domain, LegalDomain, "法律领域") if domain is not None else None
+    status_filter = _parse_enum(status, ArticleStatus, "法条状态") if status is not None else None
 
     with _state_session(ctx, save=False) as state:
         articles = state.knowledge_base.list_articles(
@@ -1207,9 +1304,7 @@ def law_list(
     table.add_column("正文预览")
     for a in articles:
         status_style = (
-            "green" if a.is_effective
-            else "red" if a.status is ArticleStatus.REPEALED
-            else "yellow"
+            "green" if a.is_effective else "red" if a.status is ArticleStatus.REPEALED else "yellow"
         )
         table.add_row(
             a.id[:8],
@@ -1247,8 +1342,10 @@ def law_show(
 
     console = get_console()
     status_style = (
-        "green" if target.is_effective
-        else "red" if target.status is ArticleStatus.REPEALED
+        "green"
+        if target.is_effective
+        else "red"
+        if target.status is ArticleStatus.REPEALED
         else "yellow"
     )
     console.print(
@@ -1279,12 +1376,10 @@ def case_summary(
         evidence = state.evidence_chain.list_evidence(case_id=case.id)
 
     console = get_console()
-    parties_txt = "、".join(
-        f"{p.role.value} {p.name}" for p in case.parties
-    ) or "（暂无当事人）"
-    claims_txt = "；".join(
-        f"{c.description}（金额 {c.amount}）" for c in case.claims
-    ) or "（暂无诉讼请求）"
+    parties_txt = "、".join(f"{p.role.value} {p.name}" for p in case.parties) or "（暂无当事人）"
+    claims_txt = (
+        "；".join(f"{c.description}（金额 {c.amount}）" for c in case.claims) or "（暂无诉讼请求）"
+    )
 
     overview = (
         f"[bold]案号:[/bold] {case.case_number or '-'}\n"
@@ -1296,7 +1391,9 @@ def case_summary(
         f"[bold]材料/证据:[/bold] {len(materials)} 份材料 / {len(evidence)} 项证据\n"
         f"[bold]时间线事件:[/bold] {len(case.timeline)} 个"
     )
-    console.print(Panel(overview, title=f"案件摘要 · {case.case_number or case.id[:8]}", border_style="cyan"))
+    console.print(
+        Panel(overview, title=f"案件摘要 · {case.case_number or case.id[:8]}", border_style="cyan")
+    )
 
     if case.timeline:
         ttable = Table(title="时间轴（按时间排序）", border_style="green")
@@ -1360,7 +1457,9 @@ def evidence_export(
         lines = ["# 证据清单", "", f"共 {len(evidence)} 项证据", ""]
         for e in evidence:
             lines.append(f"- **{e.name}**（{e.type.value}）证明对象: {e.proving_object or '-'}")
-            lines.append(f"  可采性: {e.admissibility.value} | 证明力: {e.probative_strength.value}")
+            lines.append(
+                f"  可采性: {e.admissibility.value} | 证明力: {e.probative_strength.value}"
+            )
         if analysis:
             lines += ["", "## 证据链分析", "", analysis.summary or ""]
         text = "\n".join(lines)
@@ -1420,8 +1519,10 @@ def judicial_research(
             analysis = resp
             lines.append("", "## 分析（LLM 撰写）", "", analysis)
         except Exception as exc:  # noqa: BLE001 - 无模型时退化为引用式
-            lines.append("\n## 分析（无 LLM，给出检索提示）\n\n请人工结合上述法条进行论证。"
-                         "可用 `justagent judicial doc generate` 生成正式文书。")
+            lines.append(
+                "\n## 分析（无 LLM，给出检索提示）\n\n请人工结合上述法条进行论证。"
+                "可用 `justagent judicial doc generate` 生成正式文书。"
+            )
             if ctx.obj.get("verbose"):
                 console.print(f"[dim]LLM 撰写不可用：{exc}[/dim]")
 
@@ -1493,9 +1594,7 @@ def _resolve_evidence(state: _JudicialState, evidence_id: str) -> Evidence:
 
     evidence = state.evidence_chain.get_evidence(evidence_id)
     if evidence is None:
-        matches = [
-            e for e in state.evidence_chain.list_evidence() if e.id.startswith(evidence_id)
-        ]
+        matches = [e for e in state.evidence_chain.list_evidence() if e.id.startswith(evidence_id)]
         if len(matches) == 1:
             return matches[0]
         raise typer.BadParameter(f"未找到证据：{evidence_id}")
@@ -1507,8 +1606,10 @@ def _print_review_result(evidence: Evidence, result: ReviewResult) -> None:
 
     console = get_console()
     adm_style = (
-        "green" if result.admissibility is Admissibility.ADMISSIBLE
-        else "red" if result.admissibility is Admissibility.INADMISSIBLE
+        "green"
+        if result.admissibility is Admissibility.ADMISSIBLE
+        else "red"
+        if result.admissibility is Admissibility.INADMISSIBLE
         else "yellow"
     )
     ps_style = {
@@ -1535,12 +1636,8 @@ def _print_review_result(evidence: Evidence, result: ReviewResult) -> None:
             f"  - {issue}" for issue in result.legality_issues
         )
     if result.recommendations:
-        body += "\n[bold]建议:[/bold]\n" + "\n".join(
-            f"  - {rec}" for rec in result.recommendations
-        )
-    console.print(
-        Panel(body, title=f"证据审查结果 — {evidence.name}", border_style="cyan")
-    )
+        body += "\n[bold]建议:[/bold]\n" + "\n".join(f"  - {rec}" for rec in result.recommendations)
+    console.print(Panel(body, title=f"证据审查结果 — {evidence.name}", border_style="cyan"))
 
 
 def _print_chain_analysis(
@@ -1551,8 +1648,10 @@ def _print_chain_analysis(
 
     console = get_console()
     score_style = (
-        "green" if result.completeness_score >= 0.7
-        else "yellow" if result.completeness_score >= 0.4
+        "green"
+        if result.completeness_score >= 0.7
+        else "yellow"
+        if result.completeness_score >= 0.4
         else "red"
     )
     summary = (
@@ -1601,7 +1700,11 @@ def _print_generated_document(document: GeneratedDocument, output: Path | None) 
         f"[bold]生成时间:[/bold] {_format_ts(document.created_at)}"
     )
     console.print(Panel(header, title="法律文书生成结果", border_style="cyan"))
-    console.print(Panel(document.content or "(空文书)", title=document.title or "文书正文", border_style="blue"))
+    console.print(
+        Panel(
+            document.content or "(空文书)", title=document.title or "文书正文", border_style="blue"
+        )
+    )
 
     if document.citation_verifications:
         vtable = Table(title="法条引用校验", border_style="magenta")

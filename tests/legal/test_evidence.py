@@ -10,7 +10,9 @@ from justagent.knowledge.graph import KnowledgeGraph
 from justagent.verticals.legal.evidence import (
     Admissibility,
     ChainAnalysisResult,
+    CustodyEvent,
     Evidence,
+    EvidenceAuditor,
     EvidenceChain,
     EvidenceError,
     EvidenceRelation,
@@ -111,17 +113,11 @@ class TestDataModels:
 
     def test_evidence_is_admissible(self) -> None:
         assert Evidence(name="x").is_admissible is True
-        assert Evidence(
-            name="x", admissibility=Admissibility.CONDITIONAL
-        ).is_admissible is True
-        assert Evidence(
-            name="x", admissibility=Admissibility.INADMISSIBLE
-        ).is_admissible is False
+        assert Evidence(name="x", admissibility=Admissibility.CONDITIONAL).is_admissible is True
+        assert Evidence(name="x", admissibility=Admissibility.INADMISSIBLE).is_admissible is False
 
     def test_evidence_is_excluded(self) -> None:
-        assert Evidence(
-            name="x", admissibility=Admissibility.INADMISSIBLE
-        ).is_excluded is True
+        assert Evidence(name="x", admissibility=Admissibility.INADMISSIBLE).is_excluded is True
         assert Evidence(name="x").is_excluded is False
 
     def test_evidence_relation_model(self) -> None:
@@ -274,9 +270,7 @@ class TestEvidenceChain:
         ev2 = _make_valid_evidence("证据2", case_id="case-1")
         chain.add_evidence(ev1)
         chain.add_evidence(ev2)
-        chain.add_relation(
-            ev1.id, ev2.id, EvidenceRelationType.CONTRADICTS, description="矛盾"
-        )
+        chain.add_relation(ev1.id, ev2.id, EvidenceRelationType.CONTRADICTS, description="矛盾")
         result = chain.analyze("case-1")
         assert len(result.contradictions) == 1
 
@@ -316,7 +310,9 @@ class TestEvidenceChain:
 
 
 class TestEvidenceReviewer:
-    def test_review_legality_admissible(self, reviewer: EvidenceReviewer, chain: EvidenceChain) -> None:
+    def test_review_legality_admissible(
+        self, reviewer: EvidenceReviewer, chain: EvidenceChain
+    ) -> None:
         ev = _make_valid_evidence()
         chain.add_evidence(ev)
         is_legal, issues, admissibility = reviewer.review_legality(ev.id)
@@ -324,7 +320,9 @@ class TestEvidenceReviewer:
         assert issues == []
         assert admissibility is Admissibility.ADMISSIBLE
 
-    def test_review_legality_conditional(self, reviewer: EvidenceReviewer, chain: EvidenceChain) -> None:
+    def test_review_legality_conditional(
+        self, reviewer: EvidenceReviewer, chain: EvidenceChain
+    ) -> None:
         ev = _make_valid_evidence()
         ev.source = ""  # missing source
         chain.add_evidence(ev)
@@ -482,9 +480,7 @@ class TestAsyncMethods:
         assert result.evidence_id == ev.id
 
     @pytest.mark.asyncio
-    async def test_review_all_async(
-        self, reviewer: EvidenceReviewer, chain: EvidenceChain
-    ) -> None:
+    async def test_review_all_async(self, reviewer: EvidenceReviewer, chain: EvidenceChain) -> None:
         ev1 = _make_valid_evidence("证据1")
         ev2 = _make_valid_evidence("证据2")
         chain.add_evidence(ev1)
@@ -552,9 +548,7 @@ class TestThreadSafety:
 
         def add(i: int) -> None:
             try:
-                chain.add_evidence(
-                    Evidence(name=f"证据{i}", case_id="case-1")
-                )
+                chain.add_evidence(Evidence(name=f"证据{i}", case_id="case-1"))
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
@@ -591,3 +585,127 @@ class TestThreadSafety:
             t.join()
 
         assert not errors
+
+
+# ---------------------------------------------------------------------------
+# EvidenceAuditor (M4)
+# ---------------------------------------------------------------------------
+
+
+class TestEvidenceAuditor:
+    """Deterministic full-chain audit: custody, timeline, independence, claims."""
+
+    def _chain_with(self, *evidences: Evidence) -> EvidenceChain:
+        chain = EvidenceChain()
+        for ev in evidences:
+            chain.add_evidence(ev)
+        return chain
+
+    def test_custody_missing_trail_for_official_method(self) -> None:
+        chain = self._chain_with(
+            Evidence(
+                name="扣押的账本",
+                collection_method="扣押",
+                case_id="c1",
+            )
+        )
+        audit = EvidenceAuditor(chain).audit_case("c1")
+        assert any("无保管链条记录" in i for i in audit.custody_issues)
+        assert audit.verdict == "有瑕疵"
+
+    def test_custody_ordering_and_future_dates(self) -> None:
+        chain = self._chain_with(
+            Evidence(
+                name="调取的监控",
+                collection_method="调取",
+                case_id="c1",
+                custody_chain=[
+                    CustodyEvent(date="2026-03-01", actor="法制科", action="移交"),
+                    CustodyEvent(date="2026-02-01", actor="办案队", action="收集"),
+                ],
+            )
+        )
+        issues = EvidenceAuditor(chain).audit_custody(chain.list_evidence(case_id="c1"))
+        assert any("乱序" in i for i in issues)
+
+    def test_timeline_collection_after_filing(self) -> None:
+        chain = self._chain_with(
+            Evidence(
+                name="迟到的合同",
+                case_id="c1",
+                collector="张律师",
+                source="当事人提供",
+                collection_method="当事人提供",
+                collection_date="2026-06-01",
+            )
+        )
+        audit = EvidenceAuditor(chain).audit_case("c1", filing_date="2026-01-10")
+        assert any("晚于立案日期" in i for i in audit.timeline_issues)
+
+    def test_independence_same_source_document(self) -> None:
+        chain = self._chain_with(
+            Evidence(name="合同扫描件A", case_id="c1", source_document_id="doc_9"),
+            Evidence(name="合同扫描件B", case_id="c1", source_document_id="doc_9"),
+        )
+        ids = [e.id for e in chain.list_evidence(case_id="c1")]
+        chain.add_relation(ids[0], ids[1], EvidenceRelationType.CORROBORATES)
+        warnings = EvidenceAuditor(chain).audit_independence(chain.list_evidence(case_id="c1"))
+        assert len(warnings) == 1
+        assert "不构成独立佐证" in warnings[0]
+
+    def test_claim_coverage_hit_and_miss(self) -> None:
+        from justagent.verticals.legal.case_manager import Claim
+
+        chain = self._chain_with(
+            Evidence(
+                name="转账凭证",
+                case_id="c1",
+                proving_object="被告支付货款的事实",
+                collector="王法官",
+                source="银行调取",
+                collection_method="调取",
+                custody_chain=[CustodyEvent(date="2025-12-01", actor="银行", action="收集")],
+            )
+        )
+        claims = [
+            Claim(description="判令被告支付货款100万元"),
+            Claim(description="解除双方租赁合同"),
+        ]
+        coverage = EvidenceAuditor(chain).audit_claims(claims, chain.list_evidence(case_id="c1"))
+        assert coverage[0].covered is True
+        assert coverage[1].covered is False
+        assert "需补证" in coverage[1].note
+
+    def test_verdict_severe_on_uncovered_claim(self) -> None:
+        from justagent.verticals.legal.case_manager import Claim
+
+        chain = self._chain_with(
+            Evidence(
+                name="无关票据",
+                case_id="c1",
+                proving_object="其他事实",
+                collector="甲",
+                source="提供",
+                collection_method="当事人提供",
+            )
+        )
+        audit = EvidenceAuditor(chain).audit_case(
+            "c1", claims=[Claim(description="判令返还借款本金50万元")]
+        )
+        assert audit.verdict == "严重缺陷"
+        assert any(not c.covered for c in audit.claim_coverage)
+
+    def test_verdict_pass_when_clean(self) -> None:
+        chain = self._chain_with(
+            Evidence(
+                name="合同原件",
+                case_id="c1",
+                proving_object="买卖合同关系成立",
+                collector="李法官",
+                source="原告提交",
+                collection_method="当事人提供",
+                relevance_score=0.8,
+            )
+        )
+        audit = EvidenceAuditor(chain).audit_case("c1")
+        assert audit.verdict == "通过"

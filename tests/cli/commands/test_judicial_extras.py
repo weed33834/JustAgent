@@ -95,3 +95,45 @@ def test_law_export_writes_file(jctx, tmp_path) -> None:
     judicial.law_export(jctx, output=out_file, json_output=False)
     assert out_file.exists()
     assert "第一百四十三条" in out_file.read_text(encoding="utf-8")
+
+
+def test_evidence_audit_cli_reports_issues(jctx, capsys) -> None:
+    from justagent.verticals.legal.case_manager import Claim
+    from justagent.verticals.legal.cli import _JudicialState, _state_path
+
+    _create_case(jctx)
+    state = _JudicialState.load(_state_path(jctx))
+    case = state.case_manager.list_cases()[0]
+    state.case_manager.add_claim(case.id, Claim(description="判令被告支付货款100万元"))
+    # 扣押收集但没有保管链条记录 → 审计必须报保管链条问题。
+    state.evidence_chain.add_evidence(
+        judicial.Evidence(
+            name="扣押账本",
+            collection_method="扣押",
+            proving_object="被告欠付货款的事实",
+            case_id=case.id,
+        )
+    )
+    state.save()
+    capsys.readouterr()
+
+    judicial.evidence_audit(jctx, case.id[:8], fmt="rich", output=None)
+    out = capsys.readouterr().out
+    assert "审计结论" in out
+    assert "无保管链条记录" in out
+    assert "有瑕疵" in out or "严重缺陷" in out
+
+
+def test_evidence_audit_cli_markdown_to_file(jctx, tmp_path: Path) -> None:
+    from justagent.verticals.legal.cli import _JudicialState, _state_path
+
+    _create_case(jctx)
+    state = _JudicialState.load(_state_path(jctx))
+    case_id = state.case_manager.list_cases()[0].id
+    state.save()
+
+    out_file = tmp_path / "audit.md"
+    judicial.evidence_audit(jctx, case_id[:8], fmt="markdown", output=out_file)
+    content = out_file.read_text(encoding="utf-8")
+    assert "# 证据链审计报告" in content
+    assert "审计结论" in content

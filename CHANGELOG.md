@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Legal vertical: full evidence-chain audit (M4).** New
+  `EvidenceAuditor` performs four deterministic, LLM-free checks on top of
+  the existing chain analysis:
+  * **Custody integrity** — official collection methods (扣押/调取/提取/查封)
+    require a custody trail (`Evidence.custody_chain`, new `CustodyEvent`
+    model); chain dates must be well-formed, ordered, and not in the future.
+  * **Timeline consistency** — malformed/future collection dates; evidence
+    collected after the case filing date is flagged.
+  * **Source independence** — support/corroborate relations whose ends cite
+    the same `source_document_id` do not count as independent corroboration.
+  * **Claim coverage** — every litigation claim is mapped to admissible
+    evidence via discriminative-term overlap over proving objects (document-
+    frequency filter removes generic words like 「合同」「被告」).
+  Each audit ends in a three-tier verdict: 通过 / 有瑕疵 / 严重缺陷.
+- **CLI**: `justagent judicial evidence audit CASE_ID [--format rich|json|markdown] [-o FILE]`.
+- **Web**: `POST /api/judicial/evidence/audit` returns the full audit result.
+- **Demo**: `examples/legal-sample-case/sample_case.py` — a realistic
+  卷宗 fixture with four planted defects; runs without an LLM and prints the
+  audit report.
+
+### Changed
+
+- `_tokenize` stop-word list extended with litigation-structure words
+  （被告/原告/当事人/双方/事实/判令…）to prevent false claim-evidence matches.
+
 ### Changed
 
 - **Scheduler: hand-rolled cron engine replaced with `croniter`.** The

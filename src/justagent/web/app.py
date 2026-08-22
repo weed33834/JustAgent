@@ -103,8 +103,12 @@ def _build_llm(config: AppConfig) -> LLMClient | None:
     if provider in _REMOTE_PROVIDERS and not api_key:
         return None
     return LLMClient(
-        model=model, api_key=api_key, base_url=base_url,
-        api_version=api_version, timeout=timeout, provider=provider,
+        model=model,
+        api_key=api_key,
+        base_url=base_url,
+        api_version=api_version,
+        timeout=timeout,
+        provider=provider,
     )
 
 
@@ -330,13 +334,24 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     async def doctor() -> list[dict]:
         checks = []
         checks.append({"name": "python", "status": "ok", "detail": platform.python_version()})
-        checks.append({"name": "model-backend", "status": "ok" if _build_llm(config) else "warning",
-                       "detail": "configured" if _build_llm(config) else "none"})
+        checks.append(
+            {
+                "name": "model-backend",
+                "status": "ok" if _build_llm(config) else "warning",
+                "detail": "configured" if _build_llm(config) else "none",
+            }
+        )
         sp = _judicial_state_path(config)
-        checks.append({"name": "judicial-state", "status": "ok" if sp.exists() else "warning",
-                       "detail": str(sp)})
-        checks.append({"name": "audit", "status": "ok",
-                       "detail": f"{len(_read_audit(config))} entries"})
+        checks.append(
+            {
+                "name": "judicial-state",
+                "status": "ok" if sp.exists() else "warning",
+                "detail": str(sp),
+            }
+        )
+        checks.append(
+            {"name": "audit", "status": "ok", "detail": f"{len(_read_audit(config))} entries"}
+        )
         return checks
 
     # -- config -------------------------------------------------------------
@@ -351,21 +366,25 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     async def models() -> dict:
         backends = []
         for b in config.model.backends:
-            backends.append({
-                "provider": b.provider.value,
-                "model": b.model,
-                "base_url": str(b.base_url),
-                "tier": b.tier,
-                "key": "set" if b.api_key else "none",
-            })
+            backends.append(
+                {
+                    "provider": b.provider.value,
+                    "model": b.model,
+                    "base_url": str(b.base_url),
+                    "tier": b.tier,
+                    "key": "set" if b.api_key else "none",
+                }
+            )
         if not backends and config.llm.model:
-            backends.append({
-                "provider": config.llm.provider.value,
-                "model": config.llm.model,
-                "base_url": str(config.llm.base_url or ""),
-                "tier": 2,
-                "key": "set" if config.llm.api_key else "none",
-            })
+            backends.append(
+                {
+                    "provider": config.llm.provider.value,
+                    "model": config.llm.model,
+                    "base_url": str(config.llm.base_url or ""),
+                    "tier": 2,
+                    "key": "set" if config.llm.api_key else "none",
+                }
+            )
         return {"items": backends}
 
     # -- metrics / audit ----------------------------------------------------
@@ -384,11 +403,18 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
 
         store = get_session_store()
         metas = store.list_sessions()
-        return {"items": [
-            {"id": m.session_id, "title": m.title, "created_at": m.created_at,
-             "updated_at": m.updated_at, "status": m.status.value}
-            for m in metas
-        ]}
+        return {
+            "items": [
+                {
+                    "id": m.session_id,
+                    "title": m.title,
+                    "created_at": m.created_at,
+                    "updated_at": m.updated_at,
+                    "status": m.status.value,
+                }
+                for m in metas
+            ]
+        }
 
     @app.delete("/api/sessions/{session_id}")
     async def session_delete(request: Request, session_id: str) -> dict:
@@ -407,11 +433,17 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     async def plugins() -> dict:
         from justagent.core.plugin_registry import PluginRegistry
 
-        return {"items": [
-            {"name": p.name, "version": p.version, "trust": p.trust_level.value,
-             "source": p.source}
-            for p in PluginRegistry().list()
-        ]}
+        return {
+            "items": [
+                {
+                    "name": p.name,
+                    "version": p.version,
+                    "trust": p.trust_level.value,
+                    "source": p.source,
+                }
+                for p in PluginRegistry().list()
+            ]
+        }
 
     # -- schedule ------------------------------------------------------------
     @app.get("/api/schedule")
@@ -420,12 +452,19 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         from justagent.core.scheduler import Scheduler, ScheduleStore
 
         scheduler = Scheduler(store=ScheduleStore(), project_store=ProjectStore())
-        return {"items": [
-            {"name": t.name, "schedule": t.schedule, "enabled": t.enabled,
-             "last_run": t.last_run, "next_run": t.next_run,
-             "created_at": t.created_at}
-            for t in scheduler.list_tasks()
-        ]}
+        return {
+            "items": [
+                {
+                    "name": t.name,
+                    "schedule": t.schedule,
+                    "enabled": t.enabled,
+                    "last_run": t.last_run,
+                    "next_run": t.next_run,
+                    "created_at": t.created_at,
+                }
+                for t in scheduler.list_tasks()
+            ]
+        }
 
     @app.post("/api/schedule")
     async def schedule_add(request: Request, payload: dict) -> dict:
@@ -456,12 +495,18 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         query = (payload.get("query") or "").strip()
         top_k = int(payload.get("top_k", 5))
         results = state.knowledge_base.search_articles(query, top_k=top_k)
-        return {"hits": [
-            {"citation": r.article.citation, "law_name": r.article.law_name,
-             "article_number": r.article.article_number, "score": r.score,
-             "content": r.article.content}
-            for r in results
-        ]}
+        return {
+            "hits": [
+                {
+                    "citation": r.article.citation,
+                    "law_name": r.article.law_name,
+                    "article_number": r.article.article_number,
+                    "score": r.score,
+                    "content": r.article.content,
+                }
+                for r in results
+            ]
+        }
 
     # -- chat ---------------------------------------------------------------
     @app.post("/api/chat")
@@ -471,14 +516,17 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             raise HTTPException(status_code=400, detail="message is required")
         llm = _build_llm(config)
         if llm is None:
-            return JSONResponse(status_code=200, content={
-                "reply": (
-                    "No LLM backend is configured, so the agent cannot chat. "
-                    "Configure a model backend (e.g. in .justagent.toml) or use "
-                    "the judicial panel below, which works without an LLM."
-                ),
-                "error": "no_llm",
-            })
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "reply": (
+                        "No LLM backend is configured, so the agent cannot chat. "
+                        "Configure a model backend (e.g. in .justagent.toml) or use "
+                        "the judicial panel below, which works without an LLM."
+                    ),
+                    "error": "no_llm",
+                },
+            )
         session_id = (payload.get("session_id") or "").strip() or "default"
         async with _runtimes_lock:
             runtime = _runtimes.get(session_id)
@@ -486,11 +534,13 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             runtime = AgentRuntime(
                 client=llm,
                 tools=make_default_tools(str(config.project_root)),
-                config=AgentRuntimeConfig(system_prompt=(
-                    "You are JustAgent, an assistant for judicial work. Use the "
-                    "judicial tool to manage cases, evidence, legal knowledge and "
-                    "documents. Be concise and accurate."
-                )),
+                config=AgentRuntimeConfig(
+                    system_prompt=(
+                        "You are JustAgent, an assistant for judicial work. Use the "
+                        "judicial tool to manage cases, evidence, legal knowledge and "
+                        "documents. Be concise and accurate."
+                    )
+                ),
                 cwd=str(config.project_root),
             )
             async with _runtimes_lock:
@@ -498,20 +548,27 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             try:
                 result = await runtime.run(message)
             except Exception as exc:  # noqa: BLE001
-                return JSONResponse(status_code=200,
-                                    content={"reply": f"Agent error: {exc}", "error": "agent_error"})
+                return JSONResponse(
+                    status_code=200,
+                    content={"reply": f"Agent error: {exc}", "error": "agent_error"},
+                )
         else:
             try:
                 result = await runtime.continue_run(message)
             except Exception as exc:  # noqa: BLE001
-                return JSONResponse(status_code=200,
-                                    content={"reply": f"Agent error: {exc}", "error": "agent_error"})
-        return JSONResponse(status_code=200, content={
-            "reply": result.final_content or "(no output)",
-            "status": result.status,
-            "session_id": session_id,
-            "error": result.error or "",
-        })
+                return JSONResponse(
+                    status_code=200,
+                    content={"reply": f"Agent error: {exc}", "error": "agent_error"},
+                )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "reply": result.final_content or "(no output)",
+                "status": result.status,
+                "session_id": session_id,
+                "error": result.error or "",
+            },
+        )
 
     # -- chat (SSE streaming) -------------------------------------------------
     @app.post("/api/chat/stream", response_model=None)
@@ -521,10 +578,13 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             raise HTTPException(status_code=400, detail="message is required")
         llm = _build_llm(config)
         if llm is None:
-            return JSONResponse(status_code=200, content={
-                "reply": "No LLM backend is configured, so the agent cannot chat.",
-                "error": "no_llm",
-            })
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "reply": "No LLM backend is configured, so the agent cannot chat.",
+                    "error": "no_llm",
+                },
+            )
         history = payload.get("history") or []
         sys_prompt = (
             "You are JustAgent, an assistant for judicial work. Use the judicial "
@@ -570,8 +630,11 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             result = await task
             yield f"data: {json.dumps({'type': 'done', 'content': result.final_content or '(no output)', 'status': result.status, 'error': result.error or ''}, ensure_ascii=False)}\n\n"
 
-        return StreamingResponse(_stream(), media_type="text/event-stream",
-                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+        return StreamingResponse(
+            _stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     # -- projects -----------------------------------------------------------
     @app.get("/api/projects")
@@ -579,10 +642,10 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         from justagent.core.project_store import ProjectStore
 
         store = ProjectStore()
-        return {"current": str(config.project_root), "items": [
-            {"name": p.name, "path": str(p.path)}
-            for p in store.list_all()
-        ]}
+        return {
+            "current": str(config.project_root),
+            "items": [{"name": p.name, "path": str(p.path)} for p in store.list_all()],
+        }
 
     @app.post("/api/projects")
     async def project_add(request: Request, payload: dict) -> dict:
@@ -605,28 +668,34 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     @app.get("/api/report", response_class=HTMLResponse)
     async def report() -> str:
         data = _load_judicial(config)
-        cases = "".join(
-            f"<h3>{c['case_number'] or c['id'][:8]}</h3>"
-            f"<p>案由：{c['cause']}｜法院：{c['court']}｜状态：{c['status']}｜当事人：{c['parties']}｜时间线：{c['timeline']}</p>"
-            for c in data["cases"]
-        ) or "<p>（暂无案件）</p>"
-        evidence = "".join(
-            f"<li>{e['name']}（{e['type']}）可采性：{e['admissible']} 证明力：{e['strength']}</li>"
-            for e in data["evidence"]
-        ) or "<li>（暂无证据）</li>"
-        laws = "".join(
-            f"<li>{law['citation']}（{law['domain']}）</li>"
-            for law in data["laws"]
-        ) or "<li>（暂无法条）</li>"
+        cases = (
+            "".join(
+                f"<h3>{c['case_number'] or c['id'][:8]}</h3>"
+                f"<p>案由：{c['cause']}｜法院：{c['court']}｜状态：{c['status']}｜当事人：{c['parties']}｜时间线：{c['timeline']}</p>"
+                for c in data["cases"]
+            )
+            or "<p>（暂无案件）</p>"
+        )
+        evidence = (
+            "".join(
+                f"<li>{e['name']}（{e['type']}）可采性：{e['admissible']} 证明力：{e['strength']}</li>"
+                for e in data["evidence"]
+            )
+            or "<li>（暂无证据）</li>"
+        )
+        laws = (
+            "".join(f"<li>{law['citation']}（{law['domain']}）</li>" for law in data["laws"])
+            or "<li>（暂无法条）</li>"
+        )
         return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>JustAgent 司法报表</title>
         <style>body{{font-family:sans-serif;padding:24px;color:#1b2333}} h1{{color:#6366f1}}
         h2{{border-bottom:1px solid #e6e8f2;padding-bottom:4px}} li{{margin:4px 0}}
         .meta{{color:#96a0b4;font-size:12px}} </style></head><body>
         <h1>JustAgent 司法报表</h1>
-        <p class="meta">项目：{config.project_root}｜生成于 {time.strftime('%Y-%m-%d %H:%M:%S')}</p>
-        <h2>案件（{len(data['cases'])}）</h2>{cases}
-        <h2>证据（{len(data['evidence'])}）</h2><ul>{evidence}</ul>
-        <h2>法条（{len(data['laws'])}）</h2><ul>{laws}</ul>
+        <p class="meta">项目：{config.project_root}｜生成于 {time.strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <h2>案件（{len(data["cases"])}）</h2>{cases}
+        <h2>证据（{len(data["evidence"])}）</h2><ul>{evidence}</ul>
+        <h2>法条（{len(data["laws"])}）</h2><ul>{laws}</ul>
         </body></html>"""
 
     # -- vision (multimodal image analysis) ----------------------------------
@@ -650,7 +719,9 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         if image.startswith("data:"):
             content.append({"type": "image_url", "image_url": {"url": image}})
         else:
-            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}})
+            content.append(
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image}"}}
+            )
         try:
             resp = client.chat.completions.create(
                 model=llm._model,
@@ -698,15 +769,25 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             raise HTTPException(status_code=404, detail="case not found")
         evidence = state.evidence_chain.list_evidence(case_id=case.id)
         return {
-            "id": case.id, "case_number": case.case_number,
-            "cause": case.cause_of_action, "court": case.court,
-            "status": case.status.value, "domain": case.domain,
+            "id": case.id,
+            "case_number": case.case_number,
+            "cause": case.cause_of_action,
+            "court": case.court,
+            "status": case.status.value,
+            "domain": case.domain,
             "parties": [p.model_dump() for p in case.parties],
             "claims": [c.model_dump() for c in case.claims],
-            "timeline": [ev.model_dump() for ev in sorted(case.timeline, key=lambda e: e.timestamp)],
+            "timeline": [
+                ev.model_dump() for ev in sorted(case.timeline, key=lambda e: e.timestamp)
+            ],
             "evidence": [
-                {"id": e.id, "name": e.name, "type": e.type.value,
-                 "admissible": e.admissibility.value, "strength": e.probative_strength.value}
+                {
+                    "id": e.id,
+                    "name": e.name,
+                    "type": e.type.value,
+                    "admissible": e.admissibility.value,
+                    "strength": e.probative_strength.value,
+                }
                 for e in evidence
             ],
         }
@@ -730,8 +811,47 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
                 "summary": result.summary or "",
             }
         except Exception as exc:  # noqa: BLE001 - graceful when no evidence
-            return {"completeness_score": 0.0, "total_evidence": 0,
-                    "contradiction_count": 0, "gaps": [], "summary": f"分析不可用: {exc}"}
+            return {
+                "completeness_score": 0.0,
+                "total_evidence": 0,
+                "contradiction_count": 0,
+                "gaps": [],
+                "summary": f"分析不可用: {exc}",
+            }
+
+    @app.post("/api/judicial/evidence/audit")
+    async def audit_evidence(request: Request, payload: dict) -> dict:
+        """Deterministic full chain audit — no LLM required.
+
+        Checks: custody-chain integrity, timeline consistency,
+        same-source corroboration, and claim-evidence coverage.
+        """
+        from justagent.verticals.legal.cli import _JudicialState
+        from justagent.verticals.legal.evidence import EvidenceAuditor
+
+        state = _JudicialState.load(_project_state(request))
+        case = None
+        wanted = payload.get("case_id") or ""
+        for candidate in state.case_manager.list_cases():
+            if not wanted or candidate.id.startswith(wanted) or candidate.case_number == wanted:
+                case = candidate
+                break
+        if case is None:
+            raise HTTPException(status_code=404, detail=f"case not found: {wanted}")
+        filing_date = ""
+        for event in case.timeline:
+            if getattr(event, "description", "") == "立案":
+                filing_date = str(getattr(event, "timestamp", "") or "")
+                break
+        try:
+            audit = EvidenceAuditor(state.evidence_chain).audit_case(
+                case.id, claims=list(case.claims), filing_date=filing_date
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {"verdict": "严重缺陷", "summary": f"审计不可用: {exc}"}
+        data = audit.model_dump()
+        data["chain"]["contradiction_count"] = len(audit.chain.contradictions)
+        return data
 
     @app.get("/api/judicial/laws")
     async def list_laws(request: Request) -> dict:
@@ -801,14 +921,18 @@ def _redact(data: Any) -> None:
         for k, v in data.items():
             if isinstance(v, (dict, list)):
                 _redact(v)
-            elif isinstance(v, str) and any(s in k.lower() for s in ("key", "token", "secret", "password")):
+            elif isinstance(v, str) and any(
+                s in k.lower() for s in ("key", "token", "secret", "password")
+            ):
                 data[k] = "***"
     elif isinstance(data, list):
         for item in data:
             _redact(item)
 
 
-def run(config: AppConfig, host: str = "127.0.0.1", port: int = 8000, *, no_auth: bool = False) -> None:
+def run(
+    config: AppConfig, host: str = "127.0.0.1", port: int = 8000, *, no_auth: bool = False
+) -> None:
     """Start the JustAgent web server."""
     import uvicorn
 
