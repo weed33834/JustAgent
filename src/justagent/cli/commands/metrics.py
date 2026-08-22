@@ -20,6 +20,12 @@ app = typer.Typer()
 def register(parent: typer.Typer) -> None:
     parent.add_typer(app, name="metrics", help="Inspect runtime metrics")
 
+    @app.callback(invoke_without_command=True)
+    def _default(ctx: typer.Context) -> None:
+        """Bare `justagent metrics` behaves like `metrics show`."""
+        if ctx.invoked_subcommand is None:
+            show(ctx)
+
 
 def _collect_audit_counters(
     audit: AuditLogger, exclude_trace_id: str | None = None

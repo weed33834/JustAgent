@@ -19,6 +19,12 @@ app = typer.Typer(help="Inspect configured model backends")
 def register(parent: typer.Typer) -> None:
     parent.add_typer(app, name="models", help="Inspect configured model backends")
 
+    @app.callback(invoke_without_command=True)
+    def _default(ctx: typer.Context) -> None:
+        """Bare `justagent models` behaves like `models list`."""
+        if ctx.invoked_subcommand is None:
+            list_backends(ctx)
+
 
 @app.command("list", help="List model backends; with --check run a live health check")
 def list_backends(

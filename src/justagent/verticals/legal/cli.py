@@ -657,7 +657,7 @@ def case_import(
         return
 
     with _state_session(ctx) as state:
-        _require_case(state, case_id)  # validate existence
+        case_id = _require_case(state, case_id).id  # normalize prefix → full id
         try:
             material = state.case_manager.import_file(
                 case_id,
@@ -736,7 +736,7 @@ def evidence_add(
         return
 
     with _state_session(ctx) as state:
-        _require_case(state, case_id)
+        case_id = _require_case(state, case_id).id  # normalize prefix → full id
         evidence = Evidence(
             name=name,
             type=etype,
@@ -1026,7 +1026,7 @@ def doc_generate(
     dtype = _parse_enum(doc_type, LegalDocumentType, "文书类型")
 
     with _state_session(ctx, save=False) as state:
-        _require_case(state, case_id)
+        case_id = _require_case(state, case_id).id  # normalize prefix → full id
         generator = LegalDocumentGenerator(
             state.case_manager,
             evidence_chain=state.evidence_chain,
@@ -1056,6 +1056,16 @@ def doc_generate(
     )
 
     _print_generated_document(document, output)
+
+
+@doc_app.command("types", help="列出可用的法律文书类型（与 Web 端点 /api/judicial/doc/types 对齐）。")
+def doc_types(
+    ctx: typer.Context,
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
+) -> None:
+    """列出所有内置的法律文书模板。"""
+
+    doc_list_templates(ctx=ctx, json_output=json_output)
 
 
 @doc_app.command("list-templates", help="列出可用的法律文书模板。")
