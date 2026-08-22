@@ -33,13 +33,9 @@ def _make_project(tmp_path: Path, name: str) -> Path:
     return directory
 
 
-def _completed(
-    returncode: int = 0, stdout: str = "", stderr: str = ""
-) -> CompletedProcess[str]:
+def _completed(returncode: int = 0, stdout: str = "", stderr: str = "") -> CompletedProcess[str]:
     """Build a fake :class:`subprocess.CompletedProcess`."""
-    return CompletedProcess(
-        args=["fake"], returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return CompletedProcess(args=["fake"], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -67,9 +63,7 @@ def test_scan_finds_multiple_projects(tmp_path: Path) -> None:
     config_path = _write_config(tmp_path)
     for name in ("alpha", "beta"):
         directory = _make_project(tmp_path, name)
-        (directory / "pyproject.toml").write_text(
-            "[project]\nname='x'\n", encoding="utf-8"
-        )
+        (directory / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     result = runner.invoke(
         app,
         ["--config", str(config_path), "project", "scan", str(tmp_path), "--dry-run"],
@@ -106,9 +100,15 @@ def test_scan_with_tag(tmp_path: Path) -> None:
         result = runner.invoke(
             app,
             [
-                "--config", str(config_path),
-                "project", "scan", str(tmp_path),
-                "--tag", "web", "--tag", "py",
+                "--config",
+                str(config_path),
+                "project",
+                "scan",
+                str(tmp_path),
+                "--tag",
+                "web",
+                "--tag",
+                "py",
             ],
         )
     assert result.exit_code == 0, result.output
@@ -155,9 +155,7 @@ def test_batch_status(tmp_path: Path) -> None:
             return_value=_completed(0, "", ""),
         ),
     ):
-        result = runner.invoke(
-            app, ["--config", str(config_path), "project", "batch-status"]
-        )
+        result = runner.invoke(app, ["--config", str(config_path), "project", "batch-status"])
     assert result.exit_code == 0, result.output
     assert "proj" in result.output
     assert "OK" in result.output
@@ -167,9 +165,7 @@ def test_batch_status_no_projects(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
     with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
-        result = runner.invoke(
-            app, ["--config", str(config_path), "project", "batch-status"]
-        )
+        result = runner.invoke(app, ["--config", str(config_path), "project", "batch-status"])
     assert result.exit_code == 0, result.output
     assert "Total: 0" in result.output
 
@@ -198,9 +194,7 @@ def test_batch_run_no_command(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     config_path = _write_config(tmp_path)
     with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
-        result = runner.invoke(
-            app, ["--config", str(config_path), "project", "batch-run"]
-        )
+        result = runner.invoke(app, ["--config", str(config_path), "project", "batch-run"])
     assert result.exit_code == 1, result.output
     assert "No command" in result.output
 
@@ -226,9 +220,12 @@ def test_batch_ship(tmp_path: Path) -> None:
         result = runner.invoke(
             app,
             [
-                "--config", str(config_path),
-                "project", "batch-ship",
-                "--stages", "clean",
+                "--config",
+                str(config_path),
+                "project",
+                "batch-ship",
+                "--stages",
+                "clean",
             ],
         )
     assert result.exit_code == 0, result.output

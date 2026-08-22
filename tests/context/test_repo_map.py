@@ -236,11 +236,7 @@ class TestExtractPython:
 
     def test_method_has_parent(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "class Foo:\n"
-            "    def method(self):\n"
-            "        return 1\n"
-        )
+        content = "class Foo:\n    def method(self):\n        return 1\n"
         symbols = gen._extract_python_regex(content)
         methods = [s for s in symbols if s.kind is SymbolKind.METHOD]
         assert len(methods) == 1
@@ -249,14 +245,7 @@ class TestExtractPython:
 
     def test_top_level_function_resets_class_context(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "class Foo:\n"
-            "    def m(self):\n"
-            "        pass\n"
-            "\n"
-            "def standalone():\n"
-            "    pass\n"
-        )
+        content = "class Foo:\n    def m(self):\n        pass\n\ndef standalone():\n    pass\n"
         symbols = gen._extract_python_regex(content)
         standalone = [s for s in symbols if s.name == "standalone"]
         assert len(standalone) == 1
@@ -281,11 +270,7 @@ class TestExtractPython:
 class TestExtractJavaScript:
     def test_extracts_function_and_class_and_const(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "function foo() {}\n"
-            "class Bar {}\n"
-            "const baz = 42;\n"
-        )
+        content = "function foo() {}\nclass Bar {}\nconst baz = 42;\n"
         symbols = gen._extract_javascript_regex(content)
         names_kinds = {(s.name, s.kind) for s in symbols}
         assert ("foo", SymbolKind.FUNCTION) in names_kinds
@@ -307,11 +292,7 @@ class TestExtractJavaScript:
 class TestExtractTypeScript:
     def test_extracts_interface_and_type(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "function foo() {}\n"
-            "interface Bar {}\n"
-            "type Baz = string;\n"
-        )
+        content = "function foo() {}\ninterface Bar {}\ntype Baz = string;\n"
         symbols = gen._extract_typescript_regex(content)
         names_kinds = {(s.name, s.kind) for s in symbols}
         assert ("foo", SymbolKind.FUNCTION) in names_kinds
@@ -327,12 +308,7 @@ class TestExtractTypeScript:
 class TestExtractRust:
     def test_extracts_fn_struct_enum_trait(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "fn main() {}\n"
-            "struct Foo {}\n"
-            "enum Color {}\n"
-            "trait Bar {}\n"
-        )
+        content = "fn main() {}\nstruct Foo {}\nenum Color {}\ntrait Bar {}\n"
         symbols = gen._extract_rust_regex(content)
         names_kinds = {(s.name, s.kind) for s in symbols}
         assert ("main", SymbolKind.FUNCTION) in names_kinds
@@ -349,11 +325,7 @@ class TestExtractRust:
 class TestExtractGo:
     def test_extracts_func_and_struct(self) -> None:
         gen = RepoMapGenerator()
-        content = (
-            "func foo() {}\n"
-            "func (s *Server) Run() {}\n"
-            "type Server struct {}\n"
-        )
+        content = "func foo() {}\nfunc (s *Server) Run() {}\ntype Server struct {}\n"
         symbols = gen._extract_go_regex(content)
         names_kinds = {(s.name, s.kind) for s in symbols}
         assert ("foo", SymbolKind.FUNCTION) in names_kinds

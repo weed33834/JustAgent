@@ -351,7 +351,7 @@ class TextChunker:
                 # Start the next chunk with overlap from the tail of the
                 # previous chunk (if it was long enough to warrant overlap).
                 if self._chunk_overlap > 0 and len(current) > self._min_chunk_size:
-                    overlap_text = current[-self._chunk_overlap:]
+                    overlap_text = current[-self._chunk_overlap :]
                     current = f"{overlap_text} {sentence}".strip()
                     # If the single sentence itself exceeds chunk_size,
                     # hard-split it.
@@ -483,11 +483,31 @@ class _HTMLTextExtractor(HTMLParser):
     """
 
     _SKIP_TAGS = frozenset({"script", "style", "noscript", "head"})
-    _BLOCK_TAGS = frozenset({
-        "p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6",
-        "section", "article", "header", "footer", "blockquote", "pre",
-        "ul", "ol", "table", "hr",
-    })
+    _BLOCK_TAGS = frozenset(
+        {
+            "p",
+            "div",
+            "br",
+            "li",
+            "tr",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "section",
+            "article",
+            "header",
+            "footer",
+            "blockquote",
+            "pre",
+            "ul",
+            "ol",
+            "table",
+            "hr",
+        }
+    )
 
     def __init__(self) -> None:
         super().__init__()
@@ -578,9 +598,7 @@ def _parse_pdf(data: bytes, source: str) -> str:
         except Exception as exc:
             logger.warning("pdfplumber failed to parse %s: %s", source, exc)
 
-    logger.warning(
-        "No PDF parser available (install PyPDF2 or pdfplumber) for %s", source
-    )
+    logger.warning("No PDF parser available (install PyPDF2 or pdfplumber) for %s", source)
     return f"[PDF content not extracted: {source}. Install PyPDF2 or pdfplumber.]\n"
 
 
@@ -594,9 +612,7 @@ def _parse_word(data: bytes, source: str) -> str:
 
         from docx import Document as DocxDocument
     except ImportError:
-        logger.warning(
-            "python-docx not installed; cannot parse Word document %s", source
-        )
+        logger.warning("python-docx not installed; cannot parse Word document %s", source)
         return f"[Word content not extracted: {source}. Install python-docx.]\n"
 
     try:
@@ -638,9 +654,7 @@ def _parse_excel(data: bytes, source: str) -> str:
             parts.append(f"## Sheet: {sheet.title}")
             for row in sheet.iter_rows(values_only=True):
                 cells = [
-                    str(cell).strip()
-                    for cell in row
-                    if cell is not None and str(cell).strip()
+                    str(cell).strip() for cell in row if cell is not None and str(cell).strip()
                 ]
                 if cells:
                     parts.append(" | ".join(cells))
@@ -677,11 +691,7 @@ def _parse_ppt(data: bytes, source: str) -> str:
                             slide_texts.append(text)
                 if shape.has_table:
                     for row in shape.table.rows:
-                        cells = [
-                            cell.text.strip()
-                            for cell in row.cells
-                            if cell.text.strip()
-                        ]
+                        cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
                         if cells:
                             slide_texts.append(" | ".join(cells))
             if slide_texts:
@@ -998,9 +1008,7 @@ class DocumentLifecycleManager:
             doc.metadata.update(metadata)
         if chunker is not None:
             doc.chunks = chunker.chunk_document(doc)
-        logger.info(
-            "Updated document %s to version %d", document_id, new_version
-        )
+        logger.info("Updated document %s to version %d", document_id, new_version)
         return doc
 
     def update_metadata(
@@ -1024,13 +1032,9 @@ class DocumentLifecycleManager:
             KeyError: If the document or version is not found.
         """
         doc = self._require(document_id)
-        snapshot = next(
-            (v for v in doc.versions if v.version == version), None
-        )
+        snapshot = next((v for v in doc.versions if v.version == version), None)
         if snapshot is None:
-            raise KeyError(
-                f"Version {version} not found for document {document_id}"
-            )
+            raise KeyError(f"Version {version} not found for document {document_id}")
         return self.update_content(document_id, snapshot.content)
 
     def get_version_history(self, document_id: str) -> list[DocumentVersion]:

@@ -90,21 +90,16 @@ async def _run_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
             stderr=asyncio.subprocess.PIPE,
         )
     except OSError as exc:
-        return ToolResult.failure(
-            f"Failed to spawn command {args.command!r}: {exc}"
-        )
+        return ToolResult.failure(f"Failed to spawn command {args.command!r}: {exc}")
 
     # Poll for completion, abort signal, or timeout.
     try:
-        stdout_bytes, stderr_bytes = await _wait_for_output(
-            proc, timeout=timeout, ctx=ctx
-        )
+        stdout_bytes, stderr_bytes = await _wait_for_output(proc, timeout=timeout, ctx=ctx)
     except TimeoutError:
         proc.kill()
         await proc.wait()
         return ToolResult.failure(
-            f"Command timed out after {int(timeout * 1000)}ms: "
-            f"{args.command!r}"
+            f"Command timed out after {int(timeout * 1000)}ms: {args.command!r}"
         )
     except ToolAbortedError:
         proc.kill()
@@ -114,12 +109,8 @@ async def _run_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     exit_code = proc.returncode or 0
 
     # Decode and truncate output.
-    stdout = stdout_bytes[:MAX_OUTPUT_BYTES].decode(
-        "utf-8", errors="replace"
-    )
-    stderr = stderr_bytes[:MAX_OUTPUT_BYTES].decode(
-        "utf-8", errors="replace"
-    )
+    stdout = stdout_bytes[:MAX_OUTPUT_BYTES].decode("utf-8", errors="replace")
+    stderr = stderr_bytes[:MAX_OUTPUT_BYTES].decode("utf-8", errors="replace")
 
     output_parts: list[str] = []
     if stdout:
@@ -173,9 +164,7 @@ async def _wait_for_output(
         if proc_task in done:
             return proc_task.result()
         if abort_task in done:
-            raise ToolAbortedError(
-                f"Command aborted by user: {ctx.tool_call_id}"
-            )
+            raise ToolAbortedError(f"Command aborted by user: {ctx.tool_call_id}")
         # Timeout fired.
         raise TimeoutError()
     finally:

@@ -43,9 +43,7 @@ async def test_apply_patch_add_file(tmp_path: Path) -> None:
 async def test_apply_patch_update_file(tmp_path: Path) -> None:
     (tmp_path / "f.py").write_text("def hello():\n    return 1\n")
     tool = make_apply_patch_tool()
-    patch = _patch(
-        "*** Update File: f.py\n@@\n def hello():\n-    return 1\n+    return 2\n"
-    )
+    patch = _patch("*** Update File: f.py\n@@\n def hello():\n-    return 1\n+    return 2\n")
     result = await tool.invoke({"patch": patch}, _make_ctx(tmp_path))
     assert not result.is_error
     assert (tmp_path / "f.py").read_text() == "def hello():\n    return 2\n"
@@ -64,9 +62,7 @@ async def test_apply_patch_delete_file(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_apply_patch_missing_file_for_update(tmp_path: Path) -> None:
     tool = make_apply_patch_tool()
-    patch = _patch(
-        "*** Update File: nope.py\n@@\n-x\n+y\n"
-    )
+    patch = _patch("*** Update File: nope.py\n@@\n-x\n+y\n")
     result = await tool.invoke({"patch": patch}, _make_ctx(tmp_path))
     assert result.is_error
 
@@ -92,10 +88,7 @@ async def test_apply_patch_empty_patch(tmp_path: Path) -> None:
 async def test_apply_patch_multiple_actions(tmp_path: Path) -> None:
     (tmp_path / "old.py").write_text("a\nb\n")
     tool = make_apply_patch_tool()
-    patch = _patch(
-        "*** Add File: new.py\n+created\n"
-        "*** Update File: old.py\n@@\n a\n-b\n+B\n"
-    )
+    patch = _patch("*** Add File: new.py\n+created\n*** Update File: old.py\n@@\n a\n-b\n+B\n")
     result = await tool.invoke({"patch": patch}, _make_ctx(tmp_path))
     assert not result.is_error
     assert (tmp_path / "new.py").read_text() == "created"

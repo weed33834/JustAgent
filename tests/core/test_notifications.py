@@ -94,18 +94,14 @@ class TestTerminalChannel:
 
     def test_success_goes_to_stdout(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = TerminalChannel(use_color=False)
-        channel.send(
-            Notification(title="t", message="m", level=NotificationLevel.SUCCESS)
-        )
+        channel.send(Notification(title="t", message="m", level=NotificationLevel.SUCCESS))
         captured = capsys.readouterr()
         assert "SUCCESS" in captured.out
         assert captured.err == ""
 
     def test_warning_goes_to_stderr(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = TerminalChannel(use_color=False)
-        channel.send(
-            Notification(title="t", message="m", level=NotificationLevel.WARNING)
-        )
+        channel.send(Notification(title="t", message="m", level=NotificationLevel.WARNING))
         captured = capsys.readouterr()
         assert "WARNING" in captured.err
         assert captured.out == ""
@@ -117,24 +113,16 @@ class TestTerminalChannel:
         assert "ERROR" in captured.err
         assert captured.out == ""
 
-    def test_color_codes_present_when_enabled(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_color_codes_present_when_enabled(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = TerminalChannel(use_color=True)
-        channel.send(
-            Notification(title="t", message="m", level=NotificationLevel.SUCCESS)
-        )
+        channel.send(Notification(title="t", message="m", level=NotificationLevel.SUCCESS))
         captured = capsys.readouterr()
         assert "\x1b[32m" in captured.out
         assert "\x1b[0m" in captured.out
 
-    def test_color_codes_absent_when_disabled(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_color_codes_absent_when_disabled(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = TerminalChannel(use_color=False)
-        channel.send(
-            Notification(title="t", message="m", level=NotificationLevel.SUCCESS)
-        )
+        channel.send(Notification(title="t", message="m", level=NotificationLevel.SUCCESS))
         captured = capsys.readouterr()
         assert "\x1b[" not in captured.out
 
@@ -153,17 +141,13 @@ class TestDesktopChannel:
             return_value=MagicMock(returncode=0),
         ) as mock_run:
             channel.send(
-                Notification(
-                    title="t", message="m", level=NotificationLevel.INFO, timestamp=1.0
-                )
+                Notification(title="t", message="m", level=NotificationLevel.INFO, timestamp=1.0)
             )
         mock_run.assert_called_once()
         args, _ = mock_run.call_args
         assert "notify-send" in args[0]
 
-    def test_linux_failure_does_not_raise(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_linux_failure_does_not_raise(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = DesktopChannel()
         channel.platform = "linux"
         with patch(
@@ -182,17 +166,13 @@ class TestDesktopChannel:
             return_value=MagicMock(returncode=0),
         ) as mock_run:
             channel.send(
-                Notification(
-                    title="t", message="m", level=NotificationLevel.INFO, timestamp=1.0
-                )
+                Notification(title="t", message="m", level=NotificationLevel.INFO, timestamp=1.0)
             )
         mock_run.assert_called_once()
         args, _ = mock_run.call_args
         assert "osascript" in args[0]
 
-    def test_unknown_platform_no_op(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_unknown_platform_no_op(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = DesktopChannel()
         channel.platform = "freebsd"
         # Should not raise or print anything.
@@ -231,9 +211,7 @@ class TestWebhookChannel:
         assert kwargs["json"]["metadata"] == {"k": "v"}
         assert kwargs["timeout"] == 10.0
 
-    def test_failure_does_not_raise(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_failure_does_not_raise(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = WebhookChannel(url="https://example.com/hook")
         with patch(
             "justagent.core.notifications.httpx.post",
@@ -257,15 +235,11 @@ class TestWebhookChannel:
         assert kwargs["headers"]["Authorization"] == "Bearer secret"
         assert kwargs["timeout"] == 5.0
 
-    def test_raise_for_status_does_not_raise(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_raise_for_status_does_not_raise(self, capsys: pytest.CaptureFixture[str]) -> None:
         channel = WebhookChannel(url="https://example.com/hook")
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = Exception("HTTP 500")
-        with patch(
-            "justagent.core.notifications.httpx.post", return_value=mock_response
-        ):
+        with patch("justagent.core.notifications.httpx.post", return_value=mock_response):
             channel.send(Notification(title="t", message="m"))
         captured = capsys.readouterr()
         assert "webhook notification failed" in captured.err
@@ -297,12 +271,8 @@ class TestLogChannel:
     def test_appends_multiple_lines(self, tmp_path: Path) -> None:
         log_path = tmp_path / "notifications.log"
         channel = LogChannel(log_path=log_path)
-        channel.send(
-            Notification(title="first", message="m1", level=NotificationLevel.INFO)
-        )
-        channel.send(
-            Notification(title="second", message="m2", level=NotificationLevel.WARNING)
-        )
+        channel.send(Notification(title="first", message="m1", level=NotificationLevel.INFO))
+        channel.send(Notification(title="second", message="m2", level=NotificationLevel.WARNING))
         content = log_path.read_text(encoding="utf-8")
         assert "first" in content
         assert "second" in content
@@ -319,9 +289,7 @@ class TestLogChannel:
         log_path = tmp_path / "notifications.log"
         channel = LogChannel(log_path=log_path)
         # When timestamp=0.0 (default), the channel substitutes time.time().
-        with patch(
-            "justagent.core.notifications.time.time", return_value=1700000000.0
-        ):
+        with patch("justagent.core.notifications.time.time", return_value=1700000000.0):
             channel.send(Notification(title="t", message="m"))
         content = log_path.read_text(encoding="utf-8")
         # The substituted timestamp should produce an ISO8601 string.
@@ -347,18 +315,14 @@ class TestNotificationManager:
         channel = TerminalChannel(use_color=False)
         assert manager.remove_channel(channel) is False
 
-    def test_send_to_all_channels(
-        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
-    ) -> None:
+    def test_send_to_all_channels(self, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
         manager = NotificationManager()
         terminal = TerminalChannel(use_color=False)
         log_path = tmp_path / "n.log"
         log_channel = LogChannel(log_path=log_path)
         manager.add_channel(terminal)
         manager.add_channel(log_channel)
-        results = manager.send(
-            Notification(title="t", message="m", level=NotificationLevel.INFO)
-        )
+        results = manager.send(Notification(title="t", message="m", level=NotificationLevel.INFO))
         captured = capsys.readouterr()
         assert "INFO" in captured.out
         assert log_path.exists()
@@ -428,9 +392,7 @@ class TestNotify:
         assert "world" in captured.out
         assert all(err is None for err in results.values())
 
-    def test_notify_defaults_to_info_level(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_notify_defaults_to_info_level(self, capsys: pytest.CaptureFixture[str]) -> None:
         manager = NotificationManager()
         manager.add_channel(TerminalChannel(use_color=False))
         manager.notify("t", "m")

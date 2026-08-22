@@ -139,16 +139,10 @@ class TruncationService:
             head = "".join(lines[: self.head_lines])
             tail = "".join(lines[-self.tail_lines :])
             omitted = len(lines) - self.head_lines - self.tail_lines
-            preview = (
-                head
-                + f"\n... [{omitted} lines omitted] ...\n\n"
-                + tail
-            )
+            preview = head + f"\n... [{omitted} lines omitted] ...\n\n" + tail
 
         if hint_path:
-            preview += (
-                f"\n[Output truncated. Full output saved to: {hint_path}]"
-            )
+            preview += f"\n[Output truncated. Full output saved to: {hint_path}]"
         return preview
 
     def cleanup_old(self, *, max_age_days: int = DEFAULT_RETENTION_DAYS) -> int:

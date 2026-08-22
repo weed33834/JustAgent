@@ -131,8 +131,7 @@ async def _replace_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         )
 
     return ToolResult.success(
-        f"Successfully applied {len(result.touched)} edit(s) to: "
-        f"{', '.join(result.touched)}",
+        f"Successfully applied {len(result.touched)} edit(s) to: {', '.join(result.touched)}",
         touched=result.touched,
         changes=changes,
     )

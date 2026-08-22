@@ -44,9 +44,7 @@ def resolve_path(
     try:
         resolved.relative_to(base.resolve())
     except ValueError as exc:
-        raise PathResolutionError(
-            f"Path must stay within cwd: {input_path}"
-        ) from exc
+        raise PathResolutionError(f"Path must stay within cwd: {input_path}") from exc
     return resolved
 
 

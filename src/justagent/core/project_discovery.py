@@ -119,9 +119,7 @@ class ProjectDiscovery:
     def __init__(self, config: DiscoveryConfig | None = None) -> None:
         self.config: DiscoveryConfig = config or DiscoveryConfig()
 
-    def detect_type(
-        self, directory: Path
-    ) -> tuple[ProjectType, list[str], bool]:
+    def detect_type(self, directory: Path) -> tuple[ProjectType, list[str], bool]:
         """Detect the project type from markers in ``directory``.
 
         Returns a tuple of ``(project_type, markers_found, has_git)``. When
@@ -139,10 +137,7 @@ class ProjectDiscovery:
                     markers_found.append(marker)
                     if marker == ".git":
                         has_git = True
-                    if (
-                        best_type is None
-                        or _TYPE_PRIORITY[ptype] < _TYPE_PRIORITY[best_type]
-                    ):
+                    if best_type is None or _TYPE_PRIORITY[ptype] < _TYPE_PRIORITY[best_type]:
                         best_type = ptype
             except OSError:
                 # exists() normally swallows errors, but be defensive.
@@ -159,21 +154,15 @@ class ProjectDiscovery:
         """
         root_path = Path(root)
         if not root_path.exists():
-            raise ProjectDiscoveryError(
-                f"scan root does not exist: {root_path}"
-            )
+            raise ProjectDiscoveryError(f"scan root does not exist: {root_path}")
         if not root_path.is_dir():
-            raise ProjectDiscoveryError(
-                f"scan root is not a directory: {root_path}"
-            )
+            raise ProjectDiscoveryError(f"scan root is not a directory: {root_path}")
         results: list[DiscoveredProject] = []
         self._scan(root_path, 0, results)
         results.sort(key=lambda d: d.path)
         return results
 
-    def _scan(
-        self, directory: Path, depth: int, results: list[DiscoveredProject]
-    ) -> None:
+    def _scan(self, directory: Path, depth: int, results: list[DiscoveredProject]) -> None:
         """Recursively scan ``directory`` up to ``max_depth``."""
         if depth > self.config.max_depth:
             return

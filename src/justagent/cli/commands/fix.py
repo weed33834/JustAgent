@@ -264,9 +264,7 @@ def _apply_patch(
     project_root: Path, patch: str, i18n: I18n, tools: ToolsConfig | None = None
 ) -> bool:
     if not _patch_paths_are_safe(project_root, patch):
-        typer.secho(
-            i18n._("fix.patch_unsafe_paths"), fg=typer.colors.YELLOW, err=True
-        )
+        typer.secho(i18n._("fix.patch_unsafe_paths"), fg=typer.colors.YELLOW, err=True)
         return False
 
     verifier = ToolVerifier(tools) if tools else ToolVerifier()

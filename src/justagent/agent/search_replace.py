@@ -300,23 +300,17 @@ def _perfect_replace(
     part_len = len(part_lines)
     for i in range(len(whole_lines) - part_len + 1):
         if part_tup == tuple(whole_lines[i : i + part_len]):
-            return "".join(
-                whole_lines[:i] + replace_lines + whole_lines[i + part_len :]
-            )
+            return "".join(whole_lines[:i] + replace_lines + whole_lines[i + part_len :])
     return None
 
 
-def _match_but_for_leading_whitespace(
-    whole_lines: list[str], part_lines: list[str]
-) -> str | None:
+def _match_but_for_leading_whitespace(whole_lines: list[str], part_lines: list[str]) -> str | None:
     """If ``whole_lines`` matches ``part_lines`` modulo a uniform leading
     whitespace offset, return that offset string; else ``None``.
     """
 
     num = len(whole_lines)
-    if not all(
-        whole_lines[i].lstrip() == part_lines[i].lstrip() for i in range(num)
-    ):
+    if not all(whole_lines[i].lstrip() == part_lines[i].lstrip() for i in range(num)):
         return None
     add = {
         whole_lines[i][: len(whole_lines[i]) - len(part_lines[i])]
@@ -333,16 +327,12 @@ def _replace_part_with_missing_leading_whitespace(
 ) -> str | None:
     """Outdent search & replace uniformly, then look for an exact match."""
 
-    leading: list[int] = [
-        len(p) - len(p.lstrip()) for p in part_lines if p.strip()
-    ]
+    leading: list[int] = [len(p) - len(p.lstrip()) for p in part_lines if p.strip()]
     leading += [len(p) - len(p.lstrip()) for p in replace_lines if p.strip()]
     num_leading = min(leading, default=0)
     if num_leading > 0:
         part_lines = [p[num_leading:] if p.strip() else p for p in part_lines]
-        replace_lines = [
-            p[num_leading:] if p.strip() else p for p in replace_lines
-        ]
+        replace_lines = [p[num_leading:] if p.strip() else p for p in replace_lines]
 
     num_part_lines = len(part_lines)
     for i in range(len(whole_lines) - num_part_lines + 1):
@@ -351,13 +341,8 @@ def _replace_part_with_missing_leading_whitespace(
         )
         if add_leading is None:
             continue
-        new_replace = [
-            add_leading + rline if rline.strip() else rline
-            for rline in replace_lines
-        ]
-        return "".join(
-            whole_lines[:i] + new_replace + whole_lines[i + num_part_lines :]
-        )
+        new_replace = [add_leading + rline if rline.strip() else rline for rline in replace_lines]
+        return "".join(whole_lines[:i] + new_replace + whole_lines[i + num_part_lines :])
     return None
 
 
@@ -369,9 +354,7 @@ def _perfect_or_whitespace(
     result = _perfect_replace(whole_lines, part_lines, replace_lines)
     if result:
         return result
-    return _replace_part_with_missing_leading_whitespace(
-        whole_lines, part_lines, replace_lines
-    )
+    return _replace_part_with_missing_leading_whitespace(whole_lines, part_lines, replace_lines)
 
 
 def _try_dotdotdots(whole: str, part: str, replace: str) -> str | None:
@@ -393,9 +376,7 @@ def _try_dotdotdots(whole: str, part: str, replace: str) -> str | None:
         return None
 
     # Odd-indexed pieces are the ... markers themselves; they must match.
-    all_dots_match = all(
-        part_pieces[i] == replace_pieces[i] for i in range(1, len(part_pieces), 2)
-    )
+    all_dots_match = all(part_pieces[i] == replace_pieces[i] for i in range(1, len(part_pieces), 2))
     if not all_dots_match:
         raise SearchReplaceError("Unmatched ... in SEARCH/REPLACE block")
 
@@ -445,9 +426,7 @@ def _replace_closest_edit_distance(
     if max_similarity < SIMILARITY_THRESHOLD:
         return None
 
-    return "".join(
-        whole_lines[:best_start] + replace_lines + whole_lines[best_end:]
-    )
+    return "".join(whole_lines[:best_start] + replace_lines + whole_lines[best_end:])
 
 
 def _replace_most_similar_chunk(whole: str, part: str, replace: str) -> str | None:
@@ -477,14 +456,10 @@ def _replace_most_similar_chunk(whole: str, part: str, replace: str) -> str | No
         pass
 
     # Final fallback: fuzzy edit-distance match.
-    return _replace_closest_edit_distance(
-        whole_lines, part, part_lines, replace_lines
-    )
+    return _replace_closest_edit_distance(whole_lines, part, part_lines, replace_lines)
 
 
-def _strip_quoted_wrapping(
-    text: str, fname: str | None, fence: tuple[str, str]
-) -> str:
+def _strip_quoted_wrapping(text: str, fname: str | None, fence: tuple[str, str]) -> str:
     """Strip ```` ```\n...\n``` ```` wrapping if present."""
 
     if not text:
@@ -565,13 +540,9 @@ def apply_search_replace(
 
     for edit in edits:
         file_path = _resolve_path(cwd, edit.filename, restrict_to_cwd)
-        existing = (
-            file_path.read_text(encoding=encoding) if file_path.exists() else None
-        )
+        existing = file_path.read_text(encoding=encoding) if file_path.exists() else None
         try:
-            new_content = _do_replace(
-                file_path, existing, edit.search, edit.replace, fence
-            )
+            new_content = _do_replace(file_path, existing, edit.search, edit.replace, fence)
         except SearchReplaceError as exc:
             result.failed.append((edit, str(exc)))
             continue

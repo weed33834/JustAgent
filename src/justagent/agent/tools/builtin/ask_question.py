@@ -10,9 +10,7 @@ from justagent.agent.tools.base import Tool, ToolContext, ToolResult
 class AskQuestionInput(BaseModel):
     """Input for the ``ask_question`` tool."""
 
-    question: str = Field(
-        ..., description="The question to ask the user."
-    )
+    question: str = Field(..., description="The question to ask the user.")
     options: list[str] | None = Field(
         None,
         description=(
@@ -89,9 +87,7 @@ async def _ask_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     if not answer:
         # User dismissed or denied.
         if args.default is not None:
-            return ToolResult.success(
-                args.default, source="default", reason="user dismissed"
-            )
+            return ToolResult.success(args.default, source="default", reason="user dismissed")
         return ToolResult.failure("User dismissed the question without answering.")
 
     return ToolResult.success(str(answer), source="user")

@@ -114,9 +114,7 @@ class RichDisplay:
 
         if self.json_mode or not content:
             return
-        self._console.print(
-            Panel(content, title="🤖 Assistant", border_style="blue")
-        )
+        self._console.print(Panel(content, title="🤖 Assistant", border_style="blue"))
 
     def print_tool_start(self, tool_name: str, input_preview: dict[str, Any]) -> None:
         """Print a tool-start line with a spinner icon."""
@@ -199,9 +197,7 @@ class RichDisplay:
             )
         )
         if not diff_lines:
-            self._console.print(
-                f"  (no changes in {filename})", style="dim"
-            )
+            self._console.print(f"  (no changes in {filename})", style="dim")
             return
         text = Text()
         for line in diff_lines:
@@ -216,9 +212,7 @@ class RichDisplay:
                 text.append(line_stripped + "\n", style="red")
             else:
                 text.append(line_stripped + "\n")
-        self._console.print(
-            Panel(text, title=f"📝 {filename}", border_style="cyan")
-        )
+        self._console.print(Panel(text, title=f"📝 {filename}", border_style="cyan"))
 
     # -- summaries ---------------------------------------------------------
 
@@ -287,9 +281,7 @@ class RichDisplay:
         if self.json_mode:
             return
         content = (
-            f"Mode: {mode}  |  Model: {model}\n"
-            f"CWD:  {cwd}\n"
-            f"Type /help for commands, /exit to quit"
+            f"Mode: {mode}  |  Model: {model}\nCWD:  {cwd}\nType /help for commands, /exit to quit"
         )
         self._console.print(
             Panel(
@@ -299,9 +291,7 @@ class RichDisplay:
             )
         )
 
-    def print_permission_prompt(
-        self, tool: str, description: str
-    ) -> bool:
+    def print_permission_prompt(self, tool: str, description: str) -> bool:
         """Print a permission request and return ``True``/``False``.
 
         Uses Rich's :class:`Confirm` prompt. In JSON mode (no TTY to
@@ -311,9 +301,7 @@ class RichDisplay:
 
         if self.json_mode:
             return True
-        self._console.print(
-            f"\n📋 Permission needed: {description}", style="yellow"
-        )
+        self._console.print(f"\n📋 Permission needed: {description}", style="yellow")
         return Confirm.ask(f"  Approve {tool}?", default=True)
 
     # -- helpers -----------------------------------------------------------

@@ -26,14 +26,22 @@ def upload(
     ctx: typer.Context,
     target: str = typer.Option(..., "--target", help="Upload target, e.g. pypi/docker/github"),
     image: str | None = typer.Option(None, "--image", help="Docker image name"),
-    tag: str | None = typer.Option(None, "--tag", "-t", help="Docker image tag or GitHub release tag"),
+    tag: str | None = typer.Option(
+        None, "--tag", "-t", help="Docker image tag or GitHub release tag"
+    ),
     artifacts: list[str] | None = typer.Option(None, "--artifact", help="Artifacts to upload"),
-    repository: str | None = typer.Option(None, "--repository", help="PyPI repository name (default: testpypi)"),
+    repository: str | None = typer.Option(
+        None, "--repository", help="PyPI repository name (default: testpypi)"
+    ),
     repository_url: str | None = typer.Option(
         None, "--repository-url", help="PyPI repository upload URL"
     ),
-    registry: str | None = typer.Option(None, "--registry", help="Docker registry prefix (e.g. localhost:5000)"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be uploaded without uploading"),
+    registry: str | None = typer.Option(
+        None, "--registry", help="Docker registry prefix (e.g. localhost:5000)"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", "-n", help="Show what would be uploaded without uploading"
+    ),
 ) -> None:
     """Upload artifacts to a configured target."""
     from justagent.adapters.upload.pypi import PyPIUploader

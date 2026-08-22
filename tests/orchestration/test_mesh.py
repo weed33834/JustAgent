@@ -235,9 +235,7 @@ class TestMeshRouterFindBest:
         nodes = _make_nodes()
         router.set_nodes(nodes)
         assert router.find_best_node(AgentCapability.REASONING) == "alpha"
-        assert (
-            router.find_best_node(AgentCapability.REASONING, load={"alpha": 3}) == "beta"
-        )
+        assert router.find_best_node(AgentCapability.REASONING, load={"alpha": 3}) == "beta"
 
     def test_find_best_node_none_when_no_candidate(self) -> None:
         router = MeshRouter()
@@ -282,9 +280,7 @@ class TestMeshRegistration:
     @pytest.mark.asyncio
     async def test_register_node_sets_heartbeat_when_online(self) -> None:
         mesh = AgentMesh()
-        node = MeshNode(
-            id="a", name="alpha", last_heartbeat=0.0, status=MeshNodeStatus.ONLINE
-        )
+        node = MeshNode(id="a", name="alpha", last_heartbeat=0.0, status=MeshNodeStatus.ONLINE)
         await mesh.register_node(node)
         assert node.last_heartbeat > 0.0
 
@@ -320,12 +316,8 @@ class TestMeshRegistration:
     @pytest.mark.asyncio
     async def test_list_nodes_filtered_by_status(self) -> None:
         mesh = AgentMesh()
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha", status=MeshNodeStatus.ONLINE)
-        )
-        await mesh.register_node(
-            MeshNode(id="b", name="beta", status=MeshNodeStatus.OFFLINE)
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha", status=MeshNodeStatus.ONLINE))
+        await mesh.register_node(MeshNode(id="b", name="beta", status=MeshNodeStatus.OFFLINE))
         online = await mesh.list_nodes(status=MeshNodeStatus.ONLINE)
         assert [n.id for n in online] == ["a"]
 
@@ -386,9 +378,7 @@ class TestMeshHeartbeat:
     @pytest.mark.asyncio
     async def test_heartbeat_refreshes_timestamp(self) -> None:
         mesh = AgentMesh()
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha", last_heartbeat=100.0)
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha", last_heartbeat=100.0))
         before = 100.0
         node = await mesh.heartbeat("a")
         assert node is not None
@@ -397,9 +387,7 @@ class TestMeshHeartbeat:
     @pytest.mark.asyncio
     async def test_heartbeat_revives_offline_node(self) -> None:
         mesh = AgentMesh()
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha", status=MeshNodeStatus.OFFLINE)
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha", status=MeshNodeStatus.OFFLINE))
         node = await mesh.heartbeat("a")
         assert node is not None
         assert node.status is MeshNodeStatus.ONLINE
@@ -496,9 +484,7 @@ class TestMeshDirectMessaging:
     @pytest.mark.asyncio
     async def test_send_message_to_offline_returns_empty(self) -> None:
         mesh = AgentMesh()
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha", status=MeshNodeStatus.OFFLINE)
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha", status=MeshNodeStatus.OFFLINE))
         msg = MeshMessage(source="coordinator", target="a")
         assert await mesh.send_message("a", msg) == []
 
@@ -515,9 +501,7 @@ class TestMeshDirectMessaging:
         async def boom(message: MeshMessage) -> dict[str, Any] | None:
             raise RuntimeError("handler down")
 
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha"), handler=boom
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha"), handler=boom)
         msg = MeshMessage(source="coordinator", target="a")
         records = await mesh.send_message("a", msg)
         assert records[0]["delivered"] is False
@@ -539,16 +523,10 @@ class TestMeshBroadcast:
             received.append(message.target or "broadcast")
             return None
 
-        await mesh.register_node(
-            MeshNode(id="a", name="alpha"), handler=handler
-        )
-        await mesh.register_node(
-            MeshNode(id="b", name="beta"), handler=handler
-        )
+        await mesh.register_node(MeshNode(id="a", name="alpha"), handler=handler)
+        await mesh.register_node(MeshNode(id="b", name="beta"), handler=handler)
         # Offline node should be skipped.
-        await mesh.register_node(
-            MeshNode(id="c", name="gamma", status=MeshNodeStatus.OFFLINE)
-        )
+        await mesh.register_node(MeshNode(id="c", name="gamma", status=MeshNodeStatus.OFFLINE))
         msg = MeshMessage(source="coordinator", payload={"ping": 1})
         records = await mesh.broadcast(msg)
         assert {r["node_id"] for r in records} == {"a", "b"}
@@ -671,9 +649,7 @@ class TestMeshInboxAndReporting:
     async def test_stats_reflects_state(self) -> None:
         mesh = AgentMesh()
         await mesh.register_node(MeshNode(id="a", name="alpha"))
-        await mesh.register_node(
-            MeshNode(id="b", name="beta", status=MeshNodeStatus.OFFLINE)
-        )
+        await mesh.register_node(MeshNode(id="b", name="beta", status=MeshNodeStatus.OFFLINE))
         stats = mesh.stats()
         assert stats["total_nodes"] == 2
         assert stats["by_status"]["online"] == 1

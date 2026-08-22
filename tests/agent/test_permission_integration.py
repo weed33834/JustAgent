@@ -100,9 +100,7 @@ def _patch(body: str) -> str:
 
 class TestWriteToFilePermission:
     @pytest.mark.asyncio
-    async def test_calls_request_permission_when_ask_provided(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_calls_request_permission_when_ask_provided(self, tmp_path: Path) -> None:
         """write_to_file must consult the ask callback before writing."""
 
         captured: list[dict[str, Any]] = []
@@ -117,9 +115,7 @@ class TestWriteToFilePermission:
         assert len(captured) == 1
 
     @pytest.mark.asyncio
-    async def test_auto_approves_when_ask_is_none(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_auto_approves_when_ask_is_none(self, tmp_path: Path) -> None:
         """When ask is None, the tool should still work (backward compat)."""
 
         tool = make_write_to_file_tool()
@@ -131,9 +127,7 @@ class TestWriteToFilePermission:
         assert (tmp_path / "new.txt").read_text() == "hello\n"
 
     @pytest.mark.asyncio
-    async def test_denied_permission_returns_failure(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_denied_permission_returns_failure(self, tmp_path: Path) -> None:
         """A denied permission must prevent the write and return failure."""
 
         tool = make_write_to_file_tool()
@@ -147,9 +141,7 @@ class TestWriteToFilePermission:
         assert not (tmp_path / "new.txt").exists()
 
     @pytest.mark.asyncio
-    async def test_ask_receives_correct_request_format(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_ask_receives_correct_request_format(self, tmp_path: Path) -> None:
         """The request dict must include tool, path, description, is_new_file."""
 
         captured: list[dict[str, Any]] = []
@@ -167,9 +159,7 @@ class TestWriteToFilePermission:
         assert req["is_new_file"] is True
 
     @pytest.mark.asyncio
-    async def test_is_new_file_false_for_existing_file(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_is_new_file_false_for_existing_file(self, tmp_path: Path) -> None:
         """is_new_file should be False when overwriting an existing file."""
 
         (tmp_path / "existing.txt").write_text("old\n")
@@ -189,9 +179,7 @@ class TestWriteToFilePermission:
 
 class TestReplaceInFilePermission:
     @pytest.mark.asyncio
-    async def test_calls_request_permission_when_ask_provided(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_calls_request_permission_when_ask_provided(self, tmp_path: Path) -> None:
         """replace_in_file must consult the ask callback before editing."""
 
         (tmp_path / "f.py").write_text("def hello():\n    return 1\n")
@@ -207,9 +195,7 @@ class TestReplaceInFilePermission:
         assert len(captured) == 1
 
     @pytest.mark.asyncio
-    async def test_auto_approves_when_ask_is_none(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_auto_approves_when_ask_is_none(self, tmp_path: Path) -> None:
         """When ask is None, the edit should still apply (backward compat)."""
 
         (tmp_path / "f.py").write_text("def hello():\n    return 1\n")
@@ -223,9 +209,7 @@ class TestReplaceInFilePermission:
         assert (tmp_path / "f.py").read_text() == "def hello():\n    return 2\n"
 
     @pytest.mark.asyncio
-    async def test_denied_permission_returns_failure(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_denied_permission_returns_failure(self, tmp_path: Path) -> None:
         """A denied permission must prevent the edit."""
 
         (tmp_path / "f.py").write_text("def hello():\n    return 1\n")
@@ -241,9 +225,7 @@ class TestReplaceInFilePermission:
         assert (tmp_path / "f.py").read_text() == "def hello():\n    return 1\n"
 
     @pytest.mark.asyncio
-    async def test_ask_receives_correct_request_format(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_ask_receives_correct_request_format(self, tmp_path: Path) -> None:
         """The request dict must include tool, path, description, diff_preview."""
 
         (tmp_path / "f.py").write_text("def hello():\n    return 1\n")
@@ -270,9 +252,7 @@ class TestReplaceInFilePermission:
 
 class TestRunCommandPermission:
     @pytest.mark.asyncio
-    async def test_calls_request_permission_when_ask_provided(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_calls_request_permission_when_ask_provided(self, tmp_path: Path) -> None:
         """run_command must consult the ask callback before spawning."""
 
         captured: list[dict[str, Any]] = []
@@ -286,9 +266,7 @@ class TestRunCommandPermission:
         assert len(captured) == 1
 
     @pytest.mark.asyncio
-    async def test_auto_approves_when_ask_is_none(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_auto_approves_when_ask_is_none(self, tmp_path: Path) -> None:
         """When ask is None, the command should still run (backward compat)."""
 
         tool = make_run_command_tool()
@@ -300,9 +278,7 @@ class TestRunCommandPermission:
         assert "hello" in result.output
 
     @pytest.mark.asyncio
-    async def test_denied_permission_returns_failure(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_denied_permission_returns_failure(self, tmp_path: Path) -> None:
         """A denied permission must prevent the command from running."""
 
         tool = make_run_command_tool()
@@ -314,9 +290,7 @@ class TestRunCommandPermission:
         assert "Permission denied" in (result.error or "")
 
     @pytest.mark.asyncio
-    async def test_ask_receives_correct_request_format(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_ask_receives_correct_request_format(self, tmp_path: Path) -> None:
         """The request dict must include tool, command, description."""
 
         captured: list[dict[str, Any]] = []
@@ -339,9 +313,7 @@ class TestRunCommandPermission:
 
 class TestApplyPatchPermission:
     @pytest.mark.asyncio
-    async def test_calls_request_permission_when_ask_provided(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_calls_request_permission_when_ask_provided(self, tmp_path: Path) -> None:
         """apply_patch must consult the ask callback before applying."""
 
         captured: list[dict[str, Any]] = []
@@ -356,9 +328,7 @@ class TestApplyPatchPermission:
         assert len(captured) == 1
 
     @pytest.mark.asyncio
-    async def test_auto_approves_when_ask_is_none(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_auto_approves_when_ask_is_none(self, tmp_path: Path) -> None:
         """When ask is None, the patch should still apply (backward compat)."""
 
         tool = make_apply_patch_tool()
@@ -371,9 +341,7 @@ class TestApplyPatchPermission:
         assert (tmp_path / "new.txt").read_text() == "hello"
 
     @pytest.mark.asyncio
-    async def test_denied_permission_returns_failure(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_denied_permission_returns_failure(self, tmp_path: Path) -> None:
         """A denied permission must prevent the patch from applying."""
 
         tool = make_apply_patch_tool()
@@ -387,9 +355,7 @@ class TestApplyPatchPermission:
         assert not (tmp_path / "new.txt").exists()
 
     @pytest.mark.asyncio
-    async def test_ask_receives_correct_request_format(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_ask_receives_correct_request_format(self, tmp_path: Path) -> None:
         """The request dict must include tool, description, patch_preview."""
 
         captured: list[dict[str, Any]] = []
@@ -424,9 +390,7 @@ class TestDeniedPermissionNoSideEffects:
         assert not (tmp_path / "deep").exists()
 
     @pytest.mark.asyncio
-    async def test_request_permission_default_allow_when_ask_none(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_request_permission_default_allow_when_ask_none(self, tmp_path: Path) -> None:
         """ctx.request_permission returns True when ask is None."""
 
         ctx = _make_ctx(tmp_path)

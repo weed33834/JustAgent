@@ -174,10 +174,7 @@ class SlashCommandRegistry:
         if command is None:
             return CommandResult(
                 action=CommandAction.DISPLAY,
-                message=(
-                    f"Unknown command: /{name}. "
-                    "Type /help for available commands."
-                ),
+                message=(f"Unknown command: /{name}. Type /help for available commands."),
             )
         return command.handler(args, context or {})
 
@@ -260,10 +257,7 @@ def _handle_mode(args: list[str], context: dict[str, Any]) -> CommandResult:
     if mode not in _VALID_MODES:
         return CommandResult(
             action=CommandAction.DISPLAY,
-            message=(
-                f"Invalid mode: {mode}. "
-                f"Valid modes: {', '.join(_VALID_MODES)}"
-            ),
+            message=(f"Invalid mode: {mode}. Valid modes: {', '.join(_VALID_MODES)}"),
         )
     return CommandResult(
         action=CommandAction.SWITCH_MODE,
@@ -339,10 +333,7 @@ def _handle_checkpoint(args: list[str], context: dict[str, Any]) -> CommandResul
         )
     return CommandResult(
         action=CommandAction.DISPLAY,
-        message=(
-            f"Unknown subcommand: {sub}. "
-            "Usage: /checkpoint [list|restore <id>]"
-        ),
+        message=(f"Unknown subcommand: {sub}. Usage: /checkpoint [list|restore <id>]"),
     )
 
 
@@ -384,9 +375,7 @@ def _handle_skills(args: list[str], context: dict[str, Any]) -> CommandResult:
         found = False
         for skill in skills:
             if str(_get_attr(skill, "name", "")) == skill_name:
-                content = str(
-                    _get_attr(skill, "content", _get_attr(skill, "description", ""))
-                )
+                content = str(_get_attr(skill, "content", _get_attr(skill, "description", "")))
                 found = True
                 break
         if not found:
@@ -400,10 +389,7 @@ def _handle_skills(args: list[str], context: dict[str, Any]) -> CommandResult:
         )
     return CommandResult(
         action=CommandAction.DISPLAY,
-        message=(
-            f"Unknown subcommand: {sub}. "
-            "Usage: /skills [list|load <name>]"
-        ),
+        message=(f"Unknown subcommand: {sub}. Usage: /skills [list|load <name>]"),
     )
 
 
@@ -484,10 +470,7 @@ def _handle_lint(args: list[str], context: dict[str, Any]) -> CommandResult:
     except FileNotFoundError:
         return CommandResult(
             action=CommandAction.DISPLAY,
-            message=(
-                "ruff is not installed or not on PATH. "
-                "Install it with `pip install ruff`."
-            ),
+            message=("ruff is not installed or not on PATH. Install it with `pip install ruff`."),
         )
     output = (result.stdout or "") + (result.stderr or "")
     return CommandResult(
@@ -513,8 +496,7 @@ def _handle_test(args: list[str], context: dict[str, Any]) -> CommandResult:
         return CommandResult(
             action=CommandAction.DISPLAY,
             message=(
-                "pytest is not installed or not on PATH. "
-                "Install it with `pip install pytest`."
+                "pytest is not installed or not on PATH. Install it with `pip install pytest`."
             ),
         )
     except subprocess.TimeoutExpired:
@@ -642,10 +624,7 @@ def _handle_history(args: list[str], context: dict[str, Any]) -> CommandResult:
         # Support both dict-style (``content_preview``) and Message
         # dataclass (``content``) inputs — the REPL passes live Message
         # objects, while tests may pass dicts with a preview field.
-        preview = str(
-            _get_attr(msg, "content_preview", "")
-            or _get_attr(msg, "content", "")
-        )
+        preview = str(_get_attr(msg, "content_preview", "") or _get_attr(msg, "content", ""))
         if len(preview) > 80:
             preview = preview[:77] + "..."
         # Collapse newlines for single-line display.

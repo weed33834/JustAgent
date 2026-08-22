@@ -119,7 +119,9 @@ def telemetry_config(
 
     config_path = ctx.obj.get("config_path")
     if config_path is None:
-        typer.secho(i18n._("config.read_error", exc="no config file path"), fg=typer.colors.RED, err=True)
+        typer.secho(
+            i18n._("config.read_error", exc="no config file path"), fg=typer.colors.RED, err=True
+        )
         raise typer.Exit(code=1)
 
     config_path = Path(config_path)

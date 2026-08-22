@@ -203,9 +203,7 @@ def _reasoning_task() -> AgentTask:
 class TestSelectionStrategies:
     @pytest.mark.asyncio
     async def test_round_robin_cycles_through_agents(self) -> None:
-        coord = TaskCoordinator(
-            config=CoordinatorConfig(strategy=CoordinationStrategy.ROUND_ROBIN)
-        )
+        coord = TaskCoordinator(config=CoordinatorConfig(strategy=CoordinationStrategy.ROUND_ROBIN))
         await coord.register_agent("a", capabilities={AgentCapability.REASONING})
         await coord.register_agent("b", capabilities={AgentCapability.REASONING})
         await coord.register_agent("c", capabilities={AgentCapability.REASONING})
@@ -218,9 +216,7 @@ class TestSelectionStrategies:
 
     @pytest.mark.asyncio
     async def test_round_robin_skips_ineligible(self) -> None:
-        coord = TaskCoordinator(
-            config=CoordinatorConfig(strategy=CoordinationStrategy.ROUND_ROBIN)
-        )
+        coord = TaskCoordinator(config=CoordinatorConfig(strategy=CoordinationStrategy.ROUND_ROBIN))
         await coord.register_agent("a", capabilities={AgentCapability.REASONING})
         await coord.register_agent("b", capabilities={AgentCapability.CODE_GENERATION})
         task = _reasoning_task()
@@ -258,9 +254,7 @@ class TestSelectionStrategies:
 
     @pytest.mark.asyncio
     async def test_priority_picks_highest_priority(self) -> None:
-        coord = TaskCoordinator(
-            config=CoordinatorConfig(strategy=CoordinationStrategy.PRIORITY)
-        )
+        coord = TaskCoordinator(config=CoordinatorConfig(strategy=CoordinationStrategy.PRIORITY))
         await coord.register_agent("low", capabilities={AgentCapability.REASONING}, priority=1)
         await coord.register_agent("high", capabilities={AgentCapability.REASONING}, priority=5)
         task = _reasoning_task()
@@ -268,9 +262,7 @@ class TestSelectionStrategies:
 
     @pytest.mark.asyncio
     async def test_random_returns_eligible_agent(self) -> None:
-        coord = TaskCoordinator(
-            config=CoordinatorConfig(strategy=CoordinationStrategy.RANDOM)
-        )
+        coord = TaskCoordinator(config=CoordinatorConfig(strategy=CoordinationStrategy.RANDOM))
         await coord.register_agent("a", capabilities={AgentCapability.REASONING})
         await coord.register_agent("b", capabilities={AgentCapability.REASONING})
         task = _reasoning_task()
@@ -279,9 +271,7 @@ class TestSelectionStrategies:
 
     @pytest.mark.asyncio
     async def test_select_agent_override_strategy(self) -> None:
-        coord = TaskCoordinator(
-            config=CoordinatorConfig(strategy=CoordinationStrategy.RANDOM)
-        )
+        coord = TaskCoordinator(config=CoordinatorConfig(strategy=CoordinationStrategy.RANDOM))
         await coord.register_agent("a", capabilities={AgentCapability.REASONING})
         await coord.register_agent("b", capabilities={AgentCapability.REASONING})
         task = _reasoning_task()
@@ -310,9 +300,7 @@ class TestDelegation:
         async def handler(task: AgentTask) -> AgentResult:
             return AgentResult(task_id=task.id, status="completed", output="done")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=handler
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=handler)
         task = _reasoning_task()
         result = await coord.delegate(task)
         assert result.succeeded
@@ -337,9 +325,7 @@ class TestDelegation:
         async def handler(task: AgentTask) -> dict[str, Any]:
             return {"status": "completed", "output": "from dict", "data": {"k": "v"}}
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=handler
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=handler)
         task = _reasoning_task()
         result = await coord.delegate(task)
         assert result.succeeded
@@ -427,9 +413,7 @@ class TestTimeoutAndRetry:
                 raise RuntimeError("transient")
             return AgentResult(task_id=task.id, status="completed", output="ok")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=flaky
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=flaky)
         task = _reasoning_task()
         result = await coord.delegate(task)
         assert result.succeeded
@@ -478,9 +462,7 @@ class TestFallback:
             tried.append(task.assigned_to or "")
             return AgentResult(task_id=task.id, status="completed", output="ok")
 
-        await coord.register_agent(
-            "bad", capabilities={AgentCapability.REASONING}, handler=failing
-        )
+        await coord.register_agent("bad", capabilities={AgentCapability.REASONING}, handler=failing)
         await coord.register_agent(
             "good", capabilities={AgentCapability.REASONING}, handler=succeeding
         )
@@ -505,9 +487,7 @@ class TestFallback:
             tried.append(task.assigned_to or "")
             return AgentResult(task_id=task.id, status="completed")
 
-        await coord.register_agent(
-            "bad", capabilities={AgentCapability.REASONING}, handler=failing
-        )
+        await coord.register_agent("bad", capabilities={AgentCapability.REASONING}, handler=failing)
         await coord.register_agent(
             "good", capabilities={AgentCapability.REASONING}, handler=succeeding
         )
@@ -541,9 +521,7 @@ class TestCancelTask:
             await asyncio.sleep(100)
             return AgentResult(task_id=task.id, status="completed")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=blocking
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=blocking)
         my_task = _reasoning_task()
         delegate_task = asyncio.create_task(coord.delegate(my_task))
 
@@ -597,9 +575,7 @@ class TestDelegationTracking:
         async def handler(task: AgentTask) -> AgentResult:
             return AgentResult(task_id=task.id, status="completed", output="ok")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=handler
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=handler)
         task = _reasoning_task()
         await coord.delegate(task)
         record = await coord.get_delegation(task.id)
@@ -617,9 +593,7 @@ class TestDelegationTracking:
         async def failing(task: AgentTask) -> AgentResult:
             raise RuntimeError("nope")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=failing
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=failing)
         task = _reasoning_task()
         result = await coord.delegate(task)
         assert result.status == "failed"
@@ -639,9 +613,7 @@ class TestDelegationTracking:
             await asyncio.sleep(100)
             return AgentResult(task_id=task.id, status="completed")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=blocking
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=blocking)
         my_task = _reasoning_task()
         delegate_task = asyncio.create_task(coord.delegate(my_task))
         await started.wait()
@@ -762,9 +734,7 @@ class TestCoordinatorStats:
         async def handler(task: AgentTask) -> AgentResult:
             return AgentResult(task_id=task.id, status="completed")
 
-        await coord.register_agent(
-            "a", capabilities={AgentCapability.REASONING}, handler=handler
-        )
+        await coord.register_agent("a", capabilities={AgentCapability.REASONING}, handler=handler)
         await coord.delegate(_reasoning_task())
         stats = coord.stats()
         assert stats["delegations"] == 1

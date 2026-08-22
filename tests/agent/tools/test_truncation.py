@@ -79,9 +79,7 @@ class TestTruncationService:
 
     def test_head_tail_keeps_all_when_small_enough(self) -> None:
         # If head + tail >= total lines, just keep everything (no omission).
-        service = TruncationService(
-            max_lines=2, head_lines=10, tail_lines=10
-        )
+        service = TruncationService(max_lines=2, head_lines=10, tail_lines=10)
         content = "\n".join(f"line {i}" for i in range(5)) + "\n"
         result = service.truncate(content, tool_id="test")
         assert result.truncated
@@ -89,9 +87,7 @@ class TestTruncationService:
         assert "lines omitted" not in result.content
 
     def test_custom_output_dir(self, tmp_path) -> None:
-        service = TruncationService(
-            max_lines=5, output_dir=tmp_path / "trunc"
-        )
+        service = TruncationService(max_lines=5, output_dir=tmp_path / "trunc")
         content = "\n".join(f"line {i}" for i in range(20)) + "\n"
         result = service.truncate(content, tool_id="test")
         assert result.output_path is not None

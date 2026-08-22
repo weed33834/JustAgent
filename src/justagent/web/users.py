@@ -102,7 +102,9 @@ class UserStore:
     def _check(self, password: str, stored: str) -> bool:
         try:
             if self._is_legacy(stored):
-                return hmac.compare_digest(self._legacy_hash(password, stored.split("$", 1)[0]), stored)
+                return hmac.compare_digest(
+                    self._legacy_hash(password, stored.split("$", 1)[0]), stored
+                )
             _, iter_str, salt_b64, digest_b64 = stored.split("$", 3)
             digest = hashlib.pbkdf2_hmac(
                 "sha256", password.encode(), base64.b64decode(salt_b64), int(iter_str)
@@ -140,8 +142,7 @@ class UserStore:
 
     def list_users(self) -> list[dict]:
         return [
-            {"username": u, "role": row.get("role", "viewer")}
-            for u, row in self._load().items()
+            {"username": u, "role": row.get("role", "viewer")} for u, row in self._load().items()
         ]
 
     def set_role(self, username: str, role: str, actor_role: str) -> bool:

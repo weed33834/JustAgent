@@ -239,9 +239,7 @@ class TestBuildSystemPrompt:
         assert prompt == MODE_TAG_INSTRUCTIONS
 
     def test_extra_rules_appended_between_base_and_mode_tag(self) -> None:
-        prompt = build_system_prompt(
-            "Base", AgentMode.ACT, extra_rules="Extra rules here"
-        )
+        prompt = build_system_prompt("Base", AgentMode.ACT, extra_rules="Extra rules here")
         base_idx = prompt.index("Base")
         extra_idx = prompt.index("Extra rules here")
         tag_idx = prompt.index(MODE_TAG_INSTRUCTIONS)
@@ -440,9 +438,7 @@ class TestRuntimeModeIntegration:
         runtime = AgentRuntime(
             client=client,
             tools=[],
-            config=AgentRuntimeConfig(
-                max_iterations=3, initial_mode=AgentMode.PLAN
-            ),
+            config=AgentRuntimeConfig(max_iterations=3, initial_mode=AgentMode.PLAN),
         )
         assert runtime.mode is AgentMode.PLAN
 
@@ -488,9 +484,7 @@ class TestRuntimeModeIntegration:
         runtime = AgentRuntime(
             client=client,
             tools=tools,
-            config=AgentRuntimeConfig(
-                max_iterations=3, initial_mode=AgentMode.PLAN
-            ),
+            config=AgentRuntimeConfig(max_iterations=3, initial_mode=AgentMode.PLAN),
         )
         await runtime.run("explore")
         sent_tool_ids = {t.id for t in client._calls[0].tools}
@@ -540,9 +534,7 @@ class TestRuntimeModeIntegration:
         runtime = AgentRuntime(
             client=client,
             tools=[],
-            config=AgentRuntimeConfig(
-                max_iterations=3, initial_mode=AgentMode.YOLO
-            ),
+            config=AgentRuntimeConfig(max_iterations=3, initial_mode=AgentMode.YOLO),
         )
         await runtime.run("go")
         system_msg = client._calls[0].messages[0]
@@ -594,9 +586,7 @@ class TestRuntimeModeIntegration:
         runtime = AgentRuntime(
             client=client,
             tools=tools,
-            config=AgentRuntimeConfig(
-                max_iterations=3, initial_mode=AgentMode.YOLO
-            ),
+            config=AgentRuntimeConfig(max_iterations=3, initial_mode=AgentMode.YOLO),
         )
         await runtime.run("go")
         sent_tool_ids = {t.id for t in client._calls[0].tools}

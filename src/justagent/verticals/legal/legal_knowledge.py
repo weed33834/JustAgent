@@ -460,9 +460,7 @@ class LegalKnowledgeBase:
             key = self._article_key(article.law_name, article.article_number)
             existing_id = self._article_number_index.get(key)
             if existing_id is not None and existing_id != article.id:
-                raise LegalKnowledgeError(
-                    f"Article already exists: {article.citation}"
-                )
+                raise LegalKnowledgeError(f"Article already exists: {article.citation}")
             self._articles[article.id] = article
             self._article_number_index[key] = article.id
 
@@ -471,9 +469,7 @@ class LegalKnowledgeBase:
 
             # Extract concepts into the knowledge graph.
             self._extract_article_concepts(article)
-        logger.info(
-            "Added legal article %s (%s)", article.id, article.citation
-        )
+        logger.info("Added legal article %s (%s)", article.id, article.citation)
         return article
 
     def add_articles(self, articles: list[LegalArticle]) -> int:
@@ -494,9 +490,7 @@ class LegalKnowledgeBase:
         with self._lock:
             return self._articles.get(article_id)
 
-    def find_article(
-        self, law_name: str, article_number: str
-    ) -> LegalArticle | None:
+    def find_article(self, law_name: str, article_number: str) -> LegalArticle | None:
         """Find an article by law name and article number."""
 
         with self._lock:
@@ -552,9 +546,7 @@ class LegalKnowledgeBase:
         with self._lock:
             existing_id = self._case_number_index.get(case.case_number)
             if existing_id is not None and existing_id != case.id:
-                raise LegalKnowledgeError(
-                    f"Case already exists: {case.case_number}"
-                )
+                raise LegalKnowledgeError(f"Case already exists: {case.case_number}")
             self._cases[case.id] = case
             self._case_number_index[case.case_number] = case.id
             self._index_case(case)
@@ -722,9 +714,7 @@ class LegalKnowledgeBase:
         if domain is not None:
             candidates = [c for c in candidates if c.domain is domain]
         if cause_of_action is not None:
-            candidates = [
-                c for c in candidates if c.cause_of_action == cause_of_action
-            ]
+            candidates = [c for c in candidates if c.cause_of_action == cause_of_action]
         if not candidates:
             return []
 
@@ -805,9 +795,7 @@ class LegalKnowledgeBase:
                         related.append(neighbour.name)
 
         # 2. Search articles that mention the concept.
-        article_results = self.search_articles(
-            concept, top_k=5, domain=domain, min_score=0.0
-        )
+        article_results = self.search_articles(concept, top_k=5, domain=domain, min_score=0.0)
         for ar in article_results:
             defining.append(ar.article.citation)
             if not definition and ar.article.content:
@@ -873,9 +861,7 @@ class LegalKnowledgeBase:
     ) -> ConceptExplanation:
         """Async wrapper for :meth:`explain_concept`."""
 
-        return await asyncio.to_thread(
-            self.explain_concept, concept, domain=domain
-        )
+        return await asyncio.to_thread(self.explain_concept, concept, domain=domain)
 
     # ------------------------------------------------------------------
     # Aggregate / summary
@@ -887,9 +873,7 @@ class LegalKnowledgeBase:
         with self._lock:
             domains: dict[str, int] = {}
             for article in self._articles.values():
-                domains[article.domain.value] = (
-                    domains.get(article.domain.value, 0) + 1
-                )
+                domains[article.domain.value] = domains.get(article.domain.value, 0) + 1
             return {
                 "articles": len(self._articles),
                 "cases": len(self._cases),

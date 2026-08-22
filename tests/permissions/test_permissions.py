@@ -75,18 +75,14 @@ class TestEngineBasicCheck:
 
     def test_rule_allows_specific_tool(self) -> None:
         engine = PermissionEngine()
-        engine.add_rule(
-            PermissionRule(tool="read_file", action=PermissionAction.ALLOW)
-        )
+        engine.add_rule(PermissionRule(tool="read_file", action=PermissionAction.ALLOW))
         decision = engine.check("read_file", {"path": "/etc/passwd"})
         assert decision.action is PermissionAction.ALLOW
         assert decision.matched_rule is not None
 
     def test_rule_denies_specific_tool(self) -> None:
         engine = PermissionEngine()
-        engine.add_rule(
-            PermissionRule(tool="write_to_file", action=PermissionAction.DENY)
-        )
+        engine.add_rule(PermissionRule(tool="write_to_file", action=PermissionAction.DENY))
         decision = engine.check("write_to_file", {"path": "/x"})
         assert decision.action is PermissionAction.DENY
 
@@ -103,17 +99,13 @@ class TestEngineBasicCheck:
 
     def test_wildcard_tool_matches_all(self) -> None:
         engine = PermissionEngine()
-        engine.add_rule(
-            PermissionRule(tool="*", action=PermissionAction.ALLOW)
-        )
+        engine.add_rule(PermissionRule(tool="*", action=PermissionAction.ALLOW))
         assert engine.check("any_tool", {"x": 1}).action is PermissionAction.ALLOW
         assert engine.check("other_tool", {"y": 2}).action is PermissionAction.ALLOW
 
     def test_non_matching_tool_uses_default(self) -> None:
         engine = PermissionEngine(default_action=PermissionAction.ASK)
-        engine.add_rule(
-            PermissionRule(tool="read_file", action=PermissionAction.ALLOW)
-        )
+        engine.add_rule(PermissionRule(tool="read_file", action=PermissionAction.ALLOW))
         # write_to_file has no rule → default ASK
         assert engine.check("write_to_file", {"path": "/x"}).action is PermissionAction.ASK
 
@@ -127,28 +119,28 @@ class TestPatternMatching:
     def test_glob_pattern_matches_path(self) -> None:
         engine = PermissionEngine(default_action=PermissionAction.DENY)
         engine.add_rule(
-            PermissionRule(
-                tool="write_to_file", pattern="/tmp/*", action=PermissionAction.ALLOW
-            )
+            PermissionRule(tool="write_to_file", pattern="/tmp/*", action=PermissionAction.ALLOW)
         )
-        assert engine.check("write_to_file", {"path": "/tmp/test.txt"}).action is PermissionAction.ALLOW
-        assert engine.check("write_to_file", {"path": "/home/test.txt"}).action is PermissionAction.DENY
+        assert (
+            engine.check("write_to_file", {"path": "/tmp/test.txt"}).action
+            is PermissionAction.ALLOW
+        )
+        assert (
+            engine.check("write_to_file", {"path": "/home/test.txt"}).action
+            is PermissionAction.DENY
+        )
 
     def test_glob_pattern_matches_command(self) -> None:
         engine = PermissionEngine(default_action=PermissionAction.DENY)
         engine.add_rule(
-            PermissionRule(
-                tool="run_command", pattern="ls *", action=PermissionAction.ALLOW
-            )
+            PermissionRule(tool="run_command", pattern="ls *", action=PermissionAction.ALLOW)
         )
         assert engine.check("run_command", {"command": "ls -la"}).action is PermissionAction.ALLOW
         assert engine.check("run_command", {"command": "rm -rf /"}).action is PermissionAction.DENY
 
     def test_star_pattern_matches_everything(self) -> None:
         engine = PermissionEngine(default_action=PermissionAction.DENY)
-        engine.add_rule(
-            PermissionRule(tool="*", pattern="*", action=PermissionAction.ALLOW)
-        )
+        engine.add_rule(PermissionRule(tool="*", pattern="*", action=PermissionAction.ALLOW))
         assert engine.check("any_tool", {"path": "/anything"}).action is PermissionAction.ALLOW
         assert engine.check("other", {"command": "anything"}).action is PermissionAction.ALLOW
 

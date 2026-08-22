@@ -14,9 +14,7 @@ from justagent.agent.tools.truncation import TruncationService
 class ReadFileInput(BaseModel):
     """Input for the ``read_file`` tool."""
 
-    path: str = Field(
-        ..., description="The absolute or cwd-relative path to read."
-    )
+    path: str = Field(..., description="The absolute or cwd-relative path to read.")
     offset: int | None = Field(
         None,
         description="Line number to start reading from (1-indexed).",
@@ -65,9 +63,7 @@ def _list_directory(path: Path, display: str) -> ToolResult:
     """Return a directory listing."""
 
     try:
-        entries = sorted(
-            path.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower())
-        )
+        entries = sorted(path.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower()))
     except OSError as exc:
         return ToolResult.failure(f"Cannot list directory {display}: {exc}")
 
@@ -76,9 +72,7 @@ def _list_directory(path: Path, display: str) -> ToolResult:
         suffix = "/" if entry.is_dir() else ""
         lines.append(f"{entry.name}{suffix}")
 
-    return ToolResult.success(
-        "\n".join(lines), entry_count=len(lines), is_directory=True
-    )
+    return ToolResult.success("\n".join(lines), entry_count=len(lines), is_directory=True)
 
 
 def _read_file(

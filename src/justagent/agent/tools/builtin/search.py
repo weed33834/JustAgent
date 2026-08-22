@@ -16,9 +16,7 @@ from justagent.agent.tools.truncation import TruncationService
 class SearchInput(BaseModel):
     """Input for the ``search`` tool."""
 
-    pattern: str = Field(
-        ..., description="Regular expression pattern to search for."
-    )
+    pattern: str = Field(..., description="Regular expression pattern to search for.")
     path: str | None = Field(
         None,
         description="Directory to search in (defaults to the agent's cwd).",
@@ -26,8 +24,7 @@ class SearchInput(BaseModel):
     glob: str | None = Field(
         None,
         description=(
-            "Optional filename glob (e.g. ``*.py``) to restrict the search "
-            "to specific file types."
+            "Optional filename glob (e.g. ``*.py``) to restrict the search to specific file types."
         ),
     )
     output_mode: str = Field(
@@ -140,9 +137,7 @@ async def _search_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     try:
         regex = re.compile(args.pattern)
     except re.error as exc:
-        return ToolResult.failure(
-            f"Invalid regex pattern {args.pattern!r}: {exc}"
-        )
+        return ToolResult.failure(f"Invalid regex pattern {args.pattern!r}: {exc}")
 
     # Resolve the search root.
     if args.path:
@@ -156,9 +151,7 @@ async def _search_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     if not root.exists():
         return ToolResult.failure(f"Search path does not exist: {args.path}")
     if not root.is_dir():
-        return ToolResult.failure(
-            f"Search path is not a directory: {args.path}"
-        )
+        return ToolResult.failure(f"Search path is not a directory: {args.path}")
 
     # Compile the glob pattern if provided.
     glob_pattern = args.glob
@@ -168,9 +161,7 @@ async def _search_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
 
             glob_re = re.compile(fnmatch.translate(glob_pattern))
         except re.error as exc:
-            return ToolResult.failure(
-                f"Invalid glob pattern {glob_pattern!r}: {exc}"
-            )
+            return ToolResult.failure(f"Invalid glob pattern {glob_pattern!r}: {exc}")
     else:
         glob_re = None
 
@@ -230,8 +221,7 @@ async def _search_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
 
     if args.output_mode == "count":
         count_lines = [
-            f"{file_counts[p]:>6} {p.relative_to(root)}"
-            for p in sorted(file_counts.keys())
+            f"{file_counts[p]:>6} {p.relative_to(root)}" for p in sorted(file_counts.keys())
         ]
         content = "\n".join(count_lines)
         return ToolResult.success(

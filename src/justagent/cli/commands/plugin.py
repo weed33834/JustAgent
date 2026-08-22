@@ -102,16 +102,12 @@ def _installed_version(package: str) -> Version | None:
     except PackageNotFoundError:
         return None
     except Exception:
-        logger.debug(
-            "Failed to read installed version for %s", package, exc_info=True
-        )
+        logger.debug("Failed to read installed version for %s", package, exc_info=True)
         return None
     try:
         return parse_version(raw)
     except Exception:
-        logger.debug(
-            "Failed to parse version %r for %s", raw, package, exc_info=True
-        )
+        logger.debug("Failed to parse version %r for %s", raw, package, exc_info=True)
         return None
 
 
@@ -132,9 +128,7 @@ def _capabilities_from_permissions(permissions: dict[str, Any] | None) -> Capabi
 
 
 def _capabilities_default() -> CapabilityManifest:
-    return CapabilityManifest(
-        filesystem="read-only", network=False, shell=False, git=False, env=[]
-    )
+    return CapabilityManifest(filesystem="read-only", network=False, shell=False, git=False, env=[])
 
 
 def _confirm_trust(
@@ -151,13 +145,9 @@ def _confirm_trust(
 
     if plugin_trust in (TrustLevel.COMMUNITY, TrustLevel.UNTRUSTED):
         if plugin_trust == TrustLevel.COMMUNITY:
-            typer.echo(
-                i18n._("plugin.install_trust_warning_community", plugin_name=plugin_name)
-            )
+            typer.echo(i18n._("plugin.install_trust_warning_community", plugin_name=plugin_name))
         else:
-            typer.echo(
-                i18n._("plugin.install_trust_warning_untrusted", plugin_name=plugin_name)
-            )
+            typer.echo(i18n._("plugin.install_trust_warning_untrusted", plugin_name=plugin_name))
         typer.echo(
             i18n._(
                 "plugin.install_permissions",
@@ -256,9 +246,7 @@ def plugin_info(
         typer.echo(i18n._("plugin.not_found_in_registry", name=name))
         raise typer.Exit(code=1)
 
-    typer.echo(
-        f"{i18n._('plugin.info.name')}: {plugin.get('name', i18n._('plugin.info.unknown'))}"
-    )
+    typer.echo(f"{i18n._('plugin.info.name')}: {plugin.get('name', i18n._('plugin.info.unknown'))}")
     typer.echo(
         f"{i18n._('plugin.info.version')}: {plugin.get('version', i18n._('plugin.info.unknown'))}"
     )
@@ -377,9 +365,7 @@ def install(
                 i18n._("plugin.no_sandbox_untrusted_blocked", plugin_name=plugin_name)
             )
         if plugin_trust == TrustLevel.COMMUNITY:
-            typer.echo(
-                i18n._("plugin.no_sandbox_community_warning", plugin_name=plugin_name)
-            )
+            typer.echo(i18n._("plugin.no_sandbox_community_warning", plugin_name=plugin_name))
             if not dry_run:
                 confirmation = typer.prompt(i18n._("plugin.no_sandbox_confirm"), prompt_suffix="")
                 if confirmation != plugin_name:
@@ -390,14 +376,16 @@ def install(
     # --- Trust confirmation -------------------------------------------------
     if not dry_run and not skip_trust_check:
         if plugin_trust == TrustLevel.VERIFIED and not sha256 and not signature:
-            typer.echo(
-                i18n._("plugin.install_unverified_signature", plugin_name=plugin_name)
-            )
+            typer.echo(i18n._("plugin.install_unverified_signature", plugin_name=plugin_name))
         _confirm_trust(plugin_name, plugin_trust, capabilities, yes, skip_trust_check, i18n)
 
     # --- General install confirmation ---------------------------------------
-    if not dry_run and not yes and not typer.confirm(
-        i18n._("plugin.install_confirm", plugin_name=plugin_name, source_for_pip=source_for_pip)
+    if (
+        not dry_run
+        and not yes
+        and not typer.confirm(
+            i18n._("plugin.install_confirm", plugin_name=plugin_name, source_for_pip=source_for_pip)
+        )
     ):
         typer.echo(i18n._("common.aborted"))
         raise typer.Exit(code=0)
@@ -437,8 +425,15 @@ def install(
             install_spec,
             sandbox=use_sandbox,
             env_whitelist=[
-                "PATH", "HOME", "USER", "LANG", "LC_ALL",
-                "PIP_INDEX_URL", "VIRTUAL_ENV", "XDG_CACHE_HOME", "UV_CACHE_DIR",
+                "PATH",
+                "HOME",
+                "USER",
+                "LANG",
+                "LC_ALL",
+                "PIP_INDEX_URL",
+                "VIRTUAL_ENV",
+                "XDG_CACHE_HOME",
+                "UV_CACHE_DIR",
             ],
         )
         if result.returncode != 0:
@@ -490,9 +485,7 @@ def uninstall(
     if spec is None:
         raise PluginError(i18n._("plugin.not_registered", name=name))
 
-    if not dry_run and not yes and not typer.confirm(
-        i18n._("plugin.uninstall_confirm", name=name)
-    ):
+    if not dry_run and not yes and not typer.confirm(i18n._("plugin.uninstall_confirm", name=name)):
         typer.echo(i18n._("common.aborted"))
         raise typer.Exit(code=0)
 
@@ -508,9 +501,7 @@ def uninstall(
     try:
         subprocess.run(args, check=True, capture_output=True, text=True)
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
-        raise PluginError(
-            i18n._("plugin.uninstall_failed", name=name, exc=exc)
-        ) from exc
+        raise PluginError(i18n._("plugin.uninstall_failed", name=name, exc=exc)) from exc
 
     registry.remove(name)
 
@@ -720,8 +711,15 @@ def update_plugins(
                 upgrade=True,
                 sandbox=use_sandbox,
                 env_whitelist=[
-                    "PATH", "HOME", "USER", "LANG", "LC_ALL",
-                    "PIP_INDEX_URL", "VIRTUAL_ENV", "XDG_CACHE_HOME", "UV_CACHE_DIR",
+                    "PATH",
+                    "HOME",
+                    "USER",
+                    "LANG",
+                    "LC_ALL",
+                    "PIP_INDEX_URL",
+                    "VIRTUAL_ENV",
+                    "XDG_CACHE_HOME",
+                    "UV_CACHE_DIR",
                 ],
             )
             if result.returncode != 0:
@@ -746,6 +744,4 @@ def update_plugins(
             )
         )
 
-        typer.echo(
-            i18n._("plugin.updated", plugin_name=spec.name, version=latest_version_str)
-        )
+        typer.echo(i18n._("plugin.updated", plugin_name=spec.name, version=latest_version_str))

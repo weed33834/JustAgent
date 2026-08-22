@@ -194,9 +194,7 @@ class TestToolInvoke:
     def test_invoke_validates_and_executes(self) -> None:
         tool = _make_echo_tool()
         ctx = _make_context()
-        result = asyncio.run(
-            tool.invoke({"message": "hello", "uppercase": True}, ctx)
-        )
+        result = asyncio.run(tool.invoke({"message": "hello", "uppercase": True}, ctx))
         assert result.output == "HELLO"
         assert result.metadata["tool_call_id"] == "call-1"
 
@@ -228,9 +226,7 @@ class TestToolInvoke:
         # extra fields are silently dropped.
         tool = _make_echo_tool()
         ctx = _make_context()
-        result = asyncio.run(
-            tool.invoke({"message": "hi", "extra_field": "ignored"}, ctx)
-        )
+        result = asyncio.run(tool.invoke({"message": "hi", "extra_field": "ignored"}, ctx))
         assert result.output == "hi"
 
     def test_invoke_timeout_raises_tool_timeout_error(self) -> None:

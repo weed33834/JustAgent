@@ -186,9 +186,7 @@ class ETLSource(ABC):
         return self._parser
 
     @abstractmethod
-    def extract(
-        self, *, since: float | None = None
-    ) -> Iterator[RawItem]:
+    def extract(self, *, since: float | None = None) -> Iterator[RawItem]:
         """Extract raw items from the source.
 
         Args:
@@ -220,9 +218,7 @@ class ETLSource(ABC):
                 filename=filename,
                 title=item.metadata.get("title"),
                 metadata={
-                    k: v
-                    for k, v in item.metadata.items()
-                    if k not in ("file_name", "title")
+                    k: v for k, v in item.metadata.items() if k not in ("file_name", "title")
                 },
             )
         if item.content is not None and item.content.strip():
@@ -306,9 +302,7 @@ class FilesystemSource(ETLSource):
     def pattern(self) -> str:
         return self._pattern
 
-    def extract(
-        self, *, since: float | None = None
-    ) -> Iterator[RawItem]:
+    def extract(self, *, since: float | None = None) -> Iterator[RawItem]:
         """Extract files from the directory.
 
         Yields one :class:`RawItem` per file. If ``since`` is provided,
@@ -319,8 +313,7 @@ class FilesystemSource(ETLSource):
                 continue
             # Skip excluded directories.
             if any(
-                part in self._exclude_dirs
-                for part in file_path.relative_to(self._directory).parts
+                part in self._exclude_dirs for part in file_path.relative_to(self._directory).parts
             ):
                 continue
             try:
@@ -331,9 +324,7 @@ class FilesystemSource(ETLSource):
 
             # Size check.
             if stat.st_size > self._max_file_size:
-                logger.debug(
-                    "Skipping large file %s (%d bytes)", file_path, stat.st_size
-                )
+                logger.debug("Skipping large file %s (%d bytes)", file_path, stat.st_size)
                 continue
 
             # Incremental: skip files not modified since last sync.
@@ -425,9 +416,7 @@ class DatabaseSource(ETLSource):
 
         return sqlite3.connect(self._connection_string)
 
-    def extract(
-        self, *, since: float | None = None
-    ) -> Iterator[RawItem]:
+    def extract(self, *, since: float | None = None) -> Iterator[RawItem]:
         """Execute the SQL query and yield rows as :class:`RawItem` objects.
 
         If ``since`` is provided and ``modified_column`` is set, a
@@ -455,11 +444,7 @@ class DatabaseSource(ETLSource):
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute(query, params)
-            columns = (
-                [desc[0] for desc in cursor.description]
-                if cursor.description
-                else []
-            )
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
             for row in cursor.fetchall():
                 row_dict = dict(zip(columns, row, strict=False))
                 item_id = str(row_dict.get(self._id_column, uuid.uuid4().hex))
@@ -580,9 +565,7 @@ class APISource(ETLSource):
     def url(self) -> str:
         return self._url
 
-    def extract(
-        self, *, since: float | None = None
-    ) -> Iterator[RawItem]:
+    def extract(self, *, since: float | None = None) -> Iterator[RawItem]:
         """Fetch items from the API endpoint.
 
         If ``since`` is provided and ``modified_field`` is set, a query
@@ -630,9 +613,7 @@ class APISource(ETLSource):
             else:
                 break
 
-        logger.info(
-            "API source %s: extracted %d items", self._source_id, total_yielded
-        )
+        logger.info("API source %s: extracted %d items", self._source_id, total_yielded)
 
     # ------------------------------------------------------------------
     # Internal
@@ -857,9 +838,7 @@ class ETLPipeline:
                     skipped += 1
         except Exception as exc:
             error_msg = str(exc)
-            logger.error(
-                "Sync failed for source %s: %s", source_id, exc, exc_info=True
-            )
+            logger.error("Sync failed for source %s: %s", source_id, exc, exc_info=True)
 
         duration_ms = (time.time() - start) * 1000
 
@@ -916,10 +895,7 @@ class ETLPipeline:
         """Save sync states to a JSON file."""
         file_path = Path(path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            source_id: state.model_dump()
-            for source_id, state in self._states.items()
-        }
+        data = {source_id: state.model_dump() for source_id, state in self._states.items()}
         tmp = file_path.with_suffix(file_path.suffix + ".tmp")
         try:
             tmp.write_text(

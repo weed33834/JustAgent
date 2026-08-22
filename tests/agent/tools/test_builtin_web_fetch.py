@@ -61,9 +61,7 @@ async def test_web_fetch_upgrades_http_to_https() -> None:
             return _FakeResponse()
 
     with patch("httpx.AsyncClient", _FakeClient):
-        result = await tool.invoke(
-            {"url": "http://example.com"}, _make_ctx()
-        )
+        result = await tool.invoke({"url": "http://example.com"}, _make_ctx())
     assert not result.is_error
     assert captured_urls == ["https://example.com"]
     assert "plain text response" in result.output
@@ -72,9 +70,7 @@ async def test_web_fetch_upgrades_http_to_https() -> None:
 @pytest.mark.asyncio
 async def test_web_fetch_invalid_format() -> None:
     tool = make_web_fetch_tool()
-    result = await tool.invoke(
-        {"url": "https://example.com", "format": "bogus"}, _make_ctx()
-    )
+    result = await tool.invoke({"url": "https://example.com", "format": "bogus"}, _make_ctx())
     assert result.is_error
     assert "format" in result.error.lower()
 
@@ -112,9 +108,7 @@ async def test_web_fetch_html_converted_to_markdown() -> None:
             return _FakeResponse()
 
     with patch("httpx.AsyncClient", _FakeClient):
-        result = await tool.invoke(
-            {"url": "https://example.com"}, _make_ctx()
-        )
+        result = await tool.invoke({"url": "https://example.com"}, _make_ctx())
     assert not result.is_error
     # Markdown heading prefix.
     assert "# Title" in result.output
@@ -150,9 +144,7 @@ async def test_web_fetch_raw_format() -> None:
             return _FakeResponse()
 
     with patch("httpx.AsyncClient", _FakeClient):
-        result = await tool.invoke(
-            {"url": "https://example.com", "format": "raw"}, _make_ctx()
-        )
+        result = await tool.invoke({"url": "https://example.com", "format": "raw"}, _make_ctx())
     assert not result.is_error
     # Raw mode should return the original body unchanged.
     assert "<html>" in result.output
@@ -191,9 +183,7 @@ async def test_web_fetch_http_error() -> None:
             return _FakeResponse()
 
     with patch("httpx.AsyncClient", _FakeClient):
-        result = await tool.invoke(
-            {"url": "https://example.com"}, _make_ctx()
-        )
+        result = await tool.invoke({"url": "https://example.com"}, _make_ctx())
     assert result.is_error
     assert "404" in result.error
 

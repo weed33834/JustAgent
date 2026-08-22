@@ -322,16 +322,12 @@ class CaseFile(BaseModel):
     def plaintiff(self) -> Party | None:
         """Return the first plaintiff, or ``None``."""
 
-        return next(
-            (p for p in self.parties if p.role is PartyRole.PLAINTIFF), None
-        )
+        return next((p for p in self.parties if p.role is PartyRole.PLAINTIFF), None)
 
     def defendant(self) -> Party | None:
         """Return the first defendant, or ``None``."""
 
-        return next(
-            (p for p in self.parties if p.role is PartyRole.DEFENDANT), None
-        )
+        return next((p for p in self.parties if p.role is PartyRole.DEFENDANT), None)
 
 
 class CaseContext(BaseModel):
@@ -386,9 +382,7 @@ _CLAIM_RE = re.compile(
     re.DOTALL,
 )
 
-_DATE_RE = re.compile(
-    r"(\d{4})\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})\s*日?"
-)
+_DATE_RE = re.compile(r"(\d{4})\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})\s*日?")
 
 _FACT_MARKER_RE = re.compile(
     r"(事实与理由|事实和理由|事实|案情)[：:]\s*(.+?)(?=诉讼请求|请求事项|$)",
@@ -556,9 +550,7 @@ class CaseManager:
         )
         with self._lock:
             if case_number and case_number in self._case_number_index:
-                raise CaseManagerError(
-                    f"Case number already exists: {case_number}"
-                )
+                raise CaseManagerError(f"Case number already exists: {case_number}")
             self._cases[case.id] = case
             if case_number:
                 self._case_number_index[case_number] = case.id
@@ -666,9 +658,7 @@ class CaseManager:
             _touch(case)
         return case
 
-    def add_disputed_issue(
-        self, case_id: str, issue: DisputedIssue
-    ) -> CaseFile:
+    def add_disputed_issue(self, case_id: str, issue: DisputedIssue) -> CaseFile:
         """Add a disputed issue to a case."""
 
         with self._lock:
@@ -686,9 +676,7 @@ class CaseManager:
             _touch(case)
         return case
 
-    def add_timeline_event(
-        self, case_id: str, event: TimelineEvent
-    ) -> CaseFile:
+    def add_timeline_event(self, case_id: str, event: TimelineEvent) -> CaseFile:
         """Add a timeline event and re-sort the chronology by timestamp."""
 
         with self._lock:
@@ -827,11 +815,7 @@ class CaseManager:
             case = self._cases.get(case_id)
             if case is None:
                 return []
-            return [
-                self._materials[mid]
-                for mid in case.material_ids
-                if mid in self._materials
-            ]
+            return [self._materials[mid] for mid in case.material_ids if mid in self._materials]
 
     # ------------------------------------------------------------------
     # Structured extraction
@@ -898,9 +882,7 @@ class CaseManager:
             for event in extracted["timeline"]:
                 event.source_document_id = document.id
                 case.timeline.append(event)
-            case.timeline.sort(
-                key=lambda e: e.timestamp if e.timestamp > 0 else 0
-            )
+            case.timeline.sort(key=lambda e: e.timestamp if e.timestamp > 0 else 0)
             _touch(case)
 
     def _rule_based_extract(self, content: str) -> dict[str, Any]:
@@ -1206,9 +1188,7 @@ class CaseManager:
             auto_extract=auto_extract,
         )
 
-    async def extract_all_async(
-        self, case_id: str
-    ) -> dict[str, Any]:
+    async def extract_all_async(self, case_id: str) -> dict[str, Any]:
         """Async wrapper for :meth:`extract_all`."""
 
         return await asyncio.to_thread(self.extract_all, case_id)
@@ -1233,9 +1213,7 @@ class CaseManager:
         """Return a compact summary suitable for dashboards."""
 
         with self._lock:
-            active = sum(
-                1 for c in self._cases.values() if c.is_active
-            )
+            active = sum(1 for c in self._cases.values() if c.is_active)
             return {
                 "cases": len(self._cases),
                 "active_cases": active,

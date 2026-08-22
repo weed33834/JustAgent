@@ -162,9 +162,7 @@ class TestBasicCompaction:
         assert result.tokens_before == (100 * 10) // 4
 
     def test_keep_system_prompt_false(self) -> None:
-        config = CompactionConfig(
-            keep_recent_messages=2, mode="basic", keep_system_prompt=False
-        )
+        config = CompactionConfig(keep_recent_messages=2, mode="basic", keep_system_prompt=False)
         compactor = Compactor(config)
         messages = [
             _msg("system", "system-prompt"),
@@ -303,9 +301,7 @@ class TestAgenticCompaction:
             Message(
                 role="assistant",
                 content="",
-                tool_calls=[
-                    ToolCall(id="tc1", name="read_file", input={"path": "/a"})
-                ],
+                tool_calls=[ToolCall(id="tc1", name="read_file", input={"path": "/a"})],
             ),
             _msg("user", "recent"),
         ]
@@ -348,9 +344,7 @@ class TestEstimateTokens:
         compactor = Compactor(CompactionConfig())
         msg = Message(
             role="tool",
-            tool_result=ToolResultPart(
-                tool_call_id="tc1", name="read", output="x" * 40
-            ),
+            tool_result=ToolResultPart(tool_call_id="tc1", name="read", output="x" * 40),
         )
         # 40 chars -> 10 tokens
         assert compactor.estimate_tokens([msg]) == 10
@@ -473,9 +467,7 @@ class TestEdgeCases:
     def test_no_system_prompt_with_system_messages(self) -> None:
         """When keep_system_prompt=False, system messages are removable."""
 
-        config = CompactionConfig(
-            keep_recent_messages=2, keep_system_prompt=False, mode="basic"
-        )
+        config = CompactionConfig(keep_recent_messages=2, keep_system_prompt=False, mode="basic")
         compactor = Compactor(config)
         messages = [
             _msg("system", "sys"),

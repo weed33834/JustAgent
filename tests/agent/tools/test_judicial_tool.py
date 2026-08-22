@@ -78,7 +78,5 @@ def test_tool_fails_without_state() -> None:
     tool = make_judicial_tool()  # no state path
     import asyncio
 
-    result = asyncio.run(
-        tool.invoke(JudicialInput(action="list_cases"), MagicMock())
-    )
+    result = asyncio.run(tool.invoke(JudicialInput(action="list_cases"), MagicMock()))
     assert result.error  # should surface "not configured"

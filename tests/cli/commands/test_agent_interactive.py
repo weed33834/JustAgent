@@ -93,9 +93,7 @@ def _make_mock_runtime(
 
     mock = MagicMock()
     mock.run = MagicMock(side_effect=lambda *a, **kw: _async_wrap(_run_result))
-    mock.continue_run = MagicMock(
-        side_effect=lambda *a, **kw: _async_wrap(_continue_result)
-    )
+    mock.continue_run = MagicMock(side_effect=lambda *a, **kw: _async_wrap(_continue_result))
     mock.reset = MagicMock()
     mock.abort = MagicMock()
     mock.switch_mode = MagicMock()
@@ -129,9 +127,7 @@ class TestInteractiveFlag:
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=EOFError),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -156,9 +152,7 @@ class TestInteractiveFlag:
 
 class TestWelcomeBanner:
     def test_banner_shown_in_pretty_mode(self, capsys: pytest.CaptureFixture) -> None:
-        agent_module._print_welcome_banner(
-            mode="act", model="gpt-4o", cwd="/tmp", json_mode=False
-        )
+        agent_module._print_welcome_banner(mode="act", model="gpt-4o", cwd="/tmp", json_mode=False)
         captured = capsys.readouterr()
         assert "JustAgent Agent" in captured.out
         assert "interactive" in captured.out
@@ -169,9 +163,7 @@ class TestWelcomeBanner:
         assert "/exit" in captured.out
 
     def test_banner_skipped_in_json_mode(self, capsys: pytest.CaptureFixture) -> None:
-        agent_module._print_welcome_banner(
-            mode="act", model="gpt-4o", cwd="/tmp", json_mode=True
-        )
+        agent_module._print_welcome_banner(mode="act", model="gpt-4o", cwd="/tmp", json_mode=True)
         captured = capsys.readouterr()
         assert captured.out == ""
 
@@ -182,9 +174,7 @@ class TestWelcomeBanner:
 
 
 class TestPrintResult:
-    def test_pretty_mode_prints_turn_summary(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    def test_pretty_mode_prints_turn_summary(self, capsys: pytest.CaptureFixture) -> None:
         result = _make_run_result(iterations=2, final_content="hello")
         agent_module._print_result(result, json_mode=False, turn=3)
         captured = capsys.readouterr()
@@ -192,9 +182,7 @@ class TestPrintResult:
         assert "2 iteration" in captured.out
         assert "15 tokens" in captured.out
 
-    def test_json_mode_emits_result_envelope(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    def test_json_mode_emits_result_envelope(self, capsys: pytest.CaptureFixture) -> None:
         result = _make_run_result(final_content="done")
         agent_module._print_result(result, json_mode=True, turn=1)
         captured = capsys.readouterr()
@@ -204,12 +192,8 @@ class TestPrintResult:
         assert parsed["status"] == "completed"
         assert parsed["final_content"] == "done"
 
-    def test_pretty_mode_shows_error_status(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
-        result = _make_run_result(
-            status="failed", error="boom", final_content=""
-        )
+    def test_pretty_mode_shows_error_status(self, capsys: pytest.CaptureFixture) -> None:
+        result = _make_run_result(status="failed", error="boom", final_content="")
         agent_module._print_result(result, json_mode=False, turn=1)
         captured = capsys.readouterr()
         assert "failed" in captured.err or "failed" in captured.out
@@ -231,9 +215,13 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/exit"]):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         # /exit should break before any continue_run call.
         runtime.continue_run.assert_not_called()
@@ -244,9 +232,13 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=EOFError):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.continue_run.assert_not_called()
 
@@ -256,9 +248,13 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=KeyboardInterrupt):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.continue_run.assert_not_called()
 
@@ -269,9 +265,13 @@ class TestRunInteractiveDirect:
         inputs = ["hello world", "/exit"]
         with patch("builtins.input", side_effect=inputs):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.continue_run.assert_called_once_with("hello world")
 
@@ -281,9 +281,13 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/exit"]):
             await agent_module._run_interactive(
-                runtime, "initial task", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "initial task",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.run.assert_called_once_with("initial task")
         runtime.continue_run.assert_not_called()
@@ -295,9 +299,13 @@ class TestRunInteractiveDirect:
         inputs = ["turn one", "turn two", "/exit"]
         with patch("builtins.input", side_effect=inputs):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         assert runtime.continue_run.call_count == 2
         runtime.continue_run.assert_any_call("turn one")
@@ -309,9 +317,13 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/clear", "/exit"]):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.reset.assert_called_once()
 
@@ -321,23 +333,29 @@ class TestRunInteractiveDirect:
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/mode plan", "/exit"]):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.switch_mode.assert_called_once_with(AgentMode.PLAN)
 
     @pytest.mark.asyncio
-    async def test_help_command_displays_output(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    async def test_help_command_displays_output(self, capsys: pytest.CaptureFixture) -> None:
         runtime = _make_mock_runtime()
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/help", "/exit"]):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         captured = capsys.readouterr()
         assert "Available commands" in captured.out
@@ -349,9 +367,13 @@ class TestRunInteractiveDirect:
         inputs = ["", "  ", "real input", "/exit"]
         with patch("builtins.input", side_effect=inputs):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.continue_run.assert_called_once_with("real input")
 
@@ -371,9 +393,13 @@ class TestRunInteractiveDirect:
         inputs = ["first", "second", "/exit"]
         with patch("builtins.input", side_effect=inputs):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.abort.assert_called_once()
         captured = capsys.readouterr()
@@ -387,23 +413,29 @@ class TestRunInteractiveDirect:
         inputs = ["do something", ""]
         with patch("builtins.input", side_effect=inputs):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=True, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=True,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         runtime.continue_run.assert_called_once_with("do something")
 
     @pytest.mark.asyncio
-    async def test_unknown_slash_command_shows_message(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    async def test_unknown_slash_command_shows_message(self, capsys: pytest.CaptureFixture) -> None:
         runtime = _make_mock_runtime()
         registry = create_default_registry()
         with patch("builtins.input", side_effect=["/nonexistent", "/exit"]):
             await agent_module._run_interactive(
-                runtime, "", registry,
-                json_mode=False, verbose=False,
-                model_name="test", cwd="/tmp",
+                runtime,
+                "",
+                registry,
+                json_mode=False,
+                verbose=False,
+                model_name="test",
+                cwd="/tmp",
             )
         captured = capsys.readouterr()
         assert "Unknown command" in captured.out
@@ -422,9 +454,7 @@ class TestAgentInteractiveCli:
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -438,9 +468,7 @@ class TestAgentInteractiveCli:
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=EOFError),
         ):
             result = runner.invoke(app, ["agent", "--interactive"])
@@ -454,9 +482,7 @@ class TestAgentInteractiveCli:
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -464,17 +490,13 @@ class TestAgentInteractiveCli:
         assert "JustAgent Agent" in result.output
         assert "interactive" in result.output
 
-    def test_interactive_with_initial_prompt_then_exit(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_interactive_with_initial_prompt_then_exit(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i", "initial task"])
@@ -482,17 +504,13 @@ class TestAgentInteractiveCli:
         assert result.exit_code == 0
         mock_runtime.run.assert_called_once_with("initial task")
 
-    def test_interactive_regular_input_uses_continue_run(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_interactive_regular_input_uses_continue_run(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["hello there", "/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -500,17 +518,13 @@ class TestAgentInteractiveCli:
         assert result.exit_code == 0
         mock_runtime.continue_run.assert_called_once_with("hello there")
 
-    def test_interactive_clear_command(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_interactive_clear_command(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["/clear", "/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -519,17 +533,13 @@ class TestAgentInteractiveCli:
         mock_runtime.reset.assert_called_once()
         assert "cleared" in result.output.lower()
 
-    def test_interactive_mode_switch(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_interactive_mode_switch(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=["/mode plan", "/exit"]),
         ):
             result = runner.invoke(app, ["agent", "-i"])
@@ -546,9 +556,7 @@ class TestAgentInteractiveCli:
 
         mock_runtime = _make_mock_runtime()
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
             patch("builtins.input", side_effect=EOFError),
         ):
             result = runner.invoke(app, ["agent", "--interactive"])

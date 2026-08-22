@@ -33,17 +33,14 @@ def resolve_under_cwd(
     try:
         resolved = resolved.resolve()
     except (OSError, RuntimeError) as exc:
-        raise PathSafetyError(
-            f"Cannot resolve path {input_path!r}: {exc}"
-        ) from exc
+        raise PathSafetyError(f"Cannot resolve path {input_path!r}: {exc}") from exc
     if not restrict or is_absolute:
         return resolved
     try:
         resolved.relative_to(cwd_path)
     except ValueError as exc:
         raise PathSafetyError(
-            f"Path must stay within cwd: {input_path} "
-            f"(resolved to {resolved})"
+            f"Path must stay within cwd: {input_path} (resolved to {resolved})"
         ) from exc
     return resolved
 

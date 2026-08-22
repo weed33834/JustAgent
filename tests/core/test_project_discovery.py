@@ -296,9 +296,7 @@ class TestDiscoverAndRegister:
         proj.mkdir()
         (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
         store = ProjectStore(store_path=tmp_path / "projects.json")
-        added = ProjectDiscovery().discover_and_register(
-            tmp_path, store, dry_run=True
-        )
+        added = ProjectDiscovery().discover_and_register(tmp_path, store, dry_run=True)
         assert len(added) == 1
         assert store.list_all() == []
 
@@ -307,9 +305,7 @@ class TestDiscoverAndRegister:
         proj.mkdir()
         (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
         store = ProjectStore(store_path=tmp_path / "projects.json")
-        added = ProjectDiscovery().discover_and_register(
-            tmp_path, store, tags=["web", "py"]
-        )
+        added = ProjectDiscovery().discover_and_register(tmp_path, store, tags=["web", "py"])
         assert added[0].tags == ["web", "py"]
         fetched = store.get("myproj")
         assert fetched is not None
@@ -328,9 +324,7 @@ class TestDiscoverAndRegister:
                 tags=["old"],
             )
         )
-        added = ProjectDiscovery().discover_and_register(
-            tmp_path, store, tags=["new"]
-        )
+        added = ProjectDiscovery().discover_and_register(tmp_path, store, tags=["new"])
         # Existing project is not "newly added".
         assert added == []
         fetched = store.get("myproj")
@@ -366,9 +360,7 @@ class TestEdgeCases:
         blocked.mkdir()
         good = tmp_path / "good"
         good.mkdir()
-        (good / "pyproject.toml").write_text(
-            "[project]\nname='x'\n", encoding="utf-8"
-        )
+        (good / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
 
         def fake_iterdir(self: Path) -> object:
             if self == blocked:
@@ -384,9 +376,7 @@ class TestEdgeCases:
     def test_symlinks_skipped(self, tmp_path: Path) -> None:
         proj = tmp_path / "proj"
         proj.mkdir()
-        (proj / "pyproject.toml").write_text(
-            "[project]\nname='x'\n", encoding="utf-8"
-        )
+        (proj / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
         link = tmp_path / "link"
         link.symlink_to(tmp_path)
         results = ProjectDiscovery().discover(tmp_path)

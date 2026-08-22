@@ -44,9 +44,7 @@ def test_resolve_restrict_false_allows_escape(tmp_path: Path) -> None:
     outside = tmp_path.parent / "outside.txt"
     outside.write_text("hi")
     try:
-        resolved = resolve_under_cwd(
-            tmp_path, "../outside.txt", restrict=False
-        )
+        resolved = resolve_under_cwd(tmp_path, "../outside.txt", restrict=False)
         assert resolved == outside.resolve()
     finally:
         outside.unlink()
@@ -56,9 +54,7 @@ def test_path_safety_error_is_tool_error() -> None:
     assert issubclass(PathSafetyError, ToolError)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="symlinks behave differently on Windows"
-)
+@pytest.mark.skipif(sys.platform == "win32", reason="symlinks behave differently on Windows")
 def test_resolve_handles_symlink_inside_cwd(tmp_path: Path) -> None:
     (tmp_path / "real").mkdir()
     (tmp_path / "real" / "file.txt").write_text("hi")
@@ -80,9 +76,7 @@ def test_resolve_with_pathlib_cwd(tmp_path: Path) -> None:
     assert resolved == (tmp_path / "file.txt").resolve()
 
 
-@pytest.mark.skipif(
-    os.name == "nt", reason="path semantics differ on Windows"
-)
+@pytest.mark.skipif(os.name == "nt", reason="path semantics differ on Windows")
 def test_resolve_dangling_symlink_raises(tmp_path: Path) -> None:
     (tmp_path / "dangling").symlink_to(tmp_path / "nope.txt")
     # resolve() on a dangling link returns the link path itself; the

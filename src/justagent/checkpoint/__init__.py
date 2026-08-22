@@ -184,12 +184,8 @@ class CheckpointManager:
         self._run_git("init", "--quiet", cwd=self._shadow_repo)
         # Configure the shadow repo to allow committing as root even
         # though the working tree is elsewhere.
-        self._run_git(
-            "config", "user.name", "justagent-checkpoint", cwd=self._shadow_repo
-        )
-        self._run_git(
-            "config", "user.email", "checkpoint@justagent.local", cwd=self._shadow_repo
-        )
+        self._run_git("config", "user.name", "justagent-checkpoint", cwd=self._shadow_repo)
+        self._run_git("config", "user.email", "checkpoint@justagent.local", cwd=self._shadow_repo)
         # Write the exclude patterns to the shadow repo's
         # .git/info/exclude so they apply when adding files from the
         # project worktree. Using .git/info/exclude (instead of a
@@ -197,9 +193,7 @@ class CheckpointManager:
         # shadow repo, not the user's project.
         exclude_file = self._shadow_repo / ".git" / "info" / "exclude"
         exclude_file.parent.mkdir(parents=True, exist_ok=True)
-        exclude_file.write_text(
-            "\n".join(self._config.exclude_patterns) + "\n", encoding="utf-8"
-        )
+        exclude_file.write_text("\n".join(self._config.exclude_patterns) + "\n", encoding="utf-8")
         self._initialized = True
 
     # ------------------------------------------------------------------
@@ -277,9 +271,7 @@ class CheckpointManager:
                     raise
 
             # Get the commit hash.
-            result = self._run_git(
-                "rev-parse", "--short", "HEAD", cwd=self._shadow_repo
-            )
+            result = self._run_git("rev-parse", "--short", "HEAD", cwd=self._shadow_repo)
             commit_id = result.stdout.strip()
 
             cp = Checkpoint(
@@ -438,9 +430,7 @@ class CheckpointManager:
     # Diff
     # ------------------------------------------------------------------
 
-    def diff(
-        self, checkpoint_id_a: str | None = None, checkpoint_id_b: str | None = None
-    ) -> str:
+    def diff(self, checkpoint_id_a: str | None = None, checkpoint_id_b: str | None = None) -> str:
         """Return a unified diff between two checkpoints.
 
         If ``checkpoint_id_a`` is None, uses the parent of
@@ -579,16 +569,14 @@ class CheckpointManager:
         }
         return f"JUSTAGENT-CP: {json.dumps(envelope, ensure_ascii=False)}"
 
-    def _parse_commit_message(
-        self, short_hash: str, subject: str
-    ) -> Checkpoint | None:
+    def _parse_commit_message(self, short_hash: str, subject: str) -> Checkpoint | None:
         """Parse a commit subject back into a :class:`Checkpoint`."""
 
         prefix = "JUSTAGENT-CP: "
         if not subject.startswith(prefix):
             return None
         try:
-            data = json.loads(subject[len(prefix):])
+            data = json.loads(subject[len(prefix) :])
         except json.JSONDecodeError:
             return None
         return Checkpoint(
@@ -618,9 +606,7 @@ class CheckpointManager:
     def _prune_old_checkpoints(self) -> None:
         """If we exceed max_checkpoints, prune the oldest via gc."""
 
-        result = self._run_git(
-            "rev-list", "--count", "HEAD", cwd=self._shadow_repo, check=False
-        )
+        result = self._run_git("rev-list", "--count", "HEAD", cwd=self._shadow_repo, check=False)
         if result.returncode != 0:
             return
         try:
@@ -682,13 +668,9 @@ class CheckpointManager:
                 cwd=self._shadow_repo,
                 check=False,
             )
-            self._run_git(
-                "branch", "-m", "main", cwd=self._shadow_repo, check=False
-            )
+            self._run_git("branch", "-m", "main", cwd=self._shadow_repo, check=False)
             # gc to actually reclaim space.
-            self._run_git(
-                "gc", "--quiet", "--prune=now", cwd=self._shadow_repo, check=False
-            )
+            self._run_git("gc", "--quiet", "--prune=now", cwd=self._shadow_repo, check=False)
 
 
 def diff_files(

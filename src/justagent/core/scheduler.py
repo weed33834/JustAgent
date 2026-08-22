@@ -278,9 +278,7 @@ def _parse_cron_expression(text: str) -> dict[str, str]:
     """
     fields = text.split()
     if len(fields) != 5:
-        raise SchedulerError(
-            f"cron expression must have 5 fields, got {len(fields)}: {text!r}"
-        )
+        raise SchedulerError(f"cron expression must have 5 fields, got {len(fields)}: {text!r}")
     minute, hour, day, month, weekday = fields
     # Range-check any plain integer literals so "60 * * * *" is rejected.
     _validate_cron_field(minute, 0, 59, "minute")
@@ -317,21 +315,15 @@ def _validate_cron_field(field: str, min_val: int, max_val: int, name: str) -> N
             if not (lo_str.isdigit() and hi_str.isdigit()):
                 raise SchedulerError(f"invalid cron range in {name} field: {field!r}")
             lo, hi = int(lo_str), int(hi_str)
-            if (
-                lo < min_val or hi > max_val or lo > hi
-            ) and not (name == "weekday" and hi == 7):
-                raise SchedulerError(
-                    f"cron {name} out of range [{min_val},{max_val}]: {field!r}"
-                )
+            if (lo < min_val or hi > max_val or lo > hi) and not (name == "weekday" and hi == 7):
+                raise SchedulerError(f"cron {name} out of range [{min_val},{max_val}]: {field!r}")
             continue
         if token.isdigit():
             value = int(token)
             # weekday 7 is a synonym for 0 (Sunday).
             effective_max = max_val if not (name == "weekday" and value == 7) else 7
             if value < min_val or value > effective_max:
-                raise SchedulerError(
-                    f"cron {name} out of range [{min_val},{max_val}]: {field!r}"
-                )
+                raise SchedulerError(f"cron {name} out of range [{min_val},{max_val}]: {field!r}")
             continue
         raise SchedulerError(f"invalid cron token in {name} field: {field!r}")
 

@@ -902,8 +902,7 @@ class EncryptionEngine:
                 return all_keys[0]
 
             raise EncryptionError(
-                "No usable key available; "
-                "create a key with KeyManager.create_key() first"
+                "No usable key available; create a key with KeyManager.create_key() first"
             )
 
     @property

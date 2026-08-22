@@ -23,9 +23,7 @@ def register(parent: typer.Typer) -> None:
 @app.command("list", help="List model backends; with --check run a live health check")
 def list_backends(
     ctx: typer.Context,
-    check: bool = typer.Option(
-        False, "--check", "-c", help="Run a live connectivity health check"
-    ),
+    check: bool = typer.Option(False, "--check", "-c", help="Run a live connectivity health check"),
 ) -> None:
     """Print a table of configured model backends."""
     config: AppConfig = ctx.obj["config"]

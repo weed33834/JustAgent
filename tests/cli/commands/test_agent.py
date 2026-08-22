@@ -437,9 +437,7 @@ class TestEventToDict:
         assert d["iteration"] == 0
 
     def test_turn_started(self) -> None:
-        event = TurnStartedEvent(
-            type="turn-started", run_id="r1", iteration=3
-        )
+        event = TurnStartedEvent(type="turn-started", run_id="r1", iteration=3)
         d = agent_module._event_to_dict(event)
         assert d["iteration"] == 3
 
@@ -537,9 +535,7 @@ class TestEmitCallback:
         assert "Hello, world!" in captured.out
 
     @pytest.mark.asyncio
-    async def test_pretty_mode_tool_started_uses_arrow(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    async def test_pretty_mode_tool_started_uses_arrow(self, capsys: pytest.CaptureFixture) -> None:
         emit = agent_module._make_emit_callback(json_mode=False, verbose=False)
         event = ToolStartedEvent(
             type="tool-started",
@@ -573,9 +569,7 @@ class TestEmitCallback:
         assert "read_file" in captured.out
 
     @pytest.mark.asyncio
-    async def test_pretty_mode_error_tool_uses_x(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:
+    async def test_pretty_mode_error_tool_uses_x(self, capsys: pytest.CaptureFixture) -> None:
         emit = agent_module._make_emit_callback(json_mode=False, verbose=False)
         event = ToolFinishedEvent(
             type="tool-finished",
@@ -620,27 +614,19 @@ class TestStatusToExitCode:
 
 
 class TestAgentCliEndToEnd:
-    def test_agent_runs_and_completes_with_legacy_config(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_runs_and_completes_with_legacy_config(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = MagicMock()
-        mock_runtime.run = MagicMock(
-            return_value=_async_wrap(_make_run_result(status="completed"))
-        )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        mock_runtime.run = MagicMock(return_value=_async_wrap(_make_run_result(status="completed")))
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "say hello"])
 
         assert result.exit_code == 0
         mock_runtime.run.assert_called_once_with("say hello")
 
-    def test_agent_failed_status_returns_one(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_failed_status_returns_one(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -650,16 +636,12 @@ class TestAgentCliEndToEnd:
                 _make_run_result(status="failed", final_content="", error="boom")
             )
         )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "do something"])
 
         assert result.exit_code == 1
 
-    def test_agent_stopped_status_returns_two(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_stopped_status_returns_two(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -669,45 +651,31 @@ class TestAgentCliEndToEnd:
                 _make_run_result(status="stopped", stop_reason="max_iterations")
             )
         )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "loop forever"])
 
         assert result.exit_code == 2
 
-    def test_agent_with_newstyle_config(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_with_newstyle_config(self, tmp_path: Path, monkeypatch) -> None:
         _write_newstyle_model_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = MagicMock()
-        mock_runtime.run = MagicMock(
-            return_value=_async_wrap(_make_run_result())
-        )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        mock_runtime.run = MagicMock(return_value=_async_wrap(_make_run_result()))
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "hello"])
 
         assert result.exit_code == 0
 
-    def test_agent_json_mode_emits_result_envelope(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_json_mode_emits_result_envelope(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = MagicMock()
         mock_runtime.run = MagicMock(
-            return_value=_async_wrap(
-                _make_run_result(status="completed", final_content="All done")
-            )
+            return_value=_async_wrap(_make_run_result(status="completed", final_content="All done"))
         )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "--json", "task"])
 
         assert result.exit_code == 0
@@ -719,9 +687,7 @@ class TestAgentCliEndToEnd:
         assert parsed["status"] == "completed"
         assert parsed["final_content"] == "All done"
 
-    def test_agent_plan_flag_sets_initial_mode(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_plan_flag_sets_initial_mode(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -733,18 +699,14 @@ class TestAgentCliEndToEnd:
             mock.run = MagicMock(return_value=_async_wrap(_make_run_result()))
             return mock
 
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init):
             result = runner.invoke(app, ["agent", "--plan", "explore"])
 
         assert result.exit_code == 0
         runtime_config = captured_config["config"]
         assert runtime_config.initial_mode is AgentMode.PLAN
 
-    def test_agent_yolo_flag_sets_initial_mode(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_yolo_flag_sets_initial_mode(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -756,18 +718,14 @@ class TestAgentCliEndToEnd:
             mock.run = MagicMock(return_value=_async_wrap(_make_run_result()))
             return mock
 
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init):
             result = runner.invoke(app, ["agent", "--yolo", "just do it"])
 
         assert result.exit_code == 0
         runtime_config = captured_config["config"]
         assert runtime_config.initial_mode is AgentMode.YOLO
 
-    def test_agent_yes_flag_sets_yolo_mode(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_yes_flag_sets_yolo_mode(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -779,18 +737,14 @@ class TestAgentCliEndToEnd:
             mock.run = MagicMock(return_value=_async_wrap(_make_run_result()))
             return mock
 
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init):
             result = runner.invoke(app, ["agent", "--yes", "go"])
 
         assert result.exit_code == 0
         runtime_config = captured_config["config"]
         assert runtime_config.initial_mode is AgentMode.YOLO
 
-    def test_agent_mode_flag_explicit(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_mode_flag_explicit(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
@@ -802,38 +756,33 @@ class TestAgentCliEndToEnd:
             mock.run = MagicMock(return_value=_async_wrap(_make_run_result()))
             return mock
 
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init
-        ):
+        with patch("justagent.cli.commands.agent.AgentRuntime", side_effect=fake_init):
             result = runner.invoke(app, ["agent", "--mode", "plan", "explore"])
 
         assert result.exit_code == 0
         runtime_config = captured_config["config"]
         assert runtime_config.initial_mode is AgentMode.PLAN
 
-    def test_agent_cli_overrides_pass_to_llm_client(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_cli_overrides_pass_to_llm_client(self, tmp_path: Path, monkeypatch) -> None:
         # No config file — must rely on CLI overrides.
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = MagicMock()
         mock_runtime.run = MagicMock(return_value=_async_wrap(_make_run_result()))
         with (
-            patch(
-                "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-            ),
-            patch(
-                "justagent.cli.commands.agent.LLMClient"
-            ) as mock_llm_client_class,
+            patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime),
+            patch("justagent.cli.commands.agent.LLMClient") as mock_llm_client_class,
         ):
             result = runner.invoke(
                 app,
                 [
                     "agent",
-                    "--model", "cli-model",
-                    "--api-key", "cli-key",
-                    "--base-url", "https://cli.example/v1",
+                    "--model",
+                    "cli-model",
+                    "--api-key",
+                    "cli-key",
+                    "--base-url",
+                    "https://cli.example/v1",
                     "test",
                 ],
             )
@@ -845,28 +794,20 @@ class TestAgentCliEndToEnd:
         assert call_kwargs["api_key"] == "cli-key"
         assert call_kwargs["base_url"] == "https://cli.example/v1"
 
-    def test_agent_no_api_key_fails_cleanly(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_no_api_key_fails_cleanly(self, tmp_path: Path, monkeypatch) -> None:
         # No config file, no CLI overrides — should fail with BadParameter.
         monkeypatch.chdir(tmp_path)
 
         result = runner.invoke(app, ["agent", "hello"])
         assert result.exit_code != 0
 
-    def test_agent_records_audit_events(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_agent_records_audit_events(self, tmp_path: Path, monkeypatch) -> None:
         _write_legacy_llm_config(tmp_path)
         monkeypatch.chdir(tmp_path)
 
         mock_runtime = MagicMock()
-        mock_runtime.run = MagicMock(
-            return_value=_async_wrap(_make_run_result(status="completed"))
-        )
-        with patch(
-            "justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime
-        ):
+        mock_runtime.run = MagicMock(return_value=_async_wrap(_make_run_result(status="completed")))
+        with patch("justagent.cli.commands.agent.AgentRuntime", return_value=mock_runtime):
             result = runner.invoke(app, ["agent", "task"])
 
         assert result.exit_code == 0

@@ -29,15 +29,19 @@ JudicialAction = Literal[
 class JudicialInput(BaseModel):
     """Input for the ``judicial`` tool."""
 
-    action: JudicialAction = Field(..., description=(
-        "Which judicial operation to run: list_cases, case_summary, "
-        "list_evidence, analyze_evidence, list_laws, search_laws, generate_doc."
-    ))
+    action: JudicialAction = Field(
+        ...,
+        description=(
+            "Which judicial operation to run: list_cases, case_summary, "
+            "list_evidence, analyze_evidence, list_laws, search_laws, generate_doc."
+        ),
+    )
     case_id: str | None = Field(None, description="Case id (prefix match allowed).")
     query: str | None = Field(None, description="Search query (for search_laws).")
     doc_type: str | None = Field(
-        None, description="Legal document type for generate_doc "
-        "(indictment/judgment/ruling/evidence_list/...)."
+        None,
+        description="Legal document type for generate_doc "
+        "(indictment/judgment/ruling/evidence_list/...).",
     )
     domain: str | None = Field(None, description="Legal domain filter (civil/criminal/...).")
 
@@ -196,6 +200,7 @@ def make_judicial_tool(state_path: Path | None = None) -> Tool:
 
 
 __all__ = ["JudicialInput", "make_judicial_tool"]
+
 
 def make_legal_tool(state_root: Path | None = None) -> Tool:
     """Entry-point factory for the ``justagent.tools`` group.

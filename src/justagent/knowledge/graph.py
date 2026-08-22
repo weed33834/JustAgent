@@ -123,19 +123,13 @@ class Relation(BaseModel):
 # ---------------------------------------------------------------------------
 
 # Email pattern.
-_EMAIL_RE = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-)
+_EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
 # URL pattern.
-_URL_RE = re.compile(
-    r"\bhttps?://[^\s<>\"]+|www\.[A-Za-z0-9.-]+\.[A-Za-z]{2,}[^\s<>\"]*"
-)
+_URL_RE = re.compile(r"\bhttps?://[^\s<>\"]+|www\.[A-Za-z0-9.-]+\.[A-Za-z]{2,}[^\s<>\"]*")
 
 # ISO date (2024-01-15, 2024/01/15).
-_DATE_ISO_RE = re.compile(
-    r"\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b"
-)
+_DATE_ISO_RE = re.compile(r"\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b")
 
 # Written date (January 15, 2024 / Jan 15 2024 / 15 January 2024).
 _DATE_WRITTEN_RE = re.compile(
@@ -155,9 +149,7 @@ _DATE_WRITTEN_RE = re.compile(
 )
 
 # Phone number (US/international-ish).
-_PHONE_RE = re.compile(
-    r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b"
-)
+_PHONE_RE = re.compile(r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}\b")
 
 # Money ($100, $1,000.00, 100 USD).
 _MONEY_RE = re.compile(
@@ -167,29 +159,116 @@ _MONEY_RE = re.compile(
 
 # Capitalised phrase (potential person / organisation name).
 # Matches sequences of 1-4 capitalised words, optionally with conjunctions.
-_CAPITALIZED_RE = re.compile(
-    r"\b(?:[A-Z][a-z]+(?:[-\s][A-Z][a-z]+){0,3})\b"
-)
+_CAPITALIZED_RE = re.compile(r"\b(?:[A-Z][a-z]+(?:[-\s][A-Z][a-z]+){0,3})\b")
 
 # Common stop words to filter out from capitalised-phrase matches.
-_CAPITALIZED_STOPWORDS = frozenset({
-    "The", "This", "That", "These", "Those", "A", "An",
-    "In", "On", "At", "To", "For", "Of", "With", "By", "From",
-    "And", "Or", "But", "Not", "If", "Then", "Else", "When",
-    "While", "Is", "Are", "Was", "Were", "Be", "Been", "Being",
-    "Have", "Has", "Had", "Do", "Does", "Did", "Will", "Would",
-    "Could", "Should", "May", "Might", "Must", "Can", "Shall",
-    "It", "He", "She", "We", "They", "You", "I",
-    "There", "Here", "Now", "Today", "Tomorrow", "Yesterday",
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-    "Saturday", "Sunday",
-    "January", "February", "March", "April", "June",
-    "July", "August", "September", "October", "November", "December",
-    "Some", "Any", "All", "Each", "Every", "No", "None",
-    "Which", "What", "Who", "Whom", "Whose", "How", "Why",
-    "However", "Therefore", "Moreover", "Furthermore", "Nevertheless",
-    "Meanwhile", "Finally", "First", "Second", "Third", "Last",
-})
+_CAPITALIZED_STOPWORDS = frozenset(
+    {
+        "The",
+        "This",
+        "That",
+        "These",
+        "Those",
+        "A",
+        "An",
+        "In",
+        "On",
+        "At",
+        "To",
+        "For",
+        "Of",
+        "With",
+        "By",
+        "From",
+        "And",
+        "Or",
+        "But",
+        "Not",
+        "If",
+        "Then",
+        "Else",
+        "When",
+        "While",
+        "Is",
+        "Are",
+        "Was",
+        "Were",
+        "Be",
+        "Been",
+        "Being",
+        "Have",
+        "Has",
+        "Had",
+        "Do",
+        "Does",
+        "Did",
+        "Will",
+        "Would",
+        "Could",
+        "Should",
+        "May",
+        "Might",
+        "Must",
+        "Can",
+        "Shall",
+        "It",
+        "He",
+        "She",
+        "We",
+        "They",
+        "You",
+        "I",
+        "There",
+        "Here",
+        "Now",
+        "Today",
+        "Tomorrow",
+        "Yesterday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+        "January",
+        "February",
+        "March",
+        "April",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+        "Some",
+        "Any",
+        "All",
+        "Each",
+        "Every",
+        "No",
+        "None",
+        "Which",
+        "What",
+        "Who",
+        "Whom",
+        "Whose",
+        "How",
+        "Why",
+        "However",
+        "Therefore",
+        "Moreover",
+        "Furthermore",
+        "Nevertheless",
+        "Meanwhile",
+        "Finally",
+        "First",
+        "Second",
+        "Third",
+        "Last",
+    }
+)
 
 # Relation patterns: (regex, relation_type, source_group, target_group).
 # These patterns look for verb-based relations between two capitalised
@@ -630,9 +709,9 @@ class KnowledgeGraph:
         if name_contains is not None:
             needle = name_contains.lower()
             candidates = [
-                e for e in candidates
-                if needle in e.name.lower()
-                or any(needle in a.lower() for a in e.aliases)
+                e
+                for e in candidates
+                if needle in e.name.lower() or any(needle in a.lower() for a in e.aliases)
             ]
 
         result = sorted(candidates, key=lambda e: e.name.lower())
@@ -775,8 +854,7 @@ class KnowledgeGraph:
         result = [
             self._relations[rid]
             for rid in candidate_ids
-            if rid in self._relations
-            and self._relations[rid].weight >= min_weight
+            if rid in self._relations and self._relations[rid].weight >= min_weight
         ]
         result.sort(key=lambda r: r.weight, reverse=True)
         if limit is not None:
@@ -831,11 +909,7 @@ class KnowledgeGraph:
                     continue
                 neighbour_ids.add(rel.source_entity_id)
 
-        return [
-            self._entities[nid]
-            for nid in neighbour_ids
-            if nid in self._entities
-        ]
+        return [self._entities[nid] for nid in neighbour_ids if nid in self._entities]
 
     def degree(self, entity_id: str, *, direction: str = "both") -> int:
         """Return the degree (number of connections) of an entity."""
@@ -848,9 +922,7 @@ class KnowledgeGraph:
             count += len(self._incoming.get(entity_id, set()))
         return count
 
-    def shortest_path(
-        self, source_id: str, target_id: str, max_depth: int = 5
-    ) -> list[str] | None:
+    def shortest_path(self, source_id: str, target_id: str, max_depth: int = 5) -> list[str] | None:
         """Find the shortest path between two entities (BFS).
 
         Returns a list of entity IDs from source to target, or None if
@@ -1038,9 +1110,7 @@ class KnowledgeGraph:
     # Internal
     # ------------------------------------------------------------------
 
-    def _find_entity(
-        self, name: str, entity_type: str | None = None
-    ) -> str | None:
+    def _find_entity(self, name: str, entity_type: str | None = None) -> str | None:
         """Return the entity ID for a name (case-insensitive), or None."""
         for eid in self._name_index.get(name.lower(), set()):
             entity = self._entities.get(eid)

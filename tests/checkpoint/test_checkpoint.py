@@ -69,15 +69,11 @@ class TestCheckpointDataclass:
         assert cp.metadata == {}
 
     def test_metadata_defaults_to_empty(self) -> None:
-        cp = Checkpoint(
-            id="x", iteration=0, tool_name="", timestamp=0.0, message=""
-        )
+        cp = Checkpoint(id="x", iteration=0, tool_name="", timestamp=0.0, message="")
         assert cp.metadata == {}
 
     def test_is_frozen(self) -> None:
-        cp = Checkpoint(
-            id="x", iteration=0, tool_name="", timestamp=0.0, message=""
-        )
+        cp = Checkpoint(id="x", iteration=0, tool_name="", timestamp=0.0, message="")
         with pytest.raises(AttributeError):
             cp.iteration = 5  # type: ignore[misc]
 
@@ -127,9 +123,7 @@ class TestInitialize:
         mgr = CheckpointManager(project_dir)
         mgr.initialize()
         # Excludes are written to .git/info/exclude in the shadow repo.
-        exclude_file = (
-            project_dir / ".justagent" / "checkpoints" / ".git" / "info" / "exclude"
-        )
+        exclude_file = project_dir / ".justagent" / "checkpoints" / ".git" / "info" / "exclude"
         assert exclude_file.exists()
         content = exclude_file.read_text(encoding="utf-8")
         assert ".git/" in content
@@ -142,9 +136,7 @@ class TestInitialize:
         assert mgr.is_initialized is True
 
     def test_initialize_noop_when_disabled(self, project_dir: Path) -> None:
-        mgr = CheckpointManager(
-            project_dir, CheckpointConfig(enabled=False)
-        )
+        mgr = CheckpointManager(project_dir, CheckpointConfig(enabled=False))
         mgr.initialize()
         assert mgr.is_initialized is False
         assert not (project_dir / ".justagent").exists()
@@ -195,12 +187,8 @@ class TestSnapshot:
         # --allow-empty means even no-change snapshots get a commit.
         assert cp1.id != cp2.id
 
-    def test_snapshot_returns_none_when_disabled(
-        self, project_dir: Path
-    ) -> None:
-        mgr = CheckpointManager(
-            project_dir, CheckpointConfig(enabled=False)
-        )
+    def test_snapshot_returns_none_when_disabled(self, project_dir: Path) -> None:
+        mgr = CheckpointManager(project_dir, CheckpointConfig(enabled=False))
         mgr.initialize()
         cp = mgr.snapshot(iteration=0, message="test")
         assert cp is None
@@ -259,9 +247,7 @@ class TestRestore:
         assert (project_dir / "hello.txt").exists()
         assert (project_dir / "hello.txt").read_text() == "Hello, world!\n"
 
-    def test_restore_removes_new_file(
-        self, manager: CheckpointManager, project_dir: Path
-    ) -> None:
+    def test_restore_removes_new_file(self, manager: CheckpointManager, project_dir: Path) -> None:
         cp = manager.snapshot(iteration=0, message="initial")
         assert cp is not None
         # Add a new file
@@ -281,24 +267,16 @@ class TestRestore:
         assert (project_dir / ".justagent").exists()
         assert (project_dir / ".justagent" / "checkpoints").exists()
 
-    def test_restore_unknown_checkpoint_raises(
-        self, manager: CheckpointManager
-    ) -> None:
+    def test_restore_unknown_checkpoint_raises(self, manager: CheckpointManager) -> None:
         with pytest.raises(CheckpointError):
             manager.restore("nonexistent123")
 
-    def test_restore_when_disabled_raises(
-        self, project_dir: Path
-    ) -> None:
-        mgr = CheckpointManager(
-            project_dir, CheckpointConfig(enabled=False)
-        )
+    def test_restore_when_disabled_raises(self, project_dir: Path) -> None:
+        mgr = CheckpointManager(project_dir, CheckpointConfig(enabled=False))
         with pytest.raises(CheckpointError):
             mgr.restore("abc123")
 
-    def test_restore_full_workflow(
-        self, manager: CheckpointManager, project_dir: Path
-    ) -> None:
+    def test_restore_full_workflow(self, manager: CheckpointManager, project_dir: Path) -> None:
         """Snapshot → modify → snapshot → modify more → restore → verify."""
 
         cp1 = manager.snapshot(iteration=0, message="initial")
@@ -324,16 +302,12 @@ class TestRestore:
 
 
 class TestListCheckpoints:
-    def test_list_returns_empty_before_any_snapshot(
-        self, project_dir: Path
-    ) -> None:
+    def test_list_returns_empty_before_any_snapshot(self, project_dir: Path) -> None:
         mgr = CheckpointManager(project_dir)
         mgr.initialize()
         assert mgr.list_checkpoints() == []
 
-    def test_list_returns_checkpoints_newest_first(
-        self, manager: CheckpointManager
-    ) -> None:
+    def test_list_returns_checkpoints_newest_first(self, manager: CheckpointManager) -> None:
         cp1 = manager.snapshot(iteration=0, message="first")
         time.sleep(0.01)
         cp2 = manager.snapshot(iteration=1, message="second")
@@ -346,9 +320,7 @@ class TestListCheckpoints:
         assert cps[1].id == cp2.id
         assert cps[2].id == cp1.id
 
-    def test_list_preserves_iteration_and_message(
-        self, manager: CheckpointManager
-    ) -> None:
+    def test_list_preserves_iteration_and_message(self, manager: CheckpointManager) -> None:
         manager.snapshot(iteration=7, tool_name="read_file", message="test msg")
         cps = manager.list_checkpoints()
         assert len(cps) == 1
@@ -375,9 +347,7 @@ class TestListCheckpoints:
         assert latest is not None
         assert latest.id == cp2.id
 
-    def test_latest_returns_none_when_empty(
-        self, project_dir: Path
-    ) -> None:
+    def test_latest_returns_none_when_empty(self, project_dir: Path) -> None:
         mgr = CheckpointManager(project_dir)
         mgr.initialize()
         assert mgr.latest() is None
@@ -402,9 +372,7 @@ class TestDiff:
         assert "-Hello, world!" in diff or "-Hello, world!" in diff.replace("\r", "")
         assert "+changed" in diff
 
-    def test_diff_no_changes_returns_empty(
-        self, manager: CheckpointManager
-    ) -> None:
+    def test_diff_no_changes_returns_empty(self, manager: CheckpointManager) -> None:
         cp1 = manager.snapshot(iteration=0, message="first")
         cp2 = manager.snapshot(iteration=1, message="second")
         assert cp1 is not None and cp2 is not None
@@ -498,9 +466,7 @@ class TestRuntimeIntegration:
 
         # Simulate a tool call modifying a file
         (project_dir / "hello.txt").write_text("agent modified\n", encoding="utf-8")
-        cp1 = mgr.snapshot(
-            iteration=1, tool_name="write_to_file", message="after write"
-        )
+        cp1 = mgr.snapshot(iteration=1, tool_name="write_to_file", message="after write")
         assert cp1 is not None
         assert cp0.id != cp1.id
 

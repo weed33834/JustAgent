@@ -64,9 +64,7 @@ class ToolRegistry:
         tool = self._tools.get(tool_id)
         if tool is None:
             available = ", ".join(sorted(self._tools.keys())) or "(empty)"
-            raise KeyError(
-                f"Tool {tool_id!r} is not registered. Available: {available}"
-            )
+            raise KeyError(f"Tool {tool_id!r} is not registered. Available: {available}")
         return tool
 
     def all(self) -> list[Tool]:
@@ -102,9 +100,7 @@ class _InvalidToolInput(BaseModel):
     model_config = {"extra": "allow"}
 
 
-async def _invalid_execute(
-    args: BaseModel, context: ToolContext
-) -> ToolResult:
+async def _invalid_execute(args: BaseModel, context: ToolContext) -> ToolResult:
     """Return an error result for unknown tool calls.
 
     Mirrors OpenCode's ``invalid`` tool. The runtime installs this

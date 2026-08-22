@@ -179,21 +179,15 @@ def _make_tracker(
 class TestMistakeTrackerRecord:
     def test_first_mistake_returns_continue(self) -> None:
         tracker = _make_tracker()
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
         assert outcome.action == "continue"
         assert outcome.guidance is None  # type: ignore[attr-defined]
         assert tracker.value == 1
 
     def test_returns_continue_until_limit_reached(self) -> None:
         tracker = _make_tracker(max_consecutive_mistakes=3)
-        outcome1 = tracker.record(
-            RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR)
-        )
-        outcome2 = tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR)
-        )
+        outcome1 = tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
+        outcome2 = tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
         assert outcome1.action == "continue"
         assert outcome2.action == "continue"
         assert tracker.value == 2
@@ -202,9 +196,7 @@ class TestMistakeTrackerRecord:
         tracker = _make_tracker(max_consecutive_mistakes=3)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
         tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=3, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=3, reason=MistakeReason.API_ERROR))
         assert isinstance(outcome, StopOutcome)
         assert outcome.action == "stop"
         assert "Stopped after 3/3" in outcome.message
@@ -212,9 +204,7 @@ class TestMistakeTrackerRecord:
     def test_stop_outcome_carries_default_reason_when_no_callback(self) -> None:
         tracker = _make_tracker(max_consecutive_mistakes=2)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
         assert isinstance(outcome, StopOutcome)
         assert outcome.reason is not None
         assert "maximum consecutive mistakes reached" in outcome.reason
@@ -225,9 +215,7 @@ class TestMistakeTrackerRecord:
 
         tracker = _make_tracker(max_consecutive_mistakes=2, on_limit_reached=cb)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
         assert isinstance(outcome, ContinueOutcome)
         assert outcome.action == "continue"
         assert outcome.guidance == "try a different model"
@@ -240,9 +228,7 @@ class TestMistakeTrackerRecord:
 
         tracker = _make_tracker(max_consecutive_mistakes=2, on_limit_reached=cb)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
         assert isinstance(outcome, StopOutcome)
         assert outcome.action == "stop"
         assert outcome.reason == "user aborted"
@@ -256,9 +242,7 @@ class TestMistakeTrackerRecord:
 
         tracker = _make_tracker(max_consecutive_mistakes=2, on_limit_reached=cb)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.API_ERROR))
         assert isinstance(outcome, StopOutcome)
         assert outcome.action == "stop"
         assert outcome.reason == "callback blew up"
@@ -308,9 +292,7 @@ class TestMistakeTrackerReset:
         assert tracker.value == 2
         tracker.reset()
         assert tracker.value == 0
-        outcome = tracker.record(
-            RecordMistakeInput(iteration=3, reason=MistakeReason.API_ERROR)
-        )
+        outcome = tracker.record(RecordMistakeInput(iteration=3, reason=MistakeReason.API_ERROR))
         assert outcome.action == "continue"
         assert tracker.value == 1
 
@@ -324,9 +306,7 @@ class TestMistakeTrackerSideEffects:
 
         tracker = _make_tracker(max_consecutive_mistakes=5, emit=emit)
         tracker.record(RecordMistakeInput(iteration=1, reason=MistakeReason.API_ERROR))
-        tracker.record(
-            RecordMistakeInput(iteration=2, reason=MistakeReason.INVALID_TOOL_CALL)
-        )
+        tracker.record(RecordMistakeInput(iteration=2, reason=MistakeReason.INVALID_TOOL_CALL))
         assert len(events) == 2
         assert events[0]["type"] == "error"
         assert events[0]["recoverable"] is True
