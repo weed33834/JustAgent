@@ -59,7 +59,7 @@ changelog entry will not be merged, except for typo/docs-only changes.
 
 - Unit tests go in `tests/unit/`.
 - Integration tests go in `tests/integration/` and are marked with `@pytest.mark.integration`.
-- Coverage must stay at or above 85%. Check with `uv run pytest --cov=justagent`.
+- Coverage is enforced in CI via `--cov-fail-under` (floor: 63%, ratcheted upward as coverage grows). Check locally with `uv run pytest --cov=justagent`.
 
 ## License
 

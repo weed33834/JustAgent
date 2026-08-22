@@ -103,8 +103,10 @@ class TestMeetingServiceLifecycle:
         now = datetime.now(UTC)
         with pytest.raises(MeetingError, match="after start"):
             await svc.create_meeting(
-                title="bad", organizer="a",
-                start_time=now, end_time=now - timedelta(minutes=1),
+                title="bad",
+                organizer="a",
+                start_time=now,
+                end_time=now - timedelta(minutes=1),
             )
 
     async def test_update_and_cancel_rules(self, svc: MeetingService) -> None:
@@ -155,7 +157,9 @@ class TestMeetingServiceLifecycle:
     async def test_agenda_update_status_paths(self, svc: MeetingService) -> None:
         m = await _make_meeting(svc)
         item_id = m.agenda[0].id
-        upd = await svc.update_agenda_item(m.id, item_id, status=AgendaItemStatus.DISCUSSED, notes="ok")
+        upd = await svc.update_agenda_item(
+            m.id, item_id, status=AgendaItemStatus.DISCUSSED, notes="ok"
+        )
         assert upd.status is AgendaItemStatus.DISCUSSED and upd.notes == "ok"
         with pytest.raises(MeetingError, match="Agenda item not found"):
             await svc.update_agenda_item(m.id, "ghost-id")
@@ -182,4 +186,3 @@ class TestMeetingServiceLifecycle:
         assert "Standup" in text and "ship it" in text
         again = await svc.get_minutes(m.id)
         assert again is not None and again.generated_by == "alice"
-

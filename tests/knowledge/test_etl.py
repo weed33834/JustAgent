@@ -73,12 +73,8 @@ class TestDatabaseSource:
     def _seed_db(self, tmp_path: Path) -> Path:
         db = tmp_path / "data.db"
         conn = sqlite3.connect(db)
-        conn.execute(
-            "CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT, updated_at REAL)"
-        )
-        conn.execute(
-            "INSERT INTO notes (id, body, updated_at) VALUES (1, 'first row', 100.0)"
-        )
+        conn.execute("CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT, updated_at REAL)")
+        conn.execute("INSERT INTO notes (id, body, updated_at) VALUES (1, 'first row', 100.0)")
         conn.commit()
         conn.close()
         return db
@@ -86,7 +82,9 @@ class TestDatabaseSource:
     def test_extract_rows_to_raw_items(self, tmp_path: Path) -> None:
         db = self._seed_db(tmp_path)
         src = DatabaseSource(
-            "db1", str(db), "SELECT id, body FROM notes",
+            "db1",
+            str(db),
+            "SELECT id, body FROM notes",
             content_columns=["body"],
         )
         items = list(src.extract())
@@ -103,8 +101,11 @@ class TestDatabaseSource:
             return sqlite3.connect(conn_str)
 
         src = DatabaseSource(
-            "db2", str(db), "SELECT id, body FROM notes",
-            content_columns=["body"], driver=driver,
+            "db2",
+            str(db),
+            "SELECT id, body FROM notes",
+            content_columns=["body"],
+            driver=driver,
         )
         assert len(list(src.extract())) == 1
         assert calls == [str(db)]
@@ -126,9 +127,7 @@ def _mock_urlopen(payload):
         def __exit__(self, *a):
             return False
 
-    return lambda request, timeout=None: _Resp(
-        __import__("json").dumps(payload).encode("utf-8")
-    )
+    return lambda request, timeout=None: _Resp(__import__("json").dumps(payload).encode("utf-8"))
 
 
 class TestAPISource:
@@ -138,8 +137,10 @@ class TestAPISource:
         payload = {"items": [{"id": "a", "title": "Alpha"}, {"id": "b", "title": "Beta"}]}
         monkeypatch.setattr(etl_mod, "urlopen", _mock_urlopen(payload))
         src = APISource(
-            "api1", "https://api.example.com/items",
-            items_path="items", content_fields=["title"],
+            "api1",
+            "https://api.example.com/items",
+            items_path="items",
+            content_fields=["title"],
         )
         items = list(src.extract())
         assert [i.id for i in items] == ["a", "b"]
@@ -153,8 +154,10 @@ class TestAPISource:
         # empty id falls back to a uuid (never skipped); both rows survive
         monkeypatch.setattr(etl_mod, "urlopen", _mock_urlopen(payload))
         src = APISource(
-            "api2", "https://api.example.com/items",
-            items_path="items", content_fields=["title"],
+            "api2",
+            "https://api.example.com/items",
+            items_path="items",
+            content_fields=["title"],
         )
         ids = [i.id for i in src.extract()]
         assert len(ids) == 2 and any(i == "ok" for i in ids)

@@ -236,7 +236,7 @@ uv run mypy src/
 |---------|---------------|
 | CLI フレームワーク | Typer |
 | プラグインシステム | Pluggy |
-| AI ゲートウェイ | LiteLLM |
+| AI ゲートウェイ | OpenAI 公式 SDK（OpenAI 互換プロバイダ対応） |
 | Agent ループ | 自作（ツール呼び出し反復 + 安全制御） |
 | マルチエージェントオーケストレーション | Coordinator / mesh / workflow / decision |
 | ナレッジ層 | RAG · ベクトル · ナレッジグラフ · 文書 ETL |
@@ -292,10 +292,7 @@ src/justagent/
 │   ├── document.py      # 文書処理
 │   └── etl.py           # 抽出 / 変換 / ロード
 ├── communication/       # エージェント間・チーム通信
-│   ├── audit.py         # 監査トレイル
-│   ├── broadcast.py     # ブロードキャスト
 │   ├── meeting.py       # 会議 / 審理調整
-│   ├── messaging.py     # メッセージング
 │   └── notification.py  # 通知
 ├── security/            # 司法グレードのセキュリティ
 │   ├── rbac.py          # ロールベースアクセス制御
