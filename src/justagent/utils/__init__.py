@@ -38,7 +38,7 @@ def utcnow() -> str:
     Previously duplicated in ``resources/storage.py`` and
     ``knowledge/document.py``.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     return datetime.now(UTC).isoformat()
 

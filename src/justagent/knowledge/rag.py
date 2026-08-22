@@ -43,13 +43,10 @@ from justagent.adapters.model_gateway import (
 from justagent.knowledge.document import (
     Document,
     DocumentParser,
-    DocumentStatus,
-    TextChunker,
 )
 from justagent.knowledge.vector import (
     EmbeddingProvider,
     SearchResult,
-    VectorRecord,
     VectorStore,
     create_default_embedder,
     index_document_chunks,

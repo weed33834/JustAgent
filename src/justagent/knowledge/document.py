@@ -34,11 +34,12 @@ import logging
 import re
 import time
 import uuid
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from enum import Enum
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -256,7 +257,7 @@ def detect_type(path: Path | str) -> DocumentType:
 
 def format_timestamp(ts: float) -> str:
     """Format a Unix timestamp as an ISO-8601 UTC string."""
-    return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(ts, tz=UTC).isoformat()
 
 
 # ---------------------------------------------------------------------------

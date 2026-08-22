@@ -19,6 +19,23 @@ jobs:
       - name: Engine/vertical layering rules
         run: bash scripts/layer-check.sh
 
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: uv sync --extra dev --extra web
+      - name: Ruff check
+        run: uv run --no-sync ruff check src tests
+      # Type coverage is still growing; surface drift without blocking.
+      - name: Mypy report (non-blocking)
+        continue-on-error: true
+        run: uv run --no-sync mypy src --ignore-missing-imports
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

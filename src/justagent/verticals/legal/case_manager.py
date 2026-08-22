@@ -942,7 +942,7 @@ class CaseManager:
         claim_match = _CLAIM_RE.search(content)
         if claim_match:
             claim_text = claim_match.group(2).strip()
-            for i, line in enumerate(claim_text.split("\n"), start=1):
+            for _i, line in enumerate(claim_text.split("\n"), start=1):
                 line = line.strip()
                 if line and len(line) > 2:
                     cleaned = re.sub(r"^\d+[\.、）)]\s*", "", line)

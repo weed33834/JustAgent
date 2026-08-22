@@ -216,12 +216,9 @@ class ResourceRecord(BaseModel):
             return False
         if status is not None and self.status is not status:
             return False
-        if tags:
-            if not set(tags).issubset(set(self.tags)):
-                return False
-        if name_contains and name_contains.lower() not in self.name.lower():
+        if tags and not set(tags).issubset(set(self.tags)):
             return False
-        return True
+        return not (name_contains and name_contains.lower() not in self.name.lower())
 
 
 class ResourceRegistryError(Exception):
@@ -400,9 +397,7 @@ class ResourceRegistry:
     # State mutation
     # ------------------------------------------------------------------
 
-    def update_status(
-        self, resource_id: str, status: ResourceStatus
-    ) -> ResourceRecord | None:
+    def update_status(self, resource_id: str, status: ResourceStatus) -> ResourceRecord | None:
         """Set the status of a resource; return the updated record or None."""
 
         with self._lock:
@@ -411,9 +406,7 @@ class ResourceRegistry:
                 return None
             updated = record.model_copy(update={"status": status})
             self._by_id[resource_id] = updated
-            logger.info(
-                "Resource %s status -> %s", record.name, status.value
-            )
+            logger.info("Resource %s status -> %s", record.name, status.value)
             return updated
 
     def heartbeat(self, resource_id: str, at: float | None = None) -> ResourceRecord | None:
@@ -431,15 +424,11 @@ class ResourceRegistry:
             new_status = record.status
             if new_status is ResourceStatus.UNKNOWN:
                 new_status = ResourceStatus.ONLINE
-            updated = record.model_copy(
-                update={"last_heartbeat": ts, "status": new_status}
-            )
+            updated = record.model_copy(update={"last_heartbeat": ts, "status": new_status})
             self._by_id[resource_id] = updated
             return updated
 
-    def update_load(
-        self, resource_id: str, load: ResourceLoad
-    ) -> ResourceRecord | None:
+    def update_load(self, resource_id: str, load: ResourceLoad) -> ResourceRecord | None:
         """Replace the load snapshot for a resource (called by the monitor)."""
 
         with self._lock:
@@ -463,17 +452,17 @@ class ResourceRegistry:
             for rid, record in list(self._by_id.items()):
                 if record.last_heartbeat <= 0.0:
                     continue
-                if now - record.last_heartbeat > max_age_seconds:
-                    if record.status is not ResourceStatus.OFFLINE:
-                        self._by_id[rid] = record.model_copy(
-                            update={"status": ResourceStatus.OFFLINE}
-                        )
-                        flipped.append(rid)
-                        logger.warning(
-                            "Resource %s marked OFFLINE (stale heartbeat, age=%.0fs)",
-                            record.name,
-                            now - record.last_heartbeat,
-                        )
+                if (
+                    now - record.last_heartbeat > max_age_seconds
+                    and record.status is not ResourceStatus.OFFLINE
+                ):
+                    self._by_id[rid] = record.model_copy(update={"status": ResourceStatus.OFFLINE})
+                    flipped.append(rid)
+                    logger.warning(
+                        "Resource %s marked OFFLINE (stale heartbeat, age=%.0fs)",
+                        record.name,
+                        now - record.last_heartbeat,
+                    )
         return flipped
 
     # ------------------------------------------------------------------
@@ -491,9 +480,7 @@ class ResourceRegistry:
     def count_by_status(self) -> dict[ResourceStatus, int]:
         """Return a mapping of status -> count across all resources."""
 
-        counts: dict[ResourceStatus, int] = {
-            status: 0 for status in ResourceStatus
-        }
+        counts: dict[ResourceStatus, int] = dict.fromkeys(ResourceStatus, 0)
         with self._lock:
             for record in self._by_id.values():
                 counts[record.status] = counts.get(record.status, 0) + 1
@@ -512,9 +499,7 @@ class ResourceRegistry:
                 "total": len(self._by_id),
                 "by_type": by_type,
                 "by_status": {s.value: c for s, c in status_counts.items()},
-                "schedulable": sum(
-                    1 for r in self._by_id.values() if r.is_schedulable()
-                ),
+                "schedulable": sum(1 for r in self._by_id.values() if r.is_schedulable()),
             }
 
     def to_dict(self) -> list[dict[str, Any]]:

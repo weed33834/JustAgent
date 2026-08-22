@@ -45,8 +45,9 @@ import re
 import threading
 import time
 import uuid
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -54,7 +55,7 @@ from justagent.exceptions import JustAgentError
 from justagent.utils.atomic_write import atomic_write_text
 
 if TYPE_CHECKING:  # pragma: no cover - import-only type hints
-    from justagent.agent.runtime import LLMClient, LLMRequest, Message
+    from justagent.agent.runtime import LLMClient, Message
     from justagent.knowledge.vector import EmbeddingProvider
 
 logger = logging.getLogger("justagent.agent.memory")

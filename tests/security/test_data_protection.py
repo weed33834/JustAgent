@@ -7,13 +7,12 @@ import asyncio
 import pytest
 
 from justagent.security.data_protection import (
-    DLPAction,
-    DLPError,
-    DLPScanner,
-    DLPRule,
     DataSanitizer,
     DataSensitivityLevel,
-    PIIFinding,
+    DLPAction,
+    DLPError,
+    DLPRule,
+    DLPScanner,
     PIIType,
 )
 

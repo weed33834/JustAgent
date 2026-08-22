@@ -138,10 +138,7 @@ class TestEnums:
         assert LegalDocumentType.AGENCY_OPINION.value == "agency_opinion"
         assert LegalDocumentType.LEGAL_OPINION.value == "legal_opinion"
         assert LegalDocumentType.EVIDENCE_LIST.value == "evidence_list"
-        assert (
-            LegalDocumentType.CROSS_EXAMINATION_OPINION.value
-            == "cross_examination_opinion"
-        )
+        assert LegalDocumentType.CROSS_EXAMINATION_OPINION.value == "cross_examination_opinion"
 
 
 # ---------------------------------------------------------------------------
@@ -191,9 +188,7 @@ class TestDataModels:
         assert cv.matched_article_id == ""
 
     def test_generated_document_defaults(self) -> None:
-        doc = GeneratedDocument(
-            case_id="case-1", doc_type=LegalDocumentType.INDICTMENT
-        )
+        doc = GeneratedDocument(case_id="case-1", doc_type=LegalDocumentType.INDICTMENT)
         assert doc.case_id == "case-1"
         assert doc.doc_type is LegalDocumentType.INDICTMENT
         assert doc.all_citations_valid is True
@@ -293,7 +288,9 @@ class TestTemplateManager:
 
 
 class TestGeneratorProperties:
-    def test_case_manager_property(self, generator: LegalDocumentGenerator, manager: CaseManager) -> None:
+    def test_case_manager_property(
+        self, generator: LegalDocumentGenerator, manager: CaseManager
+    ) -> None:
         assert generator.case_manager is manager
 
     def test_template_manager_property(self, generator: LegalDocumentGenerator) -> None:
@@ -320,7 +317,9 @@ class TestGeneratorProperties:
 
 
 class TestGenerationTemplateOnly:
-    def test_generate_indictment(self, generator: LegalDocumentGenerator, case_with_data: str) -> None:
+    def test_generate_indictment(
+        self, generator: LegalDocumentGenerator, case_with_data: str
+    ) -> None:
         doc = generator.generate(case_with_data, LegalDocumentType.INDICTMENT)
         assert doc.case_id == case_with_data
         assert doc.doc_type is LegalDocumentType.INDICTMENT
@@ -328,14 +327,16 @@ class TestGenerationTemplateOnly:
         assert doc.content
         assert "甲公司" in doc.content or "plaintiff" in doc.content
 
-    def test_generate_with_title(self, generator: LegalDocumentGenerator, case_with_data: str) -> None:
-        doc = generator.generate(
-            case_with_data, LegalDocumentType.INDICTMENT, title="民事起诉状"
-        )
+    def test_generate_with_title(
+        self, generator: LegalDocumentGenerator, case_with_data: str
+    ) -> None:
+        doc = generator.generate(case_with_data, LegalDocumentType.INDICTMENT, title="民事起诉状")
         assert doc.title == "民事起诉状"
         assert doc.content.startswith("民事起诉状")
 
-    def test_generate_metadata(self, generator: LegalDocumentGenerator, case_with_data: str) -> None:
+    def test_generate_metadata(
+        self, generator: LegalDocumentGenerator, case_with_data: str
+    ) -> None:
         doc = generator.generate(case_with_data, LegalDocumentType.JUDGMENT)
         assert doc.metadata["used_llm"] is False
         assert doc.metadata["template_id"]
@@ -360,23 +361,21 @@ class TestGenerationTemplateOnly:
         assert doc.content
 
     def test_generate_case_not_found(self, generator: LegalDocumentGenerator) -> None:
-        with pytest.raises(Exception):
+        from justagent.verticals.legal.case_manager import CaseManagerError
+
+        with pytest.raises(CaseManagerError):
             generator.generate("nonexistent", LegalDocumentType.INDICTMENT)
 
     def test_generate_with_knowledge_base(
         self, manager: CaseManager, case_with_data: str, knowledge_base: LegalKnowledgeBase
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         doc = gen.generate(case_with_data, LegalDocumentType.INDICTMENT, verify=False)
         assert doc.content
         # Legal context should reference the knowledge base.
         assert "民法典" in doc.content or "暂无" in doc.content
 
-    def test_generate_with_evidence_chain(
-        self, manager: CaseManager, case_with_data: str
-    ) -> None:
+    def test_generate_with_evidence_chain(self, manager: CaseManager, case_with_data: str) -> None:
         chain = EvidenceChain()
         chain.add_evidence(
             Evidence(
@@ -389,9 +388,7 @@ class TestGenerationTemplateOnly:
                 collection_method="当事人提供",
             )
         )
-        gen = LegalDocumentGenerator(
-            case_manager=manager, evidence_chain=chain
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, evidence_chain=chain)
         doc = gen.generate(case_with_data, LegalDocumentType.JUDGMENT, verify=False)
         assert "证据" in doc.content or "暂无" in doc.content
 
@@ -402,9 +399,7 @@ class TestGenerationTemplateOnly:
 
 
 class TestLLMGeneration:
-    def test_generate_with_llm(
-        self, manager: CaseManager, case_with_data: str
-    ) -> None:
+    def test_generate_with_llm(self, manager: CaseManager, case_with_data: str) -> None:
         llm_response = (
             "## 当事人信息\n原告：甲公司\n被告：乙公司\n\n"
             "## 诉讼请求\n判令被告支付货款100万元\n\n"
@@ -430,14 +425,9 @@ class TestLLMGeneration:
         assert doc.content
 
     def test_parse_llm_output(self) -> None:
-        output = (
-            "## 标题1\n内容1\n\n"
-            "## 标题2\n内容2\n"
-        )
+        output = "## 标题1\n内容1\n\n## 标题2\n内容2\n"
         sections = LegalDocumentGenerator._parse_llm_output(
-            output, LegalDocumentTemplate(
-                doc_type=LegalDocumentType.INDICTMENT, name="x"
-            )
+            output, LegalDocumentTemplate(doc_type=LegalDocumentType.INDICTMENT, name="x")
         )
         assert len(sections) == 2
         assert sections[0].title == "标题1"
@@ -447,18 +437,14 @@ class TestLLMGeneration:
     def test_parse_llm_output_no_headings(self) -> None:
         output = "纯文本内容没有标题"
         sections = LegalDocumentGenerator._parse_llm_output(
-            output, LegalDocumentTemplate(
-                doc_type=LegalDocumentType.INDICTMENT, name="x"
-            )
+            output, LegalDocumentTemplate(doc_type=LegalDocumentType.INDICTMENT, name="x")
         )
         assert len(sections) == 1
         assert sections[0].content == "纯文本内容没有标题"
 
     def test_parse_llm_output_empty(self) -> None:
         sections = LegalDocumentGenerator._parse_llm_output(
-            "", LegalDocumentTemplate(
-                doc_type=LegalDocumentType.INDICTMENT, name="x"
-            )
+            "", LegalDocumentTemplate(doc_type=LegalDocumentType.INDICTMENT, name="x")
         )
         assert len(sections) == 1
 
@@ -489,9 +475,7 @@ class TestCitationVerification:
     def test_verify_citations_with_kb(
         self, manager: CaseManager, knowledge_base: LegalKnowledgeBase
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         results = gen.verify_citations(["《民法典》第595条"])
         assert len(results) == 1
         assert results[0].is_valid is True
@@ -501,9 +485,7 @@ class TestCitationVerification:
     def test_verify_citations_repealed_article(
         self, manager: CaseManager, knowledge_base: LegalKnowledgeBase
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         results = gen.verify_citations(["《民法典》第143条"])
         assert len(results) == 1
         assert results[0].is_valid is False
@@ -512,9 +494,7 @@ class TestCitationVerification:
     def test_verify_citations_not_found(
         self, manager: CaseManager, knowledge_base: LegalKnowledgeBase
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         results = gen.verify_citations(["《不存在法》第999条"])
         assert len(results) == 1
         # With articles in the KB, fuzzy matching returns a result.
@@ -525,17 +505,13 @@ class TestCitationVerification:
     def test_verify_citations_not_found_empty_kb(self, manager: CaseManager) -> None:
         # With an empty knowledge base, no fuzzy match is possible.
         empty_kb = LegalKnowledgeBase()
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=empty_kb
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=empty_kb)
         results = gen.verify_citations(["《不存在法》第999条"])
         assert len(results) == 1
         assert results[0].is_valid is False
         assert any("not found" in issue for issue in results[0].issues)
 
-    def test_verify_citations_malformed(
-        self, generator: LegalDocumentGenerator
-    ) -> None:
+    def test_verify_citations_malformed(self, generator: LegalDocumentGenerator) -> None:
         results = generator.verify_citations(["这不是一个引用"])
         assert len(results) == 1
         assert results[0].is_valid is False
@@ -548,9 +524,7 @@ class TestCitationVerification:
     def test_verify_document(
         self, manager: CaseManager, knowledge_base: LegalKnowledgeBase, case_with_data: str
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         doc = gen.generate(case_with_data, LegalDocumentType.INDICTMENT, verify=False)
         # Manually set citations and verify.
         doc.citations = ["《民法典》第595条"]
@@ -561,9 +535,7 @@ class TestCitationVerification:
     def test_generate_with_verify_flag(
         self, manager: CaseManager, knowledge_base: LegalKnowledgeBase, case_with_data: str
     ) -> None:
-        gen = LegalDocumentGenerator(
-            case_manager=manager, knowledge_base=knowledge_base
-        )
+        gen = LegalDocumentGenerator(case_manager=manager, knowledge_base=knowledge_base)
         doc = gen.generate(case_with_data, LegalDocumentType.INDICTMENT, verify=True)
         # If there are citations, they should be verified.
         if doc.citations:
@@ -604,9 +576,7 @@ class TestAsyncMethods:
 
 
 class TestThreadSafety:
-    def test_concurrent_generation(
-        self, manager: CaseManager, case_with_data: str
-    ) -> None:
+    def test_concurrent_generation(self, manager: CaseManager, case_with_data: str) -> None:
         gen = LegalDocumentGenerator(case_manager=manager)
         errors: list[Exception] = []
         docs: list[GeneratedDocument] = []

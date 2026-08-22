@@ -16,7 +16,13 @@ from justagent.adapters.providers.unified_gateway import (
 from justagent.core.i18n import I18n, get_i18n_from_ctx
 from justagent.core.model_router import ModelRouter
 from justagent.exceptions import ModelGatewayError
-from justagent.models.config import AppConfig, LlmProvider, ModelBackendConfig, Provider, ToolsConfig
+from justagent.models.config import (
+    AppConfig,
+    LlmProvider,
+    ModelBackendConfig,
+    Provider,
+    ToolsConfig,
+)
 from justagent.utils.hashing import ToolVerifier
 from justagent.utils.patch import apply_patch, patch_paths_are_safe
 from justagent.utils.redaction import redact_paths, redact_text

@@ -29,6 +29,7 @@ so the scheduler's load balancing reflects live host utilisation.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import shutil
@@ -324,15 +325,9 @@ def default_thresholds(cpu_count: int | None = None) -> dict[str, AlertThreshold
 
     cores = cpu_count or _safe_cpu_count() or 1
     return {
-        "cpu_percent": AlertThreshold(
-            metric="cpu_percent", warning=80.0, critical=95.0
-        ),
-        "memory_percent": AlertThreshold(
-            metric="memory_percent", warning=85.0, critical=95.0
-        ),
-        "disk_percent": AlertThreshold(
-            metric="disk_percent", warning=85.0, critical=95.0
-        ),
+        "cpu_percent": AlertThreshold(metric="cpu_percent", warning=80.0, critical=95.0),
+        "memory_percent": AlertThreshold(metric="memory_percent", warning=85.0, critical=95.0),
+        "disk_percent": AlertThreshold(metric="disk_percent", warning=85.0, critical=95.0),
         "load_avg_1m": AlertThreshold(
             metric="load_avg_1m",
             warning=float(cores),
@@ -373,9 +368,7 @@ class ResourceMonitor:
             raise MonitorError("history_size must be >= 1")
         if interval <= 0:
             raise MonitorError("interval must be > 0")
-        self._thresholds: dict[str, AlertThreshold] = dict(
-            thresholds or default_thresholds()
-        )
+        self._thresholds: dict[str, AlertThreshold] = dict(thresholds or default_thresholds())
         self._history: deque[MetricSnapshot] = deque(maxlen=history_size)
         self._interval = interval
         self._alert_callback = alert_callback
@@ -501,10 +494,8 @@ class ResourceMonitor:
             _safe_call(lambda: psutil.cpu_percent(interval=None, percpu=True), [])
         )
         # Pre-warm cpu_percent so the next reading is meaningful.
-        try:
+        with contextlib.suppress(Exception):
             psutil.cpu_percent(interval=None)
-        except Exception:  # noqa: BLE001
-            pass
 
         mem = _safe_call(psutil.virtual_memory, None)
         if mem is not None:
@@ -570,17 +561,20 @@ class ResourceMonitor:
         if prev is None or prev_ts <= 0:
             return
         elapsed = max(snapshot.timestamp - prev_ts, 1e-6)
-        snapshot.network_bytes_per_sec = max(
-            0.0,
-            (snapshot.network.bytes_sent + snapshot.network.bytes_recv)
-            - (prev.network.bytes_sent + prev.network.bytes_recv),
-        ) / elapsed
-        snapshot.disk_read_bytes_per_sec = max(
-            0.0, snapshot.disk_io.read_bytes - prev.disk_io.read_bytes
-        ) / elapsed
-        snapshot.disk_write_bytes_per_sec = max(
-            0.0, snapshot.disk_io.write_bytes - prev.disk_io.write_bytes
-        ) / elapsed
+        snapshot.network_bytes_per_sec = (
+            max(
+                0.0,
+                (snapshot.network.bytes_sent + snapshot.network.bytes_recv)
+                - (prev.network.bytes_sent + prev.network.bytes_recv),
+            )
+            / elapsed
+        )
+        snapshot.disk_read_bytes_per_sec = (
+            max(0.0, snapshot.disk_io.read_bytes - prev.disk_io.read_bytes) / elapsed
+        )
+        snapshot.disk_write_bytes_per_sec = (
+            max(0.0, snapshot.disk_io.write_bytes - prev.disk_io.write_bytes) / elapsed
+        )
 
     # ------------------------------------------------------------------
     # Evaluation & alerts
@@ -610,9 +604,7 @@ class ResourceMonitor:
             if level is None:
                 # Condition cleared — resolve any active alert.
                 if prev_alert is not None and not prev_alert.resolved:
-                    resolved = prev_alert.model_copy(
-                        update={"resolved": True, "resolved_at": now}
-                    )
+                    resolved = prev_alert.model_copy(update={"resolved": True, "resolved_at": now})
                     with self._lock:
                         self._active.pop(metric, None)
                         self._alerts.append(resolved)
@@ -620,9 +612,7 @@ class ResourceMonitor:
                 continue
             if level is prev_level:
                 continue  # no transition
-            threshold_value = (
-                rule.critical if level is AlertLevel.CRITICAL else rule.warning
-            )
+            threshold_value = rule.critical if level is AlertLevel.CRITICAL else rule.warning
             threshold_value = threshold_value if threshold_value is not None else 0.0
             alert = Alert(
                 metric=metric,
@@ -653,7 +643,7 @@ class ResourceMonitor:
         """Return alerts that are currently firing (unresolved)."""
 
         with self._lock:
-            return [a for a in self._active.values()]
+            return list(self._active.values())
 
     def clear_alerts(self) -> None:
         """Clear the alert log and any active alerts."""
@@ -740,9 +730,7 @@ class ResourceMonitor:
                 running_tasks=0,
                 cpu_usage_percent=snapshot.cpu_percent,
                 memory_usage_percent=snapshot.memory_percent,
-                gpu_usage_percent=max(
-                    (g.utilization_percent for g in snapshot.gpus), default=0.0
-                ),
+                gpu_usage_percent=max((g.utilization_percent for g in snapshot.gpus), default=0.0),
                 updated_at=snapshot.timestamp,
             )
             self._registry.update_load(self._bound_resource_id, load)
@@ -824,9 +812,7 @@ def _alert_message(
     """Compose a human-readable alert message."""
 
     op = ">=" if rule.operator == "gt" else "<="
-    return (
-        f"{metric} {level.value}: {value:.1f} {op} {threshold:.1f}"
-    )
+    return f"{metric} {level.value}: {value:.1f} {op} {threshold:.1f}"
 
 
 def _safe_call(func: Callable[..., Any], default: Any) -> Any:

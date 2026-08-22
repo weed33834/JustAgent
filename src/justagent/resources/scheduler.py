@@ -24,6 +24,7 @@ be embedded in an event loop or driven by a daemon thread.
 
 from __future__ import annotations
 
+import contextlib
 import heapq
 import logging
 import os
@@ -33,14 +34,13 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from justagent.resources.registry import (
-    ResourceLoad,
     ResourceRecord,
     ResourceRegistry,
     ResourceType,
@@ -508,8 +508,10 @@ class TaskScheduler:
             self._cancel_events.pop(task_id, None)
             self._procs.pop(task_id, None)
             self._release_resource(task_id)
-            status = TaskStatus.COMPLETED if result.success else (
-                TaskStatus.TIMED_OUT if result.timed_out else TaskStatus.FAILED
+            status = (
+                TaskStatus.COMPLETED
+                if result.success
+                else (TaskStatus.TIMED_OUT if result.timed_out else TaskStatus.FAILED)
             )
             self._set_terminal(final_task, status, result=result)
             logger.info(
@@ -555,7 +557,6 @@ class TaskScheduler:
 
         policy = self._tasks[task_id].retry_policy
         attempts = 0
-        last_result: TaskResult | None = None
         while True:
             attempts += 1
             task = self._tasks[task_id]
@@ -577,7 +578,6 @@ class TaskScheduler:
                     "resource_id": resource.id,
                 }
             )
-            last_result = result
             if result.success:
                 return result
             retryable = self._is_retryable(result, policy)
@@ -613,9 +613,7 @@ class TaskScheduler:
 
         if result.success:
             return False
-        if result.timed_out and not policy.retry_on_timeout:
-            return False
-        return True
+        return not (result.timed_out and not policy.retry_on_timeout)
 
     # ------------------------------------------------------------------
     # Preemption
@@ -648,9 +646,7 @@ class TaskScheduler:
     def _pick_preemption_victim(self, urgent: Task) -> Task | None:
         """Choose the lowest-priority running task whose resource fits ``urgent``."""
 
-        running = [
-            t for t in self._tasks.values() if t.is_running() and t.id != urgent.id
-        ]
+        running = [t for t in self._tasks.values() if t.is_running() and t.id != urgent.id]
         if not running:
             return None
         urgent_weight = urgent.priority.weight
@@ -917,9 +913,7 @@ def _wait_for_proc(
     while True:
         if cancel_event.is_set():
             _kill_group(proc)
-            return _result_from_proc(
-                task, resource, proc, started, error="cancelled"
-            )
+            return _result_from_proc(task, resource, proc, started, error="cancelled")
         if deadline is not None and time.time() >= deadline:
             _kill_group(proc)
             return _result_from_proc(
@@ -943,10 +937,8 @@ def _kill_group(proc: subprocess.Popen[Any]) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
     except (ProcessLookupError, PermissionError, OSError):
-        try:
+        with contextlib.suppress(Exception):
             proc.kill()
-        except Exception:  # noqa: BLE001
-            pass
 
 
 def _result_from_proc(

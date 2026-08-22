@@ -22,7 +22,6 @@ from justagent.utils.permissions import (
     warn_if_too_broad,
 )
 
-
 logger = structlog.get_logger("justagent")
 
 
