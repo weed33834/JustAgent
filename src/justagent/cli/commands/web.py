@@ -24,7 +24,7 @@ def web(
     """Start a browser chat interface for JustAgent.
 
     Vertical tools contributed by installed vertical packages and their dashboards are served
-    at http://<host>:<port>/. Judicial features work without an LLM; chatting
+    at http://<host>:<port>/. The bundled vertical works without an LLM; chatting
     requires a configured model backend.
 
     Authentication is enforced by default: log in with the admin account

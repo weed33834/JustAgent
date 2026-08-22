@@ -71,14 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Demo**: `examples/legal-sample-case/sample_case.py` — a realistic
   卷宗 fixture with four planted defects; runs without an LLM and prints the
   audit report.
-
-### Changed
-
 - `_tokenize` stop-word list extended with litigation-structure words
   （被告/原告/当事人/双方/事实/判令…）to prevent false claim-evidence matches.
-
-### Changed
-
 - **Scheduler: hand-rolled cron engine replaced with `croniter`.** The
   ~120-line custom field-matcher and minute-by-minute next-run scan are gone;
   cron semantics (including weekday-7 aliasing and impossible-date detection)
