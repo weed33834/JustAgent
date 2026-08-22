@@ -1058,7 +1058,9 @@ def doc_generate(
     _print_generated_document(document, output)
 
 
-@doc_app.command("types", help="列出可用的法律文书类型（与 Web 端点 /api/judicial/doc/types 对齐）。")
+@doc_app.command(
+    "types", help="列出可用的法律文书类型（与 Web 端点 /api/judicial/doc/types 对齐）。"
+)
 def doc_types(
     ctx: typer.Context,
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
