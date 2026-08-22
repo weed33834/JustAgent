@@ -21,6 +21,7 @@ from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from justagent.agent.runtime import AgentRuntime, AgentRuntimeConfig, LLMClient
 from justagent.agent.tools.builtin import make_default_tools
@@ -311,6 +312,8 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     @app.get("/")
     async def index() -> FileResponse:
         return FileResponse(_HTML_DIR / "index.html")
+
+    app.mount("/static", StaticFiles(directory=str(_HTML_DIR)), name="static")
 
     @app.get("/api/health")
     async def health() -> dict:
