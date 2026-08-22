@@ -4,7 +4,7 @@ Converts a manager's free-text instruction (e.g. *"notify all employees about
 the new policy and schedule a review meeting tomorrow"*) into a structured
 :class:`DecisionIntent` composed of typed :class:`DecisionAction` objects, then
 validates, permission-checks and executes each action, dispatching to the
-appropriate platform subsystem (communication/notification, resources/scheduler,
+appropriate platform subsystem (communication/notification,
 knowledge/RAG, ...).
 
 Design:
@@ -23,7 +23,7 @@ Design:
 
 Default action handlers integrate lazily with
 :mod:`justagent.communication.notification` and
-:mod:`justagent.resources.scheduler` when available, and fall back to simulated
+:simulated execution by default; handlers are overridable via ``register_handler``
 results otherwise, so the engine is fully functional out of the box.
 """
 
@@ -500,7 +500,7 @@ class DecisionExecutor:
 
     Each :class:`DecisionType` is backed by an injectable async handler
     (:meth:`register_handler`); sensible defaults integrate lazily with the
-    communication and resources subsystems and fall back to simulated
+    communication subsystems and fall back to simulated
     results. A pluggable permission checker (:meth:`register_permission_checker`)
     gates execution, and actions flagged ``requires_approval`` must be cleared
     by an approver (:meth:`register_approver`) or pre-approved via
@@ -828,43 +828,17 @@ class DecisionExecutor:
             }
 
     async def _default_allocate_handler(self, action: DecisionAction) -> dict[str, Any]:
-        """Allocate a resource via :mod:`justagent.resources.registry` (lazy)."""
+        """Allocate resources. Simulated by default; override via register_handler."""
 
         count = int(action.parameters.get("count", 1))
         purpose = action.parameters.get("purpose", action.target)
-        try:
-            from justagent.resources.registry import (  # lazy import
-                ResourceRegistry,
-                ResourceStatus,
-                ResourceType,
-            )
-
-            registry = ResourceRegistry()
-            allocated = 0
-            for i in range(count):
-                from justagent.resources.registry import ResourceRecord
-
-                registry.register(
-                    ResourceRecord(
-                        name=f"{purpose}-{i + 1}",
-                        type=ResourceType.SERVER,
-                        status=ResourceStatus.ONLINE,
-                    )
-                )
-                allocated += 1
-            return {
-                "status": "completed",
-                "allocated": allocated,
-                "purpose": purpose,
-            }
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("Allocate handler fell back to simulated: %s", exc)
-            return {
-                "status": "completed",
-                "allocated": count,
-                "purpose": purpose,
-                "simulated": True,
-            }
+        await asyncio.sleep(0)
+        return {
+            "status": "completed",
+            "allocated": count,
+            "purpose": purpose,
+            "simulated": True,
+        }
 
     async def _default_query_handler(self, action: DecisionAction) -> dict[str, Any]:
         """Run a query (simulated by default; override via register_handler)."""

@@ -7,7 +7,6 @@
   "option.yes": "Skip interactive confirmations",
   "option.config_path": "Path to config file",
   "option.lang": "Output language (en, zh, ja, auto)",
-
   "clean.help": "Clean and format the project code.",
   "clean.option.check": "Exit with error if changes are needed",
   "clean.option.yes": "Skip interactive confirmations",
@@ -20,7 +19,6 @@
   "clean.apply_failed": "Failed to apply clean changes: {exc}",
   "clean.builtin_fallback": "Using built-in formatter (external tools not found: {tools})",
   "clean.builtin_done": "Built-in formatting complete ({count} file(s) changed).",
-
   "commit.help": "Generate a commit message and commit staged/unstaged changes.",
   "commit.option.message": "Use given commit message",
   "commit.option.edit": "Open editor to refine message",
@@ -33,7 +31,6 @@
   "commit.editor_error": "Editor exited with code {code}; commit message was not saved.",
   "commit.editor_disallowed": "Editor value is not allowed: {editor}",
   "commit.editor_unknown": "Editor '{editor}' is not in the allowlist. Allowed editors: {allowed}",
-
   "init.help": "Initialize an JustAgent configuration file for the current project.",
   "init.option.type": "Override project type",
   "init.option.output": "Config file path",
@@ -44,7 +41,6 @@
   "init.dry_run": "[dry-run] Would write config to: {output}",
   "init.created": "Created {output}",
   "init.unknown_type": "Unknown project type '{type}'. Known types: {known}.",
-
   "plugin.help": "Manage JustAgent plugins.",
   "plugin.list_help": "List registered plugins and their trust levels.",
   "plugin.search_help": "Search the official plugin registry index.",
@@ -120,7 +116,6 @@
   "plugin.stats.header_installs": "Installs",
   "plugin.stats.header_uninstalls": "Uninstalls",
   "plugin.stats.header_rating": "Rating",
-
   "registry.dashboard_title": "JustAgent Plugin Registry Dashboard",
   "registry.empty": "No plugins found in the registry.",
   "registry.sync_help": "Sync the plugin registry index from the remote source.",
@@ -130,7 +125,6 @@
   "registry.sync_signature_verified": "Signature verified: registry index passed Ed25519 signature check.",
   "registry.sync_checksum_verified": "Checksum verified: registry index passed sha256 integrity check.",
   "registry.sync_no_signature": "Warning: registry index has no signature or checksum; integrity was not verified.",
-
   "fix.help": "Ask an LLM to propose a fix for the last verification failure.",
   "fix.missing_api_key": "LLM provider '{provider}' requires an API key. Set it in config or via JUSTAGENT_LLM__API_KEY.",
   "fix.model_backend_unavailable": "No healthy model backend is available: {exc}. Configure a backend in `.justagent.toml` or run `justagent init`.",
@@ -145,7 +139,6 @@
   "fix.no_patch": "No patch was produced. Nothing to apply.",
   "fix.reading_files": "Reading project files for context: {files}",
   "fix.dry_run": "[dry-run] Would send the following context files to the model: {files}. No LLM call will be made.",
-
   "doctor.help": "Diagnose the environment and dependencies.",
   "doctor.option.json": "Output report as JSON",
   "doctor.option.fail_on_error": "Exit with non-zero code when errors are present",
@@ -180,11 +173,9 @@
   "doctor.cache_suggestion": "Check permissions in ~/.justagent/cache.",
   "doctor.observability_ok_empty": "No metrics collected yet",
   "doctor.observability_ok": "{metrics} metrics ({counters} counters, {histograms} histograms)",
-
   "metrics.title": "Runtime metrics",
   "metrics.empty": "No metrics collected yet.",
   "metrics.exported": "Metrics exported to {path}",
-
   "upload.help": "Upload artifacts to a configured target.",
   "upload.option.target": "Upload target, e.g. pypi/docker/github",
   "upload.option.image": "Docker image name",
@@ -201,7 +192,6 @@
   "upload.failed": "Upload to {target} failed: {exc}",
   "upload.dry_run": "[dry-run] Would upload to {target}:\n{details}",
   "upload.dry_run_not_configured": "[dry-run] Target '{target}' not fully configured: {reason}",
-
   "verify.help": "Run a verification command and capture errors for AI-assisted fixing.",
   "verify.option.fix": "Ask the model to suggest fixes on failure",
   "verify.dry_run": "[dry-run] Would run: {command}",
@@ -219,7 +209,6 @@
   "verify.patch_failed": "Failed to apply patch: {reason}",
   "verify.option.timeout": "Kill the verification command after this many seconds (default: no timeout)",
   "verify.timed_out": "Verification command '{command}' timed out after {timeout}s.",
-
   "audit.help": "Manage audit logs.",
   "audit.export_help": "Export audit logs to a JSON Lines file.",
   "audit.cleanup_help": "Remove audit log files older than the retention period.",
@@ -232,13 +221,10 @@
   "audit.export_siem_bundle_requires_output": "--output is required for the siem-bundle format.",
   "audit.export_siem_bundle_done": "SIEM bundle written to {dir} (audit.jsonl + MANIFEST.json + audit.jsonl.sha256).",
   "audit.export_unknown_format": "Unknown export format: {fmt}. Use 'jsonl' or 'siem-bundle'.",
-
   "registry.mirror_dry_run": "[dry-run] Would mirror the registry index from {url}.",
   "registry.mirror_fetch_failed": "Failed to fetch registry index for mirroring: {exc}",
   "registry.mirror_done": "Mirrored {plugins} plugins to {dir} (sha256={sha256}…, status={status}).",
-
   "rbac.denied": "Permission denied: {permission} is not in scope for the current identity ({role}).",
-
   "artifacts.no_rules": "No language rules apply to this project.",
   "artifacts.nothing_to_remove": "No language-native build artifacts to remove.",
   "artifacts.plan_header": "Planned removal:",
@@ -247,12 +233,9 @@
   "artifacts.confirm": "Remove {count} artifact path(s)?",
   "artifacts.aborted": "Aborted.",
   "artifacts.done": "Removed {count} artifact path(s).",
-
   "ui.requires_textual": "The 'ui' command requires the 'textual' package. Install it with: pip install 'justagent[tui]'",
-
   "common.aborted": "Aborted.",
   "common.dry_run_tag": "[dry-run]",
-
   "config.help": "Inspect and manage JustAgent configuration.",
   "config.list_help": "Show effective configuration (sensitive values are redacted).",
   "config.get_help": "Get a single configuration value.",
@@ -266,14 +249,10 @@
   "config.read_error": "Failed to read configuration: {exc}",
   "config.telemetry_status": "Telemetry is {state}.",
   "config.telemetry_set": "Telemetry {state}. Configuration written to {target}",
-
   "upload.repository_url_invalid": "--repository-url must use HTTPS or point to localhost/127.0.0.1",
-
   "plugin.rate_invalid": "Rating must be between 1 and 5",
-
   "cli.unknown_command": "Unknown command: {command}",
   "cli.unknown_command.suggestion": "Run `justagent --help` to see available commands.",
-
   "error.suggestion.init": "Run `justagent init` to create a configuration file.",
   "error.suggestion.model_config": "Edit `.justagent.toml` to configure a model backend, or run `justagent init`.",
   "error.suggestion.install_tool": "Install the required tool or add it to PATH.",
@@ -287,31 +266,9 @@
   "hooks.watch_stop": "Stopped.",
   "hooks.watchdog_missing": "watchdog is not installed. Install it with: pip install watchdog",
   "hooks.watch_missing": "Watch path does not exist: {path}",
-
   "session.empty": "No saved sessions.",
   "session.not_found": "Error: Session {session_id} not found",
   "session.resume_ready": "Session {session_id} is ready. Resume with:",
   "session.resuming": "Resuming session {session_id} ...",
-  "session.deleted": "Deleted session {session_id}.",
-
-  "judicial.help": "Judicial services: cases, evidence, documents, legal knowledge base",
-  "judicial.case.help": "Case management",
-  "judicial.case.created": "Created case: {case_number}",
-  "judicial.case.not_found": "Case not found: {case_id}",
-  "judicial.case.list_header": "Case List",
-  "judicial.case.empty": "No cases.",
-  "judicial.case.imported": "Imported file {file_path} into case {case_id}",
-  "judicial.evidence.help": "Evidence management",
-  "judicial.evidence.added": "Added evidence: {name}",
-  "judicial.evidence.list_header": "Evidence List",
-  "judicial.evidence.empty": "No evidence.",
-  "judicial.evidence.reviewed": "Evidence review completed: {evidence_id}",
-  "judicial.evidence.analysis_header": "Evidence Chain Analysis",
-  "judicial.doc.help": "Legal document generation",
-  "judicial.doc.generated": "Generated document: {doc_type}",
-  "judicial.doc.templates_header": "Available Document Templates",
-  "judicial.law.help": "Legal knowledge base management",
-  "judicial.law.added": "Added legal article: {citation}",
-  "judicial.law.search_header": "Legal Article Search Results",
-  "judicial.law.no_results": "No matching articles found."
+  "session.deleted": "Deleted session {session_id}."
 }

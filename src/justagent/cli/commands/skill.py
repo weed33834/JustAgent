@@ -29,6 +29,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from justagent.cli.commands import _common as common
 from justagent.cli.display import get_console
 from justagent.context.skill import (
     Skill,
@@ -63,28 +64,6 @@ def register(parent: typer.Typer) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _get_config(ctx: typer.Context) -> AppConfig:
-    """Return the ``AppConfig`` from ``ctx.obj`` or a default instance."""
-
-    obj = getattr(ctx, "obj", None)
-    config = obj.get("config") if obj else None
-    return config if isinstance(config, AppConfig) else AppConfig()
-
-
-def _get_verbose(ctx: typer.Context) -> bool:
-    """Return the global ``--verbose`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("verbose")) if obj else False
-
-
-def _get_dry_run(ctx: typer.Context) -> bool:
-    """Return the global ``--dry-run`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("dry_run")) if obj else False
-
-
 def _get_yes(ctx: typer.Context, explicit: bool = False) -> bool:
     """Return whether to skip confirmations (global ``yes`` or an explicit flag)."""
 
@@ -114,15 +93,6 @@ def _get_loader(ctx: typer.Context) -> SkillLoader:
 # ---------------------------------------------------------------------------
 # Formatting / parsing helpers
 # ---------------------------------------------------------------------------
-
-
-def _short(text: str, width: int) -> str:
-    """Truncate *text* to *width* chars, appending ``…`` when cut."""
-
-    text = (text or "").replace("\n", " ").strip()
-    if len(text) <= width:
-        return text
-    return text[: width - 1] + "…"
 
 
 def _format_triggers(triggers: list[SkillTrigger]) -> str:
@@ -234,9 +204,9 @@ def skill_list(
     for s in skills:
         table.add_row(
             s.name,
-            _short(s.description, 50),
+            common.short(s.description, 50),
             _format_triggers(s.triggers),
-            _short(str(s.path), 45),
+            common.short(str(s.path), 45),
         )
     console.print(table)
 
@@ -310,7 +280,7 @@ def skill_create(
     """
 
     loader = _get_loader(ctx)
-    dry_run = _get_dry_run(ctx)
+    dry_run = common.get_dry_run(ctx)
 
     if loader.get(name) is not None:
         raise typer.BadParameter(f"技能已存在：{name}（如需修改请使用 `skill update`）")
@@ -334,7 +304,7 @@ def skill_create(
                 f"名称:    {name}\n"
                 f"描述:    {description}\n"
                 f"触发器:  {_format_triggers(triggers)}\n"
-                f"正文:    {_short(resolved_body, 80)}",
+                f"正文:    {common.short(resolved_body, 80)}",
                 title="Dry Run",
                 border_style="yellow",
             )
@@ -380,7 +350,7 @@ def skill_delete(
     """删除一个技能及其目录（不可恢复，会要求确认）。"""
 
     loader = _get_loader(ctx)
-    dry_run = _get_dry_run(ctx)
+    dry_run = common.get_dry_run(ctx)
     skip_confirm = _get_yes(ctx, yes)
 
     skill = _require_skill(loader, name)
@@ -450,7 +420,7 @@ def skill_update(
     """
 
     loader = _get_loader(ctx)
-    dry_run = _get_dry_run(ctx)
+    dry_run = common.get_dry_run(ctx)
     existing = _require_skill(loader, name)
 
     resolved_body = _resolve_body(body, body_file)
@@ -467,7 +437,7 @@ def skill_update(
         if description is not None:
             changes.append(f"描述: {existing.description} → {description}")
         if resolved_body is not None:
-            changes.append(f"正文: {_short(existing.body, 30)} → {_short(resolved_body, 30)}")
+            changes.append(f"正文: {common.short(existing.body, 30)} → {common.short(resolved_body, 30)}")
         if new_triggers is not None:
             changes.append(
                 f"触发器: {_format_triggers(existing.triggers)} → {_format_triggers(new_triggers)}"
@@ -529,7 +499,7 @@ def skill_import(
     """
 
     loader = _get_loader(ctx)
-    dry_run = _get_dry_run(ctx)
+    dry_run = common.get_dry_run(ctx)
     target_name = name
 
     # Pre-validate the source file so we can fail fast with a clear message.
@@ -700,10 +670,10 @@ def skill_generate(
     )
     from justagent.exceptions import ModelGatewayError
 
-    config = _get_config(ctx)
+    config = common.get_config(ctx)
     loader = _get_loader(ctx)
-    dry_run = _get_dry_run(ctx)
-    verbose = _get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
     console = get_console()
 
     user_prompt = (
