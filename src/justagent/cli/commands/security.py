@@ -35,7 +35,6 @@ import os
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -44,8 +43,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from justagent.cli.commands import _common as common
 from justagent.cli.display import get_console
-from justagent.models.config import AppConfig
 
 # ---------------------------------------------------------------------------
 # Subsystem imports — each imported independently so a missing optional
@@ -174,33 +173,11 @@ def register(parent: typer.Typer) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _get_config(ctx: typer.Context) -> AppConfig:
-    """Return the ``AppConfig`` from ``ctx.obj`` or a default instance."""
-
-    obj = getattr(ctx, "obj", None)
-    config = obj.get("config") if obj else None
-    return config if isinstance(config, AppConfig) else AppConfig()
-
-
 def _get_audit(ctx: typer.Context) -> Any:
     """Return the CLI audit logger from ``ctx.obj``, or ``None``."""
 
     obj = getattr(ctx, "obj", None)
     return obj.get("audit_logger") if obj else None
-
-
-def _get_verbose(ctx: typer.Context) -> bool:
-    """Return the global ``--verbose`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("verbose")) if obj else False
-
-
-def _get_dry_run(ctx: typer.Context) -> bool:
-    """Return the global ``--dry-run`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("dry_run")) if obj else False
 
 
 def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
@@ -230,7 +207,7 @@ def _state_path(ctx: typer.Context) -> Path:
     env = os.environ.get("JUSTAGENT_SECURITY_STATE") or os.environ.get("MYAGENT_SECURITY_STATE")
     if env:
         return Path(env).expanduser()
-    config = _get_config(ctx)
+    config = common.get_config(ctx)
     root = Path(getattr(config, "project_root", ".") or ".")
     return root / ".justagent" / "security_state.json"
 
@@ -370,30 +347,13 @@ def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_Securi
     try:
         yield state
     finally:
-        if save and not _get_dry_run(ctx):
+        if save and not common.get_dry_run(ctx):
             state.save()
 
 
 # ---------------------------------------------------------------------------
 # Output / formatting helpers
 # ---------------------------------------------------------------------------
-
-
-def _format_ts(ts: float) -> str:
-    """Format a Unix timestamp as ``YYYY-MM-DD HH:MM``."""
-
-    if not ts:
-        return "-"
-    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
-
-
-def _short(text: str, width: int) -> str:
-    """Truncate *text* to *width* chars, appending ``…`` when cut."""
-
-    text = (text or "").replace("\n", " ").strip()
-    if len(text) <= width:
-        return text
-    return text[: width - 1] + "…"
 
 
 def _id_short(value: str, width: int = 8) -> str:
@@ -565,8 +525,8 @@ def rbac_add_role(
         _require_rbac()
         return
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
 
     permissions = _parse_permissions(permission)
 
@@ -622,7 +582,7 @@ def rbac_add_role(
                 f"权限:       {_format_permissions(role.permissions)}\n"
                 f"继承自:     {', '.join(role.inherits_from) or '(无)'}\n"
                 f"系统角色:   {'是' if role.system else '否'}\n"
-                f"创建时间:   {_format_ts(role.created_at)}",
+                f"创建时间:   {common.format_ts(role.created_at)}",
                 title=f"已创建角色 {role.name}",
                 border_style="green",
             )
@@ -682,8 +642,8 @@ def rbac_list_roles(
         table.add_row(
             _id_short(r.id, 12),
             r.name,
-            _short(r.description, 30),
-            _short(_format_permissions(r.permissions), 40),
+            common.short(r.description, 30),
+            common.short(_format_permissions(r.permissions), 40),
             ", ".join(_id_short(rid, 8) for rid in r.inherits_from) or "-",
             Text("✓" if r.system else "—", style="dim" if r.system else "white"),
         )
@@ -714,8 +674,8 @@ def rbac_assign(
         _require_rbac()
         return
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
 
     if dry_run:
         get_console().print(
@@ -952,8 +912,8 @@ def encrypt_file(
         _require_encryption()
         return
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
     algo = _parse_enum(algorithm, EncryptionAlgorithm, "加密算法")
 
     if dry_run:
@@ -1041,7 +1001,7 @@ def encrypt_file(
                 f"明文大小:     {len(plaintext)} 字节\n"
                 f"密文大小:     {len(payload.ciphertext)} 字节\n"
                 f"关联数据:     {associated_data or '(无)'}\n"
-                f"加密时间:     {_format_ts(payload.created_at)}",
+                f"加密时间:     {common.format_ts(payload.created_at)}",
                 title=f"已加密 — {file_path.name}",
                 border_style="green",
             )
@@ -1086,8 +1046,8 @@ def decrypt_file(
         _require_encryption()
         return
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
 
     if dry_run:
         get_console().print(
@@ -1290,7 +1250,7 @@ def dlp_scan(
         table.add_row(
             str(idx),
             f.pii_type.value,
-            _short(f.value, 40),
+            common.short(f.value, 40),
             Text(f.sensitivity.value, style=sens_style),
             f"{f.start}-{f.end}",
         )
@@ -1439,12 +1399,12 @@ def compliance_check(
             for r in decision.violated_rules:
                 header += (
                     f"  - [{r.severity.value}] {r.framework.value}: "
-                    f"{r.requirement}\n    {_short(r.description, 70)}\n"
+                    f"{r.requirement}\n    {common.short(r.description, 70)}\n"
                 )
         if decision.recommendations:
             header += "\n[bold]建议：[/bold]\n"
             for rec in decision.recommendations:
-                header += f"  - {_short(rec, 70)}\n"
+                header += f"  - {common.short(rec, 70)}\n"
         console.print(Panel(header, title="合规决策", border_style="red"))
 
 
@@ -1569,10 +1529,10 @@ def compliance_audit(
             AuditResult.ERROR: "red",
         }.get(e.result, "white")
         table.add_row(
-            _format_ts(e.timestamp),
-            _short(e.actor, 16),
-            _short(e.action, 28),
-            _short(e.resource, 24),
+            common.format_ts(e.timestamp),
+            common.short(e.actor, 16),
+            common.short(e.action, 28),
+            common.short(e.resource, 24),
             Text(e.result.value, style=result_style),
             _id_short(e.entry_hash, 12),
         )

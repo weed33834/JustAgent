@@ -7,7 +7,6 @@
   "option.yes": "跳过交互式确认",
   "option.config_path": "配置文件路径",
   "option.lang": "输出语言（en, zh, ja, auto）",
-
   "clean.help": "清理并格式化项目代码。",
   "clean.option.check": "如需更改则以错误退出",
   "clean.option.yes": "跳过交互式确认",
@@ -20,7 +19,6 @@
   "clean.apply_failed": "应用清理更改失败：{exc}",
   "clean.builtin_fallback": "使用内置格式化器（未找到外部工具：{tools}）",
   "clean.builtin_done": "内置格式化完成（{count} 个文件已修改）。",
-
   "commit.help": "生成提交信息并提交暂存/未暂存的更改。",
   "commit.option.message": "使用给定的提交信息",
   "commit.option.edit": "打开编辑器完善提交信息",
@@ -33,7 +31,6 @@
   "commit.editor_error": "编辑器以代码 {code} 退出；提交信息未保存。",
   "commit.editor_disallowed": "编辑器值不被允许：{editor}",
   "commit.editor_unknown": "编辑器 '{editor}' 不在白名单中。允许的编辑器：{allowed}",
-
   "init.help": "为当前项目初始化 JustAgent 配置文件。",
   "init.option.type": "覆盖项目类型",
   "init.option.output": "配置文件路径",
@@ -44,7 +41,6 @@
   "init.dry_run": "[dry-run] 将写入配置到：{output}",
   "init.created": "已创建 {output}",
   "init.unknown_type": "未知的项目类型 '{type}'。已知类型：{known}。",
-
   "plugin.help": "管理 JustAgent 插件。",
   "plugin.list_help": "列出已注册插件及其信任等级。",
   "plugin.search_help": "搜索官方插件注册索引。",
@@ -120,7 +116,6 @@
   "plugin.stats.header_installs": "安装数",
   "plugin.stats.header_uninstalls": "卸载数",
   "plugin.stats.header_rating": "评分",
-
   "registry.dashboard_title": "JustAgent 插件 Registry 看板",
   "registry.empty": "Registry 中没有找到插件。",
   "registry.sync_help": "从远程源同步插件注册表索引。",
@@ -130,7 +125,6 @@
   "registry.sync_signature_verified": "签名已验证：registry 索引通过 Ed25519 签名校验。",
   "registry.sync_checksum_verified": "校验和已验证：registry 索引通过 sha256 完整性校验。",
   "registry.sync_no_signature": "警告：registry 索引没有签名或校验和；未验证完整性。",
-
   "fix.help": "让 LLM 为上一次的验证失败提供修复建议。",
   "fix.missing_api_key": "LLM provider '{provider}' 需要 API key。请在配置中设置，或通过 JUSTAGENT_LLM__API_KEY 传入。",
   "fix.model_backend_unavailable": "当前没有可用的模型后端：{exc}。请在 `.justagent.toml` 中配置模型后端，或运行 `justagent init`。",
@@ -145,7 +139,6 @@
   "fix.no_patch": "未生成补丁，无可应用内容。",
   "fix.reading_files": "正在为上下文读取项目文件：{files}",
   "fix.dry_run": "[dry-run] 将向模型发送以下上下文文件：{files}，不会实际调用 LLM。",
-
   "doctor.help": "诊断 JustAgent 环境和依赖。",
   "doctor.option.json": "以 JSON 格式输出报告",
   "doctor.option.fail_on_error": "存在 ERROR 时返回非零退出码",
@@ -180,11 +173,9 @@
   "doctor.cache_suggestion": "请检查 ~/.justagent/cache 的权限。",
   "doctor.observability_ok_empty": "尚未收集任何指标",
   "doctor.observability_ok": "{metrics} 个指标（{counters} 计数器，{histograms} 直方图）",
-
   "metrics.title": "运行时指标",
   "metrics.empty": "尚未收集任何指标。",
   "metrics.exported": "指标已导出到 {path}",
-
   "upload.help": "将产物上传到已配置的目标。",
   "upload.option.target": "上传目标，例如 pypi/docker/github",
   "upload.option.image": "Docker 镜像名称",
@@ -201,7 +192,6 @@
   "upload.failed": "上传到 {target} 失败：{exc}",
   "upload.dry_run": "[dry-run] 将上传到 {target}：\n{details}",
   "upload.dry_run_not_configured": "[dry-run] 目标 '{target}' 尚未完整配置：{reason}",
-
   "verify.help": "运行验证命令并捕获错误以进行 AI 辅助修复。",
   "verify.option.fix": "失败时请求模型建议修复",
   "verify.dry_run": "[dry-run] 将运行：{command}",
@@ -219,7 +209,6 @@
   "verify.patch_failed": "应用补丁失败：{reason}",
   "verify.option.timeout": "在指定秒数后终止验证命令（默认：不超时）",
   "verify.timed_out": "验证命令 '{command}' 在 {timeout} 秒后超时。",
-
   "audit.help": "管理审计日志。",
   "audit.export_help": "将审计日志导出为 JSON Lines 文件。",
   "audit.cleanup_help": "删除超过保留期的审计日志文件。",
@@ -232,13 +221,10 @@
   "audit.export_siem_bundle_requires_output": "siem-bundle 格式需要 --output 指定输出目录。",
   "audit.export_siem_bundle_done": "SIEM 包已写入 {dir}（audit.jsonl + MANIFEST.json + audit.jsonl.sha256）。",
   "audit.export_unknown_format": "未知导出格式：{fmt}。可用：jsonl 或 siem-bundle。",
-
   "registry.mirror_dry_run": "[dry-run] 将从 {url} 镜像注册表索引。",
   "registry.mirror_fetch_failed": "拉取注册表索引失败：{exc}",
   "registry.mirror_done": "已镜像 {plugins} 个插件到 {dir}（sha256={sha256}…, status={status}）。",
-
   "rbac.denied": "权限不足：{permission} 不在当前身份（{role}）的权限范围内。",
-
   "artifacts.no_rules": "当前项目不匹配任何语言规则。",
   "artifacts.nothing_to_remove": "没有可清理的语言构建产物。",
   "artifacts.plan_header": "计划移除：",
@@ -247,12 +233,9 @@
   "artifacts.confirm": "确认移除 {count} 个构建产物路径？",
   "artifacts.aborted": "已中止。",
   "artifacts.done": "已移除 {count} 个构建产物路径。",
-
   "ui.requires_textual": "ui 命令需要 textual 包。请运行：pip install 'justagent[tui]'",
-
   "common.aborted": "已中止。",
   "common.dry_run_tag": "[dry-run]",
-
   "config.help": "查看和管理 JustAgent 配置。",
   "config.list_help": "显示生效配置（敏感值会被脱敏）。",
   "config.get_help": "获取单个配置项的值。",
@@ -266,14 +249,10 @@
   "config.read_error": "读取配置失败：{exc}",
   "config.telemetry_status": "遥测已{state}。",
   "config.telemetry_set": "遥测已{state}。配置已写入 {target}",
-
   "upload.repository_url_invalid": "--repository-url 必须使用 HTTPS，或指向 localhost/127.0.0.1",
-
   "plugin.rate_invalid": "评分必须在 1 到 5 之间",
-
   "cli.unknown_command": "未知命令：{command}",
   "cli.unknown_command.suggestion": "运行 `justagent --help` 查看可用命令。",
-
   "error.suggestion.init": "运行 `justagent init` 创建配置文件。",
   "error.suggestion.model_config": "编辑 `.justagent.toml` 配置模型后端，或运行 `justagent init`。",
   "error.suggestion.install_tool": "安装所需工具，或将其加入 PATH。",
@@ -287,31 +266,9 @@
   "hooks.watch_stop": "已停止。",
   "hooks.watchdog_missing": "未安装 watchdog。请运行：pip install watchdog",
   "hooks.watch_missing": "监听路径不存在：{path}",
-
   "session.empty": "没有保存的会话。",
   "session.not_found": "错误：找不到会话 {session_id}",
   "session.resume_ready": "会话 {session_id} 已就绪。使用以下命令恢复：",
   "session.resuming": "正在恢复会话 {session_id} ...",
-  "session.deleted": "已删除会话 {session_id}。",
-
-  "judicial.help": "司法服务管理：案件、证据、文书、法条库",
-  "judicial.case.help": "案件管理",
-  "judicial.case.created": "已创建案件：{case_number}",
-  "judicial.case.not_found": "未找到案件：{case_id}",
-  "judicial.case.list_header": "案件列表",
-  "judicial.case.empty": "暂无案件。",
-  "judicial.case.imported": "已导入文件 {file_path} 到案件 {case_id}",
-  "judicial.evidence.help": "证据管理",
-  "judicial.evidence.added": "已添加证据：{name}",
-  "judicial.evidence.list_header": "证据列表",
-  "judicial.evidence.empty": "暂无证据。",
-  "judicial.evidence.reviewed": "证据审查完成：{evidence_id}",
-  "judicial.evidence.analysis_header": "证据链分析结果",
-  "judicial.doc.help": "法律文书生成",
-  "judicial.doc.generated": "已生成文书：{doc_type}",
-  "judicial.doc.templates_header": "可用文书模板",
-  "judicial.law.help": "法条库管理",
-  "judicial.law.added": "已添加法条：{citation}",
-  "judicial.law.search_header": "法条检索结果",
-  "judicial.law.no_results": "未找到匹配法条。"
+  "session.deleted": "已删除会话 {session_id}。"
 }

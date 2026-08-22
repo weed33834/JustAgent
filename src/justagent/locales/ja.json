@@ -221,13 +221,10 @@
   "audit.export_siem_bundle_requires_output": "siem-bundle 形式には --output で出力ディレクトリが必要です。",
   "audit.export_siem_bundle_done": "SIEM バンドルを {dir} に書き出しました（audit.jsonl + MANIFEST.json + audit.jsonl.sha256）。",
   "audit.export_unknown_format": "未知のエクスポート形式: {fmt}。jsonl または siem-bundle を指定してください。",
-
   "registry.mirror_dry_run": "[dry-run] {url} からレジストリインデックスをミラーリングします。",
   "registry.mirror_fetch_failed": "レジストリインデックスの取得に失敗しました: {exc}",
   "registry.mirror_done": "{plugins} 件のプラグインを {dir} にミラーリングしました（sha256={sha256}…, status={status}）。",
-
   "rbac.denied": "権限不足: {permission} は現在の身元（{role}）のスコープ外です。",
-
   "artifacts.no_rules": "このプロジェクトに該当する言語ルールはありません。",
   "artifacts.nothing_to_remove": "削除対象の言語ビルド成果物はありません。",
   "artifacts.plan_header": "削除予定:",
@@ -236,7 +233,6 @@
   "artifacts.confirm": "{count} 件のビルド成果物を削除しますか？",
   "artifacts.aborted": "中止しました。",
   "artifacts.done": "{count} 件のビルド成果物を削除しました。",
-
   "ui.requires_textual": "ui コマンドは textual パッケージが必要です。pip install 'justagent[tui]' でインストールしてください。",
   "common.aborted": "中止しました。",
   "common.dry_run_tag": "[dry-run]",
@@ -270,31 +266,9 @@
   "hooks.watch_stop": "停止しました。",
   "hooks.watchdog_missing": "watchdog がインストールされていません。pip install watchdog を実行してください。",
   "hooks.watch_missing": "監視パスが存在しません: {path}",
-
   "session.empty": "保存されたセッションはありません。",
   "session.not_found": "エラー：セッション {session_id} が見つかりません",
   "session.resume_ready": "セッション {session_id} の準備ができました。以下のコマンドで復元：",
   "session.resuming": "セッション {session_id} を復元しています ...",
-  "session.deleted": "セッション {session_id} を削除しました。",
-
-  "judicial.help": "司法サービス管理：案件、証拠、文書、法令ライブラリ",
-  "judicial.case.help": "案件管理",
-  "judicial.case.created": "案件を作成しました：{case_number}",
-  "judicial.case.not_found": "案件が見つかりません：{case_id}",
-  "judicial.case.list_header": "案件一覧",
-  "judicial.case.empty": "案件がありません。",
-  "judicial.case.imported": "ファイル {file_path} を案件 {case_id} にインポートしました",
-  "judicial.evidence.help": "証拠管理",
-  "judicial.evidence.added": "証拠を追加しました：{name}",
-  "judicial.evidence.list_header": "証拠一覧",
-  "judicial.evidence.empty": "証拠がありません。",
-  "judicial.evidence.reviewed": "証拠審査完了：{evidence_id}",
-  "judicial.evidence.analysis_header": "証拠チェーン分析結果",
-  "judicial.doc.help": "法律文書生成",
-  "judicial.doc.generated": "文書を生成しました：{doc_type}",
-  "judicial.doc.templates_header": "利用可能な文書テンプレート",
-  "judicial.law.help": "法令ライブラリ管理",
-  "judicial.law.added": "法令を追加しました：{citation}",
-  "judicial.law.search_header": "法令検索結果",
-  "judicial.law.no_results": "一致する法令が見つかりませんでした。"
+  "session.deleted": "セッション {session_id} を削除しました。"
 }

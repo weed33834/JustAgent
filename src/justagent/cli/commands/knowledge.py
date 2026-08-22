@@ -31,7 +31,6 @@ import os
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +39,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from justagent.cli.commands import _common as common
 from justagent.cli.display import get_console
 from justagent.knowledge import (
     Document,
@@ -54,7 +54,6 @@ from justagent.knowledge import (
     create_default_embedder,
     index_document_chunks,
 )
-from justagent.models.config import AppConfig
 
 # ---------------------------------------------------------------------------
 # Typer sub-apps
@@ -104,33 +103,11 @@ def register(parent: typer.Typer) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _get_config(ctx: typer.Context) -> AppConfig:
-    """Return the ``AppConfig`` from ``ctx.obj`` or a default instance."""
-
-    obj = getattr(ctx, "obj", None)
-    config = obj.get("config") if obj else None
-    return config if isinstance(config, AppConfig) else AppConfig()
-
-
 def _get_audit(ctx: typer.Context) -> Any:
     """Return the audit logger from ``ctx.obj``, or ``None``."""
 
     obj = getattr(ctx, "obj", None)
     return obj.get("audit_logger") if obj else None
-
-
-def _get_verbose(ctx: typer.Context) -> bool:
-    """Return the global ``--verbose`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("verbose")) if obj else False
-
-
-def _get_dry_run(ctx: typer.Context) -> bool:
-    """Return the global ``--dry-run`` flag."""
-
-    obj = getattr(ctx, "obj", None)
-    return bool(obj.get("dry_run")) if obj else False
 
 
 def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
@@ -158,7 +135,7 @@ def _state_dir(ctx: typer.Context) -> Path:
     env = os.environ.get("JUSTAGENT_KNOWLEDGE_STATE") or os.environ.get("MYAGENT_KNOWLEDGE_STATE")
     if env:
         return Path(env).expanduser()
-    config = _get_config(ctx)
+    config = common.get_config(ctx)
     root = Path(getattr(config, "project_root", ".") or ".")
     return root / ".justagent" / "knowledge"
 
@@ -289,30 +266,13 @@ def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_Knowle
     try:
         yield state
     finally:
-        if save and not _get_dry_run(ctx):
+        if save and not common.get_dry_run(ctx):
             state.save()
 
 
 # ---------------------------------------------------------------------------
 # Output / formatting helpers
 # ---------------------------------------------------------------------------
-
-
-def _format_ts(ts: float) -> str:
-    """Format a Unix timestamp as ``YYYY-MM-DD HH:MM``."""
-
-    if not ts:
-        return "-"
-    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
-
-
-def _short(text: str, width: int) -> str:
-    """Truncate *text* to *width* chars, appending ``…`` when cut."""
-
-    text = (text or "").replace("\n", " ").strip()
-    if len(text) <= width:
-        return text
-    return text[: width - 1] + "…"
 
 
 def _id_short(value: str, width: int = 8) -> str:
@@ -354,7 +314,7 @@ def _get_gateway(ctx: typer.Context) -> Any:
     without LLM-generated answers.
     """
 
-    config = _get_config(ctx)
+    config = common.get_config(ctx)
     try:
         from justagent.core.model_router import ModelRouter
 
@@ -391,8 +351,8 @@ def doc_add(
     后续的语义检索和 RAG 问答。指定 ``--no-index`` 可仅注册文档而不索引。
     """
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
     console = get_console()
 
     if dry_run:
@@ -462,7 +422,7 @@ def doc_add(
                 f"分块数:     {len(doc.chunks)}\n"
                 f"已索引:     {indexed_count} 块\n"
                 f"状态:       {doc.status.value}\n"
-                f"创建时间:   {_format_ts(doc.created_at)}",
+                f"创建时间:   {common.format_ts(doc.created_at)}",
                 title=f"已添加文档 {doc.title}",
                 border_style="green",
             )
@@ -547,13 +507,13 @@ def doc_list(
         }.get(d.status, "white")
         table.add_row(
             _id_short(d.id),
-            _short(d.title, 30),
+            common.short(d.title, 30),
             d.type.value,
             Text(d.status.value, style=status_style),
             str(len(d.chunks)),
             str(d.version),
-            _short(d.source, 24),
-            _format_ts(d.updated_at),
+            common.short(d.source, 24),
+            common.format_ts(d.updated_at),
         )
     console.print(table)
 
@@ -581,20 +541,20 @@ def doc_show(
         f"[bold]分块数:[/bold]      {len(doc.chunks)}\n"
         f"[bold]Token 估算:[/bold]  {doc.token_count}\n"
         f"[bold]内容哈希:[/bold]    {doc.content_hash[:16]}...\n"
-        f"[bold]创建时间:[/bold]    {_format_ts(doc.created_at)}\n"
-        f"[bold]更新时间:[/bold]    {_format_ts(doc.updated_at)}"
+        f"[bold]创建时间:[/bold]    {common.format_ts(doc.created_at)}\n"
+        f"[bold]更新时间:[/bold]    {common.format_ts(doc.updated_at)}"
     )
     console.print(Panel(header, title=f"文档 {doc.title}", border_style="cyan"))
 
     # Metadata.
     if doc.metadata:
-        meta_lines = "\n".join(f"  {k}: {_short(str(v), 60)}" for k, v in doc.metadata.items())
+        meta_lines = "\n".join(f"  {k}: {common.short(str(v), 60)}" for k, v in doc.metadata.items())
         console.print(Panel(meta_lines, title="元数据", border_style="blue"))
     else:
         console.print("[dim]元数据：（暂无）[/dim]")
 
     # Content preview.
-    preview = _short(doc.content, 500) if doc.content else "(空)"
+    preview = common.short(doc.content, 500) if doc.content else "(空)"
     console.print(Panel(preview, title="内容预览", border_style="blue"))
 
     # Chunks.
@@ -606,7 +566,7 @@ def doc_show(
         for chunk in doc.chunks[:20]:  # show first 20 chunks
             ctable.add_row(
                 str(chunk.index),
-                _short(chunk.content, 60),
+                common.short(chunk.content, 60),
                 str(chunk.token_count),
             )
         if len(doc.chunks) > 20:
@@ -626,7 +586,7 @@ def doc_show(
             vtable.add_row(
                 str(ver.version),
                 ver.content_hash[:16] + "...",
-                _format_ts(ver.created_at),
+                common.format_ts(ver.created_at),
                 str(len(ver.content)),
             )
         console.print(vtable)
@@ -704,9 +664,9 @@ def doc_search(
         table.add_row(
             str(r.rank),
             Text(f"{r.score:.3f}", style=score_style),
-            _short(r.document_title or r.document_id, 24),
+            common.short(r.document_title or r.document_id, 24),
             str(r.chunk.index),
-            _short(r.chunk.content, 50),
+            common.short(r.chunk.content, 50),
         )
     console.print(table)
 
@@ -735,7 +695,7 @@ def graph_build(
     if doc_id is None and not all_docs:
         raise typer.BadParameter("请指定 --doc-id <文档ID> 或 --all 从所有文档构建")
 
-    dry_run = _get_dry_run(ctx)
+    dry_run = common.get_dry_run(ctx)
     console = get_console()
 
     with _state_session(ctx) as state:
@@ -937,9 +897,9 @@ def graph_query(
             for e in entities:
                 etable.add_row(
                     _id_short(e.id),
-                    _short(e.name, 24),
+                    common.short(e.name, 24),
                     e.entity_type,
-                    _short(", ".join(e.aliases), 20) or "-",
+                    common.short(", ".join(e.aliases), 20) or "-",
                     str(graph.degree(e.id)),
                     str(len(e.source_documents)),
                 )
@@ -964,9 +924,9 @@ def graph_query(
                 tgt_name = tgt.name if tgt else r.target_entity_id[:8]
                 rtable.add_row(
                     _id_short(r.id),
-                    _short(src_name, 18),
+                    common.short(src_name, 18),
                     r.relation_type,
-                    _short(tgt_name, 18),
+                    common.short(tgt_name, 18),
                     f"{r.weight:.2f}",
                     str(len(r.source_documents)),
                 )
@@ -988,7 +948,7 @@ def graph_query(
                 for i, e in enumerate(top, start=1):
                     ttable.add_row(
                         str(i),
-                        _short(e.name, 30),
+                        common.short(e.name, 30),
                         e.entity_type,
                         str(graph.degree(e.id)),
                     )
@@ -1018,8 +978,8 @@ def rag_index(
     如果同一文档已索引过，旧的分块会被自动清除后重新索引。
     """
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
     console = get_console()
 
     if dry_run:
@@ -1103,8 +1063,8 @@ def rag_query(
     返回检索到的上下文片段。
     """
 
-    verbose = _get_verbose(ctx)
-    dry_run = _get_dry_run(ctx)
+    verbose = common.get_verbose(ctx)
+    dry_run = common.get_dry_run(ctx)
     console = get_console()
 
     if dry_run:
@@ -1199,9 +1159,9 @@ def rag_query(
             ctable.add_row(
                 str(i),
                 Text(f"{c.score:.3f}", style=score_style),
-                _short(c.document_title or c.document_id, 24),
+                common.short(c.document_title or c.document_id, 24),
                 str(c.chunk_index),
-                _short(c.snippet, 50),
+                common.short(c.snippet, 50),
             )
         console.print(ctable)
     else:

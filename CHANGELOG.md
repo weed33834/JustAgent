@@ -21,11 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Dead `resources/database.py` gateway (644 lines).** Hand-rolled
+- **Dead `resources/` package (1,599 lines).** monitor / registry / scheduler /
+  storage were the last of the "enterprise infrastructure" showcase modules:
+  zero runtime callers, zero test coverage; the orchestration decision layer
+  already falls back to simulated execution when they are absent. Barrel
+  exports removed with the package.
+- **Dead `utils/runner.py` + `utils/toml.py`.** Zero importers;
+  `subprocess.run` and stdlib `tomllib` cover both.
+- **Dead locale keys.** The `judicial.*` help strings in en/zh/ja locales had
+  no consumers (the vertical CLI does not route through i18n): -20 keys ×3.
   connection pool + five database backends (SQLite/MySQL/PostgreSQL/Redis/
   MongoDB) had zero runtime callers — the knowledge ETL uses stdlib
   `sqlite3` directly. Barrel exports removed from `justagent.resources`;
   re-introduce a DB layer via SQLAlchemy only when a real consumer appears.
+- **CLI helpers deduplicated.** `_get_config` / `_get_verbose` /
+  `_get_dry_run` / `_short` / `_format_ts` existed byte-identical in three
+  command modules; consolidated into `cli/commands/_common.py`.
 
 ### Changed
 
