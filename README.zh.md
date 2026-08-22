@@ -236,7 +236,7 @@ uv run mypy src/
 |----|------|
 | CLI 框架 | Typer |
 | 插件系统 | Pluggy |
-| AI 网关 | LiteLLM |
+| AI 网关 | OpenAI 官方 SDK（兼容各 OpenAI 系供应商） |
 | Agent 循环 | 自研（工具调用迭代 + 安全控制） |
 | 多智能体编排 | Coordinator / mesh / workflow / decision |
 | 知识层 | RAG · 向量 · 知识图谱 · 文档 ETL |
@@ -292,10 +292,7 @@ src/justagent/
 │   ├── document.py      # 文档处理
 │   └── etl.py           # 抽取 / 转换 / 加载
 ├── communication/       # 智能体间与团队沟通
-│   ├── audit.py         # 审计留痕
-│   ├── broadcast.py     # 广播
 │   ├── meeting.py       # 会议 / 庭审协调
-│   ├── messaging.py     # 消息
 │   └── notification.py  # 通知
 ├── security/            # 加密 · RBAC · 数据防泄漏
 │   ├── rbac.py          # 基于角色的访问控制

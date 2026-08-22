@@ -531,7 +531,9 @@ def doc_show(
 
     # Metadata.
     if doc.metadata:
-        meta_lines = "\n".join(f"  {k}: {common.short(str(v), 60)}" for k, v in doc.metadata.items())
+        meta_lines = "\n".join(
+            f"  {k}: {common.short(str(v), 60)}" for k, v in doc.metadata.items()
+        )
         console.print(Panel(meta_lines, title="元数据", border_style="blue"))
     else:
         console.print("[dim]元数据：（暂无）[/dim]")

@@ -24,7 +24,12 @@ from justagent.communication.notification import (
 
 
 def _notif(**kw) -> Notification:
-    base: dict = {"title": "t", "body": "b", "recipient": "ops", "channels": [NotificationChannel.IN_APP]}
+    base: dict = {
+        "title": "t",
+        "body": "b",
+        "recipient": "ops",
+        "channels": [NotificationChannel.IN_APP],
+    }
     base.update(kw)
     return Notification(**base)
 
@@ -46,7 +51,8 @@ class TestModels:
 
     def test_template_render_with_params(self) -> None:
         tpl = NotificationTemplate(
-            id="deploy", name="Deploy notice",
+            id="deploy",
+            name="Deploy notice",
             title_template="Deploy {env}",
             body_template="{service} v{ver} shipped",
             channels=[NotificationChannel.WEBHOOK],
@@ -56,7 +62,9 @@ class TestModels:
         assert n.body == "api v2.0 shipped"
 
     def test_delivery_record_lifecycle(self) -> None:
-        r = DeliveryRecord(notification_id="n1", channel=NotificationChannel.EMAIL, recipient="a@b.c")
+        r = DeliveryRecord(
+            notification_id="n1", channel=NotificationChannel.EMAIL, recipient="a@b.c"
+        )
         assert r.status is DeliveryStatus.PENDING
         r.mark_sent()
         r.mark_delivered()
@@ -83,7 +91,9 @@ class TestEngineFanOut:
     async def test_unregistered_channel_marks_failed(self) -> None:
         eng = NotificationEngine()
         records = await eng.notify(
-            title="x", body="y", channels=[NotificationChannel.EMAIL],
+            title="x",
+            body="y",
+            channels=[NotificationChannel.EMAIL],
         )
         assert records[0].status is DeliveryStatus.FAILED
         assert "No implementation" in (records[0].error or "")
@@ -103,11 +113,15 @@ class TestEngineFanOut:
     async def test_template_flow_via_engine(self) -> None:
         eng = NotificationEngine()
         eng.register_channel(InAppChannel())
-        eng.register_template(NotificationTemplate(
-            id="alert", name="Alert",
-            title_template="[ALERT] {kind}", body_template="{detail}",
-            channels=[NotificationChannel.IN_APP],
-        ))
+        eng.register_template(
+            NotificationTemplate(
+                id="alert",
+                name="Alert",
+                title_template="[ALERT] {kind}",
+                body_template="{detail}",
+                channels=[NotificationChannel.IN_APP],
+            )
+        )
         records = await eng.notify_from_template(
             "alert", recipient="ops", params={"kind": "disk", "detail": "91%"}
         )
@@ -140,6 +154,7 @@ class TestChannels:
 
         class FakeResp:
             status_code = 200
+
             def raise_for_status(self): ...
 
         import httpx
@@ -163,6 +178,6 @@ class TestChannels:
             rec = await ch.send(_notif(channels=[NotificationChannel.EMAIL], recipient="ops@x.y"))
         assert rec.status is DeliveryStatus.SENT
         # login/send_message are recorded on the context-manager child mock
-        assert smtp.mock_calls, 'SMTP was never constructed'
-        assert any('.login' in c[0] for c in smtp.mock_calls), smtp.mock_calls
-        assert any('.send_message' in c[0] for c in smtp.mock_calls), smtp.mock_calls
+        assert smtp.mock_calls, "SMTP was never constructed"
+        assert any(".login" in c[0] for c in smtp.mock_calls), smtp.mock_calls
+        assert any(".send_message" in c[0] for c in smtp.mock_calls), smtp.mock_calls

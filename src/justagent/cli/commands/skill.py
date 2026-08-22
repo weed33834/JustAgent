@@ -426,7 +426,9 @@ def skill_update(
         if description is not None:
             changes.append(f"描述: {existing.description} → {description}")
         if resolved_body is not None:
-            changes.append(f"正文: {common.short(existing.body, 30)} → {common.short(resolved_body, 30)}")
+            changes.append(
+                f"正文: {common.short(existing.body, 30)} → {common.short(resolved_body, 30)}"
+            )
         if new_triggers is not None:
             changes.append(
                 f"触发器: {_format_triggers(existing.triggers)} → {_format_triggers(new_triggers)}"

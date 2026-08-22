@@ -313,7 +313,7 @@ uv run mypy src/
 |-------|-----------|
 | CLI framework | Typer |
 | Plugin system | Pluggy |
-| AI gateway | LiteLLM |
+| AI gateway | Official OpenAI SDK (OpenAI-compatible providers) |
 | Agent loop | Custom (tool-calling iteration with safety controls) |
 | Multi-agent orchestration | Coordinator / mesh / workflow / decision |
 | Knowledge layer | RAG · vector · knowledge graph · document ETL |
@@ -369,10 +369,7 @@ src/justagent/
 │   ├── document.py     # Document processing
 │   └── etl.py          # Extract / transform / load
 ├── communication/      # Inter-agent & team communication
-│   ├── audit.py        # Audit trail
-│   ├── broadcast.py    # Broadcast
 │   ├── meeting.py      # Meeting / hearing coordination
-│   ├── messaging.py    # Messaging
 │   └── notification.py # Notifications
 ├── security/            # Encryption · RBAC · data protection
 │   ├── rbac.py         # Role-based access control
