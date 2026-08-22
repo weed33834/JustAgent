@@ -433,7 +433,7 @@ class S3StorageBackend(_ObjectStorageBackend):
     def _ensure_client(self) -> Any:
         if getattr(self, "_client", None) is None:
             try:
-                import boto3  # type: ignore[import-not-found]
+                import boto3
             except ImportError as exc:  # pragma: no cover - optional dep
                 raise StorageError(
                     "boto3 is required for the S3 backend; install with `pip install boto3`"
@@ -453,7 +453,7 @@ class S3StorageBackend(_ObjectStorageBackend):
             resp = client.get_object(Bucket=self.bucket, Key=key)
         except Exception as exc:  # noqa: BLE001
             raise StorageError(f"S3 get failed for {key!r}: {exc}") from exc
-        body = resp["Body"].read()
+        body: bytes = resp["Body"].read()
         return body
 
     def _client_put(self, key: str, data: bytes) -> None:
@@ -473,7 +473,7 @@ class S3StorageBackend(_ObjectStorageBackend):
 
     def _client_head(self, key: str) -> bool:
         client = self._ensure_client()
-        from botocore.exceptions import ClientError  # type: ignore[import-not-found]
+        from botocore.exceptions import ClientError
 
         try:
             client.head_object(Bucket=self.bucket, Key=key)
@@ -541,7 +541,7 @@ class MinioStorageBackend(_ObjectStorageBackend):
     def _ensure_client(self) -> Any:
         if getattr(self, "_client", None) is None:
             try:
-                from minio import Minio  # type: ignore[import-not-found]
+                from minio import Minio
             except ImportError as exc:  # pragma: no cover - optional dep
                 raise StorageError(
                     "minio is required for the MinIO backend; install with `pip install minio`"
@@ -565,7 +565,8 @@ class MinioStorageBackend(_ObjectStorageBackend):
         try:
             resp = client.get_object(self.bucket, key)
             try:
-                return resp.read()
+                data: bytes = resp.read()
+                return data
             finally:
                 resp.close()
                 resp.release_conn()

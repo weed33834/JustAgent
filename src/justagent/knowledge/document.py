@@ -43,7 +43,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from justagent.utils import utcnow
+from justagent.utils import utcnow  # noqa: F401 - re-exported for backwards compatibility
 
 logger = logging.getLogger("justagent.knowledge")
 
@@ -543,7 +543,7 @@ def _parse_pdf(data: bytes, source: str) -> str:
     try:
         import io
 
-        from PyPDF2 import PdfReader  # type: ignore[import-untyped]
+        from PyPDF2 import PdfReader
     except ImportError:
         pass
     else:
@@ -562,7 +562,7 @@ def _parse_pdf(data: bytes, source: str) -> str:
     try:
         import io
 
-        import pdfplumber  # type: ignore[import-untyped]
+        import pdfplumber
     except ImportError:
         pass
     else:
@@ -592,7 +592,7 @@ def _parse_word(data: bytes, source: str) -> str:
     try:
         import io
 
-        from docx import Document as DocxDocument  # type: ignore[import-untyped]
+        from docx import Document as DocxDocument
     except ImportError:
         logger.warning(
             "python-docx not installed; cannot parse Word document %s", source
@@ -626,7 +626,7 @@ def _parse_excel(data: bytes, source: str) -> str:
     try:
         import io
 
-        from openpyxl import load_workbook  # type: ignore[import-untyped]
+        from openpyxl import load_workbook
     except ImportError:
         logger.warning("openpyxl not installed; cannot parse Excel file %s", source)
         return f"[Excel content not extracted: {source}. Install openpyxl.]\n"
@@ -659,7 +659,7 @@ def _parse_ppt(data: bytes, source: str) -> str:
     try:
         import io
 
-        from pptx import Presentation  # type: ignore[import-untyped]
+        from pptx import Presentation
     except ImportError:
         logger.warning("python-pptx not installed; cannot parse PPT file %s", source)
         return f"[PPT content not extracted: {source}. Install python-pptx.]\n"
@@ -986,14 +986,14 @@ class DocumentLifecycleManager:
                 version=new_version,
                 content=content,
                 content_hash=_sha256_text(content),
-                created_at=utcnow(),
+                created_at=time.time(),
                 metadata=dict(doc.metadata),
             )
         )
         doc.content = content
         doc.content_hash = _sha256_text(content)
         doc.version = new_version
-        doc.updated_at = utcnow()
+        doc.updated_at = time.time()
         if metadata:
             doc.metadata.update(metadata)
         if chunker is not None:
@@ -1011,7 +1011,7 @@ class DocumentLifecycleManager:
         """Merge ``metadata`` into a document without creating a new version."""
         doc = self._require(document_id)
         doc.metadata.update(metadata)
-        doc.updated_at = utcnow()
+        doc.updated_at = time.time()
         return doc
 
     def restore_version(self, document_id: str, version: int) -> Document:
@@ -1046,7 +1046,7 @@ class DocumentLifecycleManager:
         """Archive a document (exclude from active search)."""
         doc = self._require(document_id)
         doc.status = DocumentStatus.ARCHIVED
-        doc.updated_at = utcnow()
+        doc.updated_at = time.time()
         logger.info("Archived document %s", document_id)
         return doc
 
@@ -1054,7 +1054,7 @@ class DocumentLifecycleManager:
         """Restore an archived document to active status."""
         doc = self._require(document_id)
         doc.status = DocumentStatus.ACTIVE
-        doc.updated_at = utcnow()
+        doc.updated_at = time.time()
         logger.info("Unarchived document %s", document_id)
         return doc
 
@@ -1062,7 +1062,7 @@ class DocumentLifecycleManager:
         """Soft-delete a document."""
         doc = self._require(document_id)
         doc.status = DocumentStatus.DELETED
-        doc.updated_at = utcnow()
+        doc.updated_at = time.time()
         logger.info("Soft-deleted document %s", document_id)
         return doc
 
@@ -1106,5 +1106,4 @@ __all__ = [
     "format_timestamp",
     "parse_html",
     "parse_markdown",
-    "utcnow",
 ]

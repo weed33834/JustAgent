@@ -285,25 +285,25 @@ def _derive_key(
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-        kdf = PBKDF2HMAC(
+        pbkdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=length,
             salt=salt,
             iterations=_PBKDF2_ITERATIONS,
         )
-        return kdf.derive(password_bytes)
+        return pbkdf.derive(password_bytes)
 
     if method is KeyDerivationMethod.SCRYPT:
         from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-        kdf = Scrypt(
+        scrypt_kdf = Scrypt(
             salt=salt,
             length=length,
             n=2**14,
             r=8,
             p=1,
         )
-        return kdf.derive(password_bytes)
+        return scrypt_kdf.derive(password_bytes)
 
     if method is KeyDerivationMethod.ARGON2:
         try:
@@ -313,7 +313,7 @@ def _derive_key(
             logger.warning("argon2-cffi not installed; falling back to PBKDF2 for key derivation")
             return _derive_key(password_bytes, salt, KeyDerivationMethod.PBKDF2, length)
 
-        return hash_secret_raw(
+        derived: bytes = hash_secret_raw(
             secret=password_bytes,
             salt=salt,
             time_cost=3,
@@ -322,6 +322,7 @@ def _derive_key(
             hash_len=length,
             type=Argon2Type.ID,
         )
+        return derived
 
     raise EncryptionError(f"Unsupported key derivation method: {method!r}")
 
@@ -847,7 +848,7 @@ class EncryptionEngine:
             payload.algorithm.value,
             payload.key_id,
         )
-        return plaintext
+        return bytes(plaintext)
 
     def decrypt_string(self, payload: EncryptedPayload) -> str:
         """Decrypt an :class:`EncryptedPayload` and decode as UTF-8."""

@@ -1010,9 +1010,8 @@ def encrypt_file(
         if password is not None:
             key = km.create_key(algo, password=password)
         else:
-            key = km.get_active_key(algo)
-            if key is None:
-                key = km.create_key(algo)
+            active: EncryptionKey | None = km.get_active_key(algo)
+            key = km.create_key(algo) if active is None else active
 
         try:
             payload = engine.encrypt(

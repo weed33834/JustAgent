@@ -68,10 +68,7 @@ def vertical_tool_factories() -> list:
     the agent from starting.
     """
     factories = []
-    try:
-        eps = entry_points(group="justagent.tools")
-    except TypeError:  # pragma: no cover - Python 3.9 fallback signature
-        eps = entry_points().get("justagent.tools", [])
+    eps = entry_points(group="justagent.tools")
     for ep in eps:
         try:
             obj = ep.load()

@@ -198,7 +198,7 @@ class UnifiedGateway(ModelGateway):
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=[{"role": m.role, "content": m.content} for m in req.messages],
+                messages=cast("Any", [{"role": m.role, "content": m.content} for m in req.messages]),
                 temperature=req.temperature if req.temperature is not None else 0.7,
                 max_tokens=req.max_tokens if req.max_tokens is not None else 512,
             )

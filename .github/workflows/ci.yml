@@ -31,9 +31,7 @@ jobs:
         run: uv sync --extra dev --extra web
       - name: Ruff check
         run: uv run --no-sync ruff check src tests
-      # Type coverage is still growing; surface drift without blocking.
-      - name: Mypy report (non-blocking)
-        continue-on-error: true
+      - name: Mypy (strict gate)
         run: uv run --no-sync mypy src --ignore-missing-imports
 
   test:

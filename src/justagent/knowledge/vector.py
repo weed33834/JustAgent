@@ -65,7 +65,7 @@ logger = logging.getLogger("justagent.knowledge")
 # ---------------------------------------------------------------------------
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 
     _HAS_NUMPY = True
 except ImportError:  # pragma: no cover
@@ -535,9 +535,11 @@ class OpenAIEmbedder(EmbeddingProvider):
             kwargs["dimensions"] = self._dimensions
 
         response = client.embeddings.create(**kwargs)
-        data = getattr(response, "data", None)
+        data: Any = getattr(response, "data", None)
         if data is None and isinstance(response, dict):
             data = response.get("data", [])
+        if data is None:
+            data = []
 
         pairs: list[tuple[int, list[float]]] = []
         for item in data:
@@ -793,7 +795,8 @@ def batch_cosine_similarity(
         # Zero out rows where either norm is zero.
         zero_mask = (q_norm == 0.0) | (mat_norms == 0.0)
         scores[zero_mask] = 0.0
-        return scores.tolist()
+        result: list[float] = scores.tolist()
+        return result
     # Pure-Python fallback.
     return [cosine_similarity(query, v) for v in vectors]
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`web` console crashed listing sessions.** `SessionMetadata` has no
+  `title`/`session_id` attributes (`id`, `prompt_preview` do) — the
+  sessions endpoint raised `AttributeError` at runtime.
+- **Document versioning stored ISO strings into float timestamp fields.**
+  `knowledge/document.py` fed `utils.utcnow()` (ISO-8601 text) into
+  `created_at`/`updated_at` floats; Pydantic v2 would reject these updates.
+  Now uses `time.time()`.
+- **Process-group kill on Windows.** `_kill_group` called POSIX-only
+  `os.killpg`/`os.getpgid` unguarded; now falls back to `proc.kill()`.
+
 ### Removed
 
 - **Dead `resources/database.py` gateway (644 lines).** Hand-rolled
@@ -17,10 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **mypy: full type-check pass, CI gate now blocking.** All 71 mypy errors
+  across 18 files fixed (annotations in the web layer, TypedDict casts for
+  OpenAI message params, KDF union types, graph extraction loop vars, …).
+  The `lint` job's mypy step is no longer `continue-on-error`.
 - **Lint debt cleared; CI now gates on ruff.** All ~80 ruff violations fixed
   across `src` and `tests`; new `lint` job runs `ruff check src tests`
-  (blocking) plus a non-blocking `mypy` report (type coverage tracked
-  separately, currently ~71 errors in 18 files).
+  (blocking) plus a **blocking** `mypy src` gate.
 - **Web console: evidence audit entry point.** The evidence panel gains an
   "证据链审计" button that calls `POST /api/judicial/evidence/audit` and
   reports verdict, per-category issues, and claim coverage in chat.
