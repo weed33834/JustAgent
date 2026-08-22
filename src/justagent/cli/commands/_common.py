@@ -7,6 +7,8 @@ friends); they live here once so behaviour changes land everywhere.
 from __future__ import annotations
 
 import time
+from contextlib import suppress
+from typing import Any
 
 import typer
 
@@ -48,3 +50,14 @@ def format_ts(ts: float) -> str:
     """Format a Unix timestamp as a local ``YYYY-MM-DD HH:MM`` string."""
 
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(ts))
+
+
+def audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
+    """Record an audit event best-effort (never raises)."""
+
+    obj = getattr(ctx, "obj", None)
+    audit_logger = obj.get("audit_logger") if obj else None
+    if audit_logger is None:
+        return
+    with suppress(Exception):  # audit must never break a command
+        audit_logger.record(event, payload or {})

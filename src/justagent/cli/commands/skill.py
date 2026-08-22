@@ -71,17 +71,6 @@ def _get_yes(ctx: typer.Context, explicit: bool = False) -> bool:
     return bool(explicit or (obj.get("yes") if obj else False))
 
 
-def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
-    """Record an audit event best-effort (never raises)."""
-
-    obj = getattr(ctx, "obj", None)
-    audit = obj.get("audit_logger") if obj else None
-    if audit is None:
-        return
-    with suppress(Exception):  # audit must never break a command
-        audit.record(event, payload or {})
-
-
 def _get_loader(ctx: typer.Context) -> SkillLoader:
     """Build a :class:`SkillLoader` rooted at the current working directory."""
 
@@ -322,7 +311,7 @@ def skill_create(
         get_console().print(f"[red]✗ 创建失败：{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    _audit(
+    common.audit(
         ctx,
         "skill.create",
         {"name": name, "description": description, "triggers": len(triggers)},
@@ -377,7 +366,7 @@ def skill_delete(
         get_console().print(f"[red]✗ 删除失败：未找到技能 {name}[/red]")
         raise typer.Exit(code=1)
 
-    _audit(ctx, "skill.delete", {"name": name, "path": str(skill.path)})
+    common.audit(ctx, "skill.delete", {"name": name, "path": str(skill.path)})
 
     if json_output:
         _emit_json({"name": name, "deleted": True, "path": str(skill.path)})
@@ -462,7 +451,7 @@ def skill_update(
         get_console().print(f"[red]✗ 更新失败：{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    _audit(ctx, "skill.update", {"name": name})
+    common.audit(ctx, "skill.update", {"name": name})
 
     if json_output:
         _emit_json(_skill_to_dict(skill, include_body=True))
@@ -532,7 +521,7 @@ def skill_import(
         get_console().print(f"[red]✗ 导入失败：{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    _audit(
+    common.audit(
         ctx,
         "skill.import",
         {"name": skill.name, "source": str(file_path), "renamed": bool(target_name)},
@@ -775,7 +764,7 @@ def skill_generate(
         console.print(f"[red]✗ 创建失败：{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    _audit(
+    common.audit(
         ctx,
         "skill.generate",
         {

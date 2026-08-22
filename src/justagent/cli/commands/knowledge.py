@@ -103,23 +103,6 @@ def register(parent: typer.Typer) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _get_audit(ctx: typer.Context) -> Any:
-    """Return the audit logger from ``ctx.obj``, or ``None``."""
-
-    obj = getattr(ctx, "obj", None)
-    return obj.get("audit_logger") if obj else None
-
-
-def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
-    """Record an audit event best-effort (never raises)."""
-
-    audit = _get_audit(ctx)
-    if audit is None:
-        return
-    with suppress(Exception):  # audit must never break a command
-        audit.record(event, payload or {})
-
-
 # ---------------------------------------------------------------------------
 # Persistence layer
 # ---------------------------------------------------------------------------
@@ -398,7 +381,7 @@ def doc_add(
             )
             indexed_count = len(records)
 
-    _audit(
+    common.audit(
         ctx,
         "knowledge.doc.add",
         {
@@ -735,7 +718,7 @@ def graph_build(
             total_entities += len(entities)
             total_relations += len(relations)
 
-    _audit(
+    common.audit(
         ctx,
         "knowledge.graph.build",
         {
@@ -1013,7 +996,7 @@ def rag_index(
             console.print(f"[red]✗ 索引失败：{exc}[/red]")
             raise typer.Exit(code=1) from exc
 
-    _audit(
+    common.audit(
         ctx,
         "knowledge.rag.index",
         {
@@ -1098,7 +1081,7 @@ def rag_query(
             console.print(f"[red]✗ RAG 问答失败：{exc}[/red]")
             raise typer.Exit(code=1) from exc
 
-    _audit(
+    common.audit(
         ctx,
         "knowledge.rag.query",
         {

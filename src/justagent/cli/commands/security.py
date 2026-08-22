@@ -1,29 +1,29 @@
-"""``justagent security`` command — RBAC, encryption, DLP and compliance.
+"""justagent security command — RBAC, encryption, DLP and compliance.
 
-Exposes the :mod:`justagent.security` package through the CLI:
+Exposes the :mod:justagent.security package through the CLI:
 
-* ``justagent security rbac``         — role / user / permission management.
-* ``justagent security encrypt``      — authenticated file encryption (AEAD).
-* ``justagent security decrypt``      — file decryption.
-* ``justagent security dlp``          — PII scanning and data-loss prevention.
-* ``justagent security compliance``   — framework checks and audit trail.
+* justagent security rbac         — role / user / permission management.
+* justagent security encrypt      — authenticated file encryption (AEAD).
+* justagent security decrypt      — file decryption.
+* justagent security dlp          — PII scanning and data-loss prevention.
+* justagent security compliance   — framework checks and audit trail.
 
-The security engines (:class:`RBACEngine`, :class:`KeyManager`,
-:class:`ComplianceChecker`, :class:`AuditTrailManager`) are in-memory by
+The security engines (:class:RBACEngine, :class:KeyManager,
+:class:ComplianceChecker, :class:AuditTrailManager) are in-memory by
 design.  To make the CLI usable across invocations, this module
 transparently persists state to a JSON file
-(``<project_root>/.justagent/security_state.json`` by default, overridable
-via the ``JUSTAGENT_SECURITY_STATE`` environment variable).  Each command
+(<project_root>/.justagent/security_state.json by default, overridable
+via the JUSTAGENT_SECURITY_STATE environment variable).  Each command
 loads the state, performs its operation, and writes the state back
 (read-only commands skip the write).
 
-Optional dependencies (e.g. ``cryptography`` for the encryption
+Optional dependencies (e.g. cryptography for the encryption
 subsystem) are imported independently per subsystem so that a missing
 library degrades only the affected command group rather than the whole
 module.
 
-The module follows the same conventions as the other ``justagent``
-commands: a ``register(parent: typer.Typer)`` entry point, ``ctx.obj``
+The module follows the same conventions as the other justagent
+commands: a register(parent: typer.Typer) entry point, ctx.obj
 for shared config / audit / verbosity, Rich tables for listings, and
 Google-style docstrings with full type hints.
 """
@@ -48,7 +48,7 @@ from justagent.cli.display import get_console
 
 # ---------------------------------------------------------------------------
 # Subsystem imports — each imported independently so a missing optional
-# dependency (e.g. ``cryptography``) degrades only the affected group.
+# dependency (e.g. cryptography) degrades only the affected group.
 # ---------------------------------------------------------------------------
 
 try:
@@ -157,7 +157,7 @@ compliance_app = typer.Typer(
 
 
 def register(parent: typer.Typer) -> None:
-    """Register the ``security`` command group and its sub-groups."""
+    """Register the security command group and its sub-groups."""
 
     app.add_typer(rbac_app, name="rbac")
     app.add_typer(encrypt_app, name="encrypt")
@@ -173,23 +173,6 @@ def register(parent: typer.Typer) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _get_audit(ctx: typer.Context) -> Any:
-    """Return the CLI audit logger from ``ctx.obj``, or ``None``."""
-
-    obj = getattr(ctx, "obj", None)
-    return obj.get("audit_logger") if obj else None
-
-
-def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None) -> None:
-    """Record a CLI-level audit event best-effort (never raises)."""
-
-    audit = _get_audit(ctx)
-    if audit is None:
-        return
-    with suppress(Exception):  # audit must never break a command
-        audit.record(event, payload or {})
-
-
 # ---------------------------------------------------------------------------
 # Persistence layer
 # ---------------------------------------------------------------------------
@@ -198,10 +181,10 @@ def _audit(ctx: typer.Context, event: str, payload: dict[str, Any] | None = None
 def _state_path(ctx: typer.Context) -> Path:
     """Resolve the security state file path.
 
-    Priority: ``JUSTAGENT_SECURITY_STATE`` (or legacy
-    ``MYAGENT_SECURITY_STATE``) env var >
-    ``<project_root>/.justagent/security_state.json`` >
-    ``./.justagent/security_state.json``.
+    Priority: JUSTAGENT_SECURITY_STATE (or legacy
+    MYAGENT_SECURITY_STATE) env var >
+    <project_root>/.justagent/security_state.json >
+    ./.justagent/security_state.json.
     """
 
     env = os.environ.get("JUSTAGENT_SECURITY_STATE") or os.environ.get("MYAGENT_SECURITY_STATE")
@@ -215,8 +198,8 @@ def _state_path(ctx: typer.Context) -> Path:
 class _SecurityState:
     """Container holding the security engines with JSON save/restore.
 
-    The underlying engines (:class:`RBACEngine`, :class:`KeyManager`,
-    :class:`ComplianceChecker`, :class:`AuditTrailManager`) only offer
+    The underlying engines (:class:RBACEngine, :class:KeyManager,
+    :class:ComplianceChecker, :class:AuditTrailManager) only offer
     incremental mutation APIs.  To round-trip persisted state we restore
     the internal registries directly — this is the integration layer's
     concern and is clearly isolated here rather than spread across
@@ -339,8 +322,8 @@ def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_Securi
 
     Args:
         ctx: The Typer context (for path resolution and dry-run flag).
-        save: When ``True`` (default) the state is written back on a clean
-            exit.  Read-only commands pass ``False`` to avoid needless writes.
+        save: When True (default) the state is written back on a clean
+            exit.  Read-only commands pass False to avoid needless writes.
     """
 
     state = _SecurityState.load(_state_path(ctx))
@@ -451,9 +434,9 @@ def _resolve_role(engine: RBACEngine, role_id_or_name: str) -> Role:
 
 
 def _parse_permissions(specs: list[str]) -> dict[Any, set[Any]]:
-    """Parse permission specs like ``document:read,write`` into a dict.
+    """Parse permission specs like document:read,write into a dict.
 
-    Each spec must have the form ``<resource_type>:<perm1>,<perm2>,...``.
+    Each spec must have the form <resource_type>:<perm1>,<perm2>,....
     Multiple specs for the same resource type are merged.
     """
 
@@ -480,7 +463,7 @@ def _parse_permissions(specs: list[str]) -> dict[Any, set[Any]]:
 
 
 def _format_permissions(permissions: dict[Any, set[Any]]) -> str:
-    """Render a permissions dict as a compact ``rt:p1,p2; …`` string."""
+    """Render a permissions dict as a compact rt:p1,p2; … string."""
 
     parts: list[str] = []
     for rt, perms in sorted(permissions.items(), key=lambda kv: kv[0].value):
@@ -516,8 +499,8 @@ def rbac_add_role(
 ) -> None:
     """添加一个自定义 RBAC 角色并为其分配权限。
 
-    权限以 ``resource:perm1,perm2`` 格式指定，可多次使用 ``--permission``
-    为不同资源类型设置权限。角色可通过 ``--inherits-from`` 继承已有角色
+    权限以 resource:perm1,perm2 格式指定，可多次使用 --permission
+    为不同资源类型设置权限。角色可通过 --inherits-from 继承已有角色
     的权限（传递式，自动检测循环）。
     """
 
@@ -566,7 +549,7 @@ def rbac_add_role(
             metadata={"role_name": name, "permissions": _format_permissions(permissions)},
         )
 
-    _audit(
+    common.audit(
         ctx,
         "security.rbac.add_role",
         {"role_id": role.id, "role_name": name},
@@ -627,7 +610,7 @@ def rbac_list_roles(
 
     console = get_console()
     if not roles:
-        console.print("[dim]暂无角色。使用 `security rbac add-role` 创建一个。[/dim]")
+        console.print("[dim]暂无角色。使用 security rbac add-role 创建一个。[/dim]")
         return
 
     table = Table(title=f"角色列表（共 {len(roles)} 个）", border_style="cyan")
@@ -728,7 +711,7 @@ def rbac_assign(
             },
         )
 
-    _audit(
+    common.audit(
         ctx,
         "security.rbac.assign",
         {"user": user, "role": resolved_role.name, "role_id": resolved_role.id},
@@ -799,7 +782,7 @@ def rbac_check(
         assert engine is not None
         decision: AccessDecision = engine.evaluate_access(user, rt, perm)
 
-    _audit(
+    common.audit(
         ctx,
         "security.rbac.check",
         {
@@ -897,10 +880,10 @@ def encrypt_file(
     """使用 AEAD 认证加密对文件进行加密。
 
     加密结果为一个自描述的 JSON 载荷（包含密钥 ID、算法、nonce、
-    密文和认证标签），可使用 ``security decrypt file`` 还原。
+    密文和认证标签），可使用 security decrypt file 还原。
 
     密钥管理：
-    - 指定 ``--password`` 时，使用 PBKDF2 从口令派生密钥并持久化。
+    - 指定 --password 时，使用 PBKDF2 从口令派生密钥并持久化。
     - 不指定时，自动使用已有活动密钥或生成新的随机密钥。
 
     .. warning::
@@ -972,7 +955,7 @@ def encrypt_file(
             },
         )
 
-    _audit(
+    common.audit(
         ctx,
         "security.encrypt.file",
         {"file": str(file_path), "algorithm": algo.value, "key_id": payload.key_id},
@@ -1031,7 +1014,7 @@ def decrypt_file(
         help="解密明文输出路径（默认在原文件名后加 .dec）",
     ),
 ) -> None:
-    """解密一个由 ``security encrypt file`` 生成的加密载荷。
+    """解密一个由 security encrypt file 生成的加密载荷。
 
     从 JSON 载荷中读取密钥 ID、算法、nonce 和密文，通过安全状态中
     持久化的密钥进行解密。
@@ -1095,7 +1078,7 @@ def decrypt_file(
             },
         )
 
-    _audit(
+    common.audit(
         ctx,
         "security.decrypt.file",
         {"file": str(file_path), "key_id": payload.key_id},
@@ -1159,7 +1142,7 @@ def dlp_scan(
     护照号、银行账号、身份证号、地址，以及中国特有的居民身份证号、
     统一社会信用代码、官方案件编号、营业执照号等。
 
-    使用 ``--redact`` 查看脱敏后的内容，或 ``--mask`` 查看部分遮罩的内容。
+    使用 --redact 查看脱敏后的内容，或 --mask 查看部分遮罩的内容。
     """
 
     if not _DLP_AVAILABLE:
@@ -1181,7 +1164,7 @@ def dlp_scan(
     scanner = DLPScanner()
     findings: list[PIIFinding] = scanner.scan_text(content)
 
-    _audit(
+    common.audit(
         ctx,
         "security.dlp.scan",
         {
@@ -1337,7 +1320,7 @@ def compliance_check(
                 },
             )
 
-    _audit(
+    common.audit(
         ctx,
         "security.compliance.check",
         {
@@ -1424,7 +1407,7 @@ def compliance_audit(
     """查看安全审计追踪记录。
 
     审计追踪是一个仅追加的、防篡改的哈希链（每条记录的 SHA-256 哈希
-    依赖前一条记录的哈希）。使用 ``--verify`` 可验证整条链的完整性。
+    依赖前一条记录的哈希）。使用 --verify 可验证整条链的完整性。
 
     支持按操作者、操作类型、资源和结果过滤。
     """
@@ -1460,7 +1443,7 @@ def compliance_audit(
         chain_valid = manager.verify_chain() if verify else None
         summary = manager.summary()
 
-    _audit(
+    common.audit(
         ctx,
         "security.compliance.audit",
         {"filters": filters, "returned": len(entries)},
