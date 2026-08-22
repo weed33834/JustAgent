@@ -250,7 +250,8 @@ class NumpyHashingEmbedder(HashingEmbedder):
         norm = float(np.linalg.norm(vec))
         if norm > 0:
             vec = vec / norm
-        return vec.tolist()
+        embedding: list[float] = vec.tolist()
+        return embedding
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not _HAS_NUMPY:
