@@ -86,9 +86,7 @@ def _resolve_cosine_similarity() -> Any:
 
             _cosine_similarity = cosine_similarity
         except ImportError as exc:  # pragma: no cover - optional dependency
-            logger.debug(
-                "vector module unavailable; semantic search disabled: %s", exc
-            )
+            logger.debug("vector module unavailable; semantic search disabled: %s", exc)
             _cosine_similarity = None
     return _cosine_similarity
 
@@ -351,7 +349,10 @@ class MemoryStore:
             self._save_locked()
         logger.info(
             "Added memory %s (importance=%.2f, session=%s, tags=%s)",
-            entry.id, importance, session_id or "-", entry.tags,
+            entry.id,
+            importance,
+            session_id or "-",
+            entry.tags,
         )
         return entry.model_copy(deep=True)
 
@@ -402,8 +403,7 @@ class MemoryStore:
         with self._lock:
             self._ensure_loaded()
             candidates = [
-                e for e in self._memories.values()
-                if e.importance_score >= min_importance
+                e for e in self._memories.values() if e.importance_score >= min_importance
             ]
 
         if not candidates:
@@ -419,8 +419,7 @@ class MemoryStore:
                 query_vec = None
 
         scored: list[tuple[float, MemoryEntry]] = [
-            (self._score_memory(query_vec, query_tokens, entry), entry)
-            for entry in candidates
+            (self._score_memory(query_vec, query_tokens, entry), entry) for entry in candidates
         ]
         # Drop memories with no relevance: a score <= 0 means there is no
         # token overlap and no semantic similarity, so returning them would
@@ -505,9 +504,9 @@ class MemoryStore:
         with self._lock:
             self._ensure_loaded()
             doomed = [
-                mid for mid, entry in self._memories.items()
-                if entry.timestamp < cutoff
-                and entry.importance_score < importance_threshold
+                mid
+                for mid, entry in self._memories.items()
+                if entry.timestamp < cutoff and entry.importance_score < importance_threshold
             ]
             if not doomed:
                 return 0
@@ -516,7 +515,9 @@ class MemoryStore:
             self._save_locked()
         logger.info(
             "Decayed %d memories older than %.1f days (threshold=%.2f)",
-            len(doomed), older_than_days, importance_threshold,
+            len(doomed),
+            older_than_days,
+            importance_threshold,
         )
         return len(doomed)
 
@@ -542,9 +543,7 @@ class MemoryStore:
 
         with self._lock:
             self._ensure_loaded()
-            session_entries = [
-                e for e in self._memories.values() if e.session_id == session_id
-            ]
+            session_entries = [e for e in self._memories.values() if e.session_id == session_id]
 
         if len(session_entries) < 2:
             return 0
@@ -566,7 +565,9 @@ class MemoryStore:
         if consolidated:
             logger.info(
                 "Consolidated %d memories into %d summary/summaries for session %s",
-                consolidated, sum(1 for g in groups if len(g) >= 2), session_id,
+                consolidated,
+                sum(1 for g in groups if len(g) >= 2),
+                session_id,
             )
         return consolidated
 
@@ -656,9 +657,7 @@ class MemoryStore:
 
         if not query_tokens:
             return 0.0
-        haystack = " ".join(
-            [entry.content, entry.summary, *entry.tags]
-        )
+        haystack = " ".join([entry.content, entry.summary, *entry.tags])
         haystack_tokens = set(self._tokenize(haystack))
         if not haystack_tokens:
             return 0.0
@@ -748,9 +747,7 @@ class MemoryStore:
         )
         if self._embedder is not None:
             try:
-                merged.embedding = self._embedder.embed(
-                    merged.summary or merged_content
-                )
+                merged.embedding = self._embedder.embed(merged.summary or merged_content)
             except Exception as exc:  # noqa: BLE001 - degrade gracefully
                 logger.warning("Failed to embed merged memory %s: %s", merged.id, exc)
                 merged.embedding = None
@@ -937,9 +934,7 @@ class MemoryManager:
             try:
                 return self._llm_extract(messages, session_id)
             except Exception as exc:  # noqa: BLE001 - never block on LLM
-                logger.warning(
-                    "LLM memory extraction failed; using heuristics: %s", exc
-                )
+                logger.warning("LLM memory extraction failed; using heuristics: %s", exc)
         return self._heuristic_extract(messages, session_id)
 
     def _llm_extract(
@@ -996,9 +991,7 @@ class MemoryManager:
                 summary=(item.get("summary") or "").strip() or None,
             )
             extracted.append(entry)
-        logger.info(
-            "LLM-extracted %d memories for session %s", len(extracted), session_id
-        )
+        logger.info("LLM-extracted %d memories for session %s", len(extracted), session_id)
         return extracted
 
     def _heuristic_extract(
@@ -1036,7 +1029,8 @@ class MemoryManager:
         if extracted:
             logger.info(
                 "Heuristically extracted %d memories for session %s",
-                len(extracted), session_id,
+                len(extracted),
+                session_id,
             )
         return extracted
 
@@ -1059,10 +1053,7 @@ class MemoryManager:
             return []
         if not isinstance(data, list):
             return []
-        return [
-            item for item in data
-            if isinstance(item, dict) and item.get("content")
-        ]
+        return [item for item in data if isinstance(item, dict) and item.get("content")]
 
     @staticmethod
     def _classify(text: str) -> tuple[str | None, float]:
@@ -1119,9 +1110,7 @@ class MemoryManager:
             return ""
 
         if query and query.strip():
-            memories = self._store.search(
-                query, limit=max_memories, min_importance=0.1
-            )
+            memories = self._store.search(query, limit=max_memories, min_importance=0.1)
         else:
             memories = self._store.list_recent(limit=max_memories)
 
@@ -1164,7 +1153,9 @@ class MemoryManager:
         if result is not None:
             logger.info(
                 "Adjusted importance of %s by %+.2f -> %.2f",
-                memory_id, delta, result.importance_score,
+                memory_id,
+                delta,
+                result.importance_score,
             )
         return result
 
@@ -1248,10 +1239,7 @@ def get_memory_store(
 
     if store_dir is not None:
         return MemoryStore(store_dir, embedder=embedder)
-    env_dir = (
-        os.environ.get("JUSTAGENT_MEMORIES_DIR")
-        or os.environ.get("MYAGENT_MEMORIES_DIR")
-    )
+    env_dir = os.environ.get("JUSTAGENT_MEMORIES_DIR") or os.environ.get("MYAGENT_MEMORIES_DIR")
     if env_dir:
         return MemoryStore(Path(env_dir), embedder=embedder)
     return MemoryStore(embedder=embedder)

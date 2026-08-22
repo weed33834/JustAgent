@@ -283,9 +283,7 @@ class TestArticleManagement:
         assert kb.get_article(article.id).content == "修改后的内容"
 
     def test_add_articles_bulk(self, kb: LegalKnowledgeBase) -> None:
-        articles = [
-            _make_article("民法典", f"第{i}条") for i in range(100, 103)
-        ]
+        articles = [_make_article("民法典", f"第{i}条") for i in range(100, 103)]
         count = kb.add_articles(articles)
         assert count == 3
         assert kb.article_count == 3
@@ -394,9 +392,7 @@ class TestCaseManagement:
         assert kb.get_case(case.id).ruling_result == "改判"
 
     def test_add_cases_bulk(self, kb: LegalKnowledgeBase) -> None:
-        cases = [
-            _make_case(f"(2023)京01民终{i}号") for i in range(100, 103)
-        ]
+        cases = [_make_case(f"(2023)京01民终{i}号") for i in range(100, 103)]
         count = kb.add_cases(cases)
         assert count == 3
         assert kb.case_count == 3
@@ -493,9 +489,7 @@ class TestArticleSearch:
 
     def test_search_top_k_limit(self, kb: LegalKnowledgeBase) -> None:
         for i in range(5):
-            kb.add_article(
-                _make_article("民法典", f"第{i}条", content=f"民事法律行为第{i}条")
-            )
+            kb.add_article(_make_article("民法典", f"第{i}条", content=f"民事法律行为第{i}条"))
         results = kb.search_articles("民事", top_k=2)
         assert len(results) <= 2
 
@@ -516,9 +510,7 @@ class TestArticleSearch:
 
     def test_search_results_sorted_by_score(self, kb: LegalKnowledgeBase) -> None:
         kb.add_article(_make_article("民法典", "第143条", content="民事 法律 行为"))
-        kb.add_article(
-            _make_article("民法典", "第144条", content="无民事行为能力人")
-        )
+        kb.add_article(_make_article("民法典", "第144条", content="无民事行为能力人"))
         results = kb.search_articles("民事 法律 行为")
         scores = [r.score for r in results]
         assert scores == sorted(scores, reverse=True)
@@ -650,9 +642,7 @@ class TestConceptExplanation:
         assert len(explanation.defining_articles) >= 1
 
     def test_explain_concept_with_domain_filter(self, kb: LegalKnowledgeBase) -> None:
-        kb.add_article(
-            _make_article("民法典", "第143条", domain=LegalDomain.CIVIL)
-        )
+        kb.add_article(_make_article("民法典", "第143条", domain=LegalDomain.CIVIL))
         kb.add_article(
             _make_article(
                 "刑法",
@@ -679,14 +669,10 @@ class TestAsyncMethods:
         assert len(results) >= 1
 
     @pytest.mark.asyncio
-    async def test_search_articles_async_with_filters(
-        self, kb: LegalKnowledgeBase
-    ) -> None:
+    async def test_search_articles_async_with_filters(self, kb: LegalKnowledgeBase) -> None:
         kb.add_article(_make_article("民法典", "第143条", domain=LegalDomain.CIVIL))
         kb.add_article(_make_article("刑法", "第1条", domain=LegalDomain.CRIMINAL))
-        results = await kb.search_articles_async(
-            "第", domain=LegalDomain.CIVIL
-        )
+        results = await kb.search_articles_async("第", domain=LegalDomain.CIVIL)
         assert all(r.article.domain is LegalDomain.CIVIL for r in results)
 
     @pytest.mark.asyncio
@@ -696,21 +682,15 @@ class TestAsyncMethods:
         assert len(results) >= 1
 
     @pytest.mark.asyncio
-    async def test_search_cases_async_with_filters(
-        self, kb: LegalKnowledgeBase
-    ) -> None:
+    async def test_search_cases_async_with_filters(self, kb: LegalKnowledgeBase) -> None:
         kb.add_case(_make_case("(2023)甲001号", domain=LegalDomain.CIVIL))
         kb.add_case(_make_case("(2023)甲002号", domain=LegalDomain.CRIMINAL))
-        results = await kb.search_cases_async(
-            "纠纷", domain=LegalDomain.CIVIL
-        )
+        results = await kb.search_cases_async("纠纷", domain=LegalDomain.CIVIL)
         assert all(r.case.domain is LegalDomain.CIVIL for r in results)
 
     @pytest.mark.asyncio
     async def test_explain_concept_async(self, kb: LegalKnowledgeBase) -> None:
-        kb.add_article(
-            _make_article(content="民事法律行为的概念定义", keywords=["民事法律行为"])
-        )
+        kb.add_article(_make_article(content="民事法律行为的概念定义", keywords=["民事法律行为"]))
         explanation = await kb.explain_concept_async("民事法律行为")
         assert explanation.concept == "民事法律行为"
 
@@ -918,9 +898,7 @@ class TestThreadSafety:
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
-        threads = [
-            threading.Thread(target=add_and_search, args=(i,)) for i in range(15)
-        ]
+        threads = [threading.Thread(target=add_and_search, args=(i,)) for i in range(15)]
         for t in threads:
             t.start()
         for t in threads:

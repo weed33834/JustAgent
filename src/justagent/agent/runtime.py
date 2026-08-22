@@ -632,9 +632,7 @@ class AgentRuntime:
             # ``KeyError`` on the first turn of an interactive REPL.
             self._total_usage = {
                 "prompt_tokens": int(session.usage.get("prompt_tokens", 0)),
-                "completion_tokens": int(
-                    session.usage.get("completion_tokens", 0)
-                ),
+                "completion_tokens": int(session.usage.get("completion_tokens", 0)),
                 "total_tokens": int(session.usage.get("total_tokens", 0)),
             }
             if not self._run_id:
@@ -838,9 +836,7 @@ class AgentRuntime:
             # Inject long-term memory context if enabled.
             system_prompt = self._inject_memory(system_prompt, user_input)
             if system_prompt:
-                self._messages.insert(
-                    0, Message(role="system", content=system_prompt)
-                )
+                self._messages.insert(0, Message(role="system", content=system_prompt))
             if not self._run_id:
                 self._run_id = uuid.uuid4().hex[:16]
 
@@ -908,9 +904,7 @@ class AgentRuntime:
                     # run. Otherwise continue the loop and retry the LLM
                     # call (the mistake tracker may have injected a
                     # recovery notice via its callbacks).
-                    outcome = await self._handle_mistake(
-                        MistakeReason.API_ERROR, str(exc)
-                    )
+                    outcome = await self._handle_mistake(MistakeReason.API_ERROR, str(exc))
                     if outcome.status in {"stopped", "failed"}:
                         return outcome
                     continue
@@ -942,20 +936,12 @@ class AgentRuntime:
                     return self._completed_result(response.content)
 
                 # --- 4. Execute the tool calls ---
-                tool_results = await self._execute_tool_calls(
-                    response.tool_calls
-                )
+                tool_results = await self._execute_tool_calls(response.tool_calls)
 
                 # --- 5. Check for terminal tool (completes_run) ---
-                terminal = any(
-                    self._is_terminal_tool(tc.name) for tc in response.tool_calls
-                )
+                terminal = any(self._is_terminal_tool(tc.name) for tc in response.tool_calls)
                 if terminal:
-                    final = (
-                        tool_results[0].output
-                        if tool_results
-                        else response.content
-                    )
+                    final = tool_results[0].output if tool_results else response.content
                     return self._completed_result(final)
 
             # Iteration cap hit.
@@ -989,9 +975,7 @@ class AgentRuntime:
         """Send the conversation to the LLM and return the response."""
 
         # Filter tools by the current mode (Plan mode hides edit tools).
-        available_tools = filter_tools_for_mode(
-            list(self._registry.all()), self._mode_config.mode
-        )
+        available_tools = filter_tools_for_mode(list(self._registry.all()), self._mode_config.mode)
         request = LLMRequest(
             messages=list(self._messages),
             tools=available_tools,
@@ -1002,16 +986,12 @@ class AgentRuntime:
 
     # -- internal: tool execution ----------------------------------------
 
-    async def _execute_tool_calls(
-        self, tool_calls: list[ToolCall]
-    ) -> list[ToolResultPart]:
+    async def _execute_tool_calls(self, tool_calls: list[ToolCall]) -> list[ToolResultPart]:
         """Execute each tool call and append the results to history."""
 
         if self._config.parallel_tool_execution:
             results: list[ToolResultPart] = list(
-                await asyncio.gather(
-                    *(self._execute_one(tc) for tc in tool_calls)
-                )
+                await asyncio.gather(*(self._execute_one(tc) for tc in tool_calls))
             )
         else:
             results = []
@@ -1022,9 +1002,7 @@ class AgentRuntime:
 
         # Append all tool results as messages.
         for result in results:
-            self._messages.append(
-                Message(role="tool", tool_result=result, name=result.name)
-            )
+            self._messages.append(Message(role="tool", tool_result=result, name=result.name))
 
         return results
 
@@ -1087,9 +1065,7 @@ class AgentRuntime:
     async def _check_loop_detection(self, call: ToolCall) -> ToolResultPart | None:
         """Check for loop patterns. Returns an error result if hard loop detected."""
 
-        verdict = self._loop_tracker.inspect(
-            LoopDetectionCall(name=call.name, input=call.input)
-        )
+        verdict = self._loop_tracker.inspect(LoopDetectionCall(name=call.name, input=call.input))
         if verdict.kind == "soft":
             await self._emit_event(
                 LoopWarningEvent(
@@ -1156,43 +1132,29 @@ class AgentRuntime:
         # DENY rules are still enforced above; only ASK falls through here.
         return None
 
-    async def _invoke_tool_safe(
-        self, tool: Tool, call: ToolCall, ctx: ToolContext
-    ) -> ToolResult:
+    async def _invoke_tool_safe(self, tool: Tool, call: ToolCall, ctx: ToolContext) -> ToolResult:
         """Invoke a tool with comprehensive error handling."""
 
         try:
             return await tool.invoke(call.input, ctx)
         except InvalidArgumentsError as exc:
-            outcome = await self._handle_mistake(
-                MistakeReason.INVALID_TOOL_CALL, str(exc)
-            )
+            outcome = await self._handle_mistake(MistakeReason.INVALID_TOOL_CALL, str(exc))
             if outcome.status in {"stopped", "failed"}:
-                raise ToolAbortedError(
-                    outcome.error or outcome.stop_reason
-                ) from exc
+                raise ToolAbortedError(outcome.error or outcome.stop_reason) from exc
             return ToolResult.failure(str(exc))
         except ToolTimeoutError as exc:
             return ToolResult.failure(f"Tool timed out: {exc}")
         except ToolAbortedError:
             raise
         except ToolError as exc:
-            outcome = await self._handle_mistake(
-                MistakeReason.TOOL_EXECUTION_FAILED, str(exc)
-            )
+            outcome = await self._handle_mistake(MistakeReason.TOOL_EXECUTION_FAILED, str(exc))
             if outcome.status in {"stopped", "failed"}:
-                raise ToolAbortedError(
-                    outcome.error or outcome.stop_reason
-                ) from exc
+                raise ToolAbortedError(outcome.error or outcome.stop_reason) from exc
             return ToolResult.failure(str(exc))
         except Exception as exc:  # noqa: BLE001
-            outcome = await self._handle_mistake(
-                MistakeReason.TOOL_EXECUTION_FAILED, str(exc)
-            )
+            outcome = await self._handle_mistake(MistakeReason.TOOL_EXECUTION_FAILED, str(exc))
             if outcome.status in {"stopped", "failed"}:
-                raise ToolAbortedError(
-                    outcome.error or outcome.stop_reason
-                ) from exc
+                raise ToolAbortedError(outcome.error or outcome.stop_reason) from exc
             return ToolResult.failure(f"Tool crashed: {exc}")
 
     async def _finalize_tool_call(
@@ -1200,9 +1162,7 @@ class AgentRuntime:
     ) -> ToolResultPart:
         """Record changes, emit finished event, and build the result part."""
 
-        output = result.output if result.output else (
-            result.error or "(no output)"
-        )
+        output = result.output if result.output else (result.error or "(no output)")
         is_error = result.is_error
 
         # Record file changes for write/edit/patch tools (best-effort).
@@ -1231,9 +1191,7 @@ class AgentRuntime:
 
     # -- internal: mistake tracking --------------------------------------
 
-    async def _handle_mistake(
-        self, reason: MistakeReason, details: str
-    ) -> RunResult:
+    async def _handle_mistake(self, reason: MistakeReason, details: str) -> RunResult:
         """Record a mistake and decide whether to continue or stop."""
 
         assert self._mistake_tracker is not None
@@ -1290,9 +1248,7 @@ class AgentRuntime:
             if path and tool_name == "write_to_file":
                 old = result.metadata.get("old_content")
                 new = result.metadata.get("new_content", "")
-                self._change_tracker.record_write(
-                    str(path), old, str(new), tool_name
-                )
+                self._change_tracker.record_write(str(path), old, str(new), tool_name)
             return
 
         for ch in changes_meta:
@@ -1305,9 +1261,7 @@ class AgentRuntime:
             if action == "deleted":
                 self._change_tracker.record_delete(str(path), tool_name)
             elif action == "created" or old_content is None:
-                self._change_tracker.record_write(
-                    str(path), None, str(new_content), tool_name
-                )
+                self._change_tracker.record_write(str(path), None, str(new_content), tool_name)
             else:
                 self._change_tracker.record_edit(
                     str(path), str(old_content), str(new_content), tool_name
@@ -1337,9 +1291,7 @@ class AgentRuntime:
 
         switch_notice = self._mode_config.consume_switch_notice()
         user_body = (
-            switch_notice + "\n" + format_user_message(
-                user_input, self._mode_config.mode
-            )
+            switch_notice + "\n" + format_user_message(user_input, self._mode_config.mode)
             if switch_notice
             else format_user_message(user_input, self._mode_config.mode)
         )
@@ -1362,9 +1314,7 @@ class AgentRuntime:
 
     def _accumulate_usage(self, usage: dict[str, Any]) -> None:
         for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
-            self._total_usage[key] = self._total_usage.get(key, 0) + int(
-                usage.get(key, 0)
-            )
+            self._total_usage[key] = self._total_usage.get(key, 0) + int(usage.get(key, 0))
 
     def _completed_result(self, content: str) -> RunResult:
         return RunResult(

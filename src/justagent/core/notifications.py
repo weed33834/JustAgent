@@ -244,9 +244,7 @@ class NotificationManager:
         """Return a defensive copy of the registered channels."""
         return list(self._channels)
 
-    def send(
-        self, notification: Notification
-    ) -> dict[NotificationChannel, Exception | None]:
+    def send(self, notification: Notification) -> dict[NotificationChannel, Exception | None]:
         """Send ``notification`` to every registered channel.
 
         Returns a map of ``channel -> exception`` (None on success).

@@ -227,9 +227,7 @@ def verify(
     typer.echo(i18n._("verify.verified", command=command))
 
 
-def _handle_error(
-    context: CommandContext, error: Exception, audit: AuditLogger
-) -> None:
+def _handle_error(context: CommandContext, error: Exception, audit: AuditLogger) -> None:
     """调用 ``on_error`` hooks 并可选地应用修复补丁。"""
     hook_results = plugin_manager.call("on_error", context=context, error=error, fail_fast=False)
 

@@ -1,0 +1,5 @@
+# Commits that only reformat code — excluded from git blame.
+# See https://github.com/orgs/community/discussions/26783
+
+# style: apply ruff format to src and tests (format-only, AST-verified)
+bb78bfe75fb854f06592c6ec5ecfc4617745d513

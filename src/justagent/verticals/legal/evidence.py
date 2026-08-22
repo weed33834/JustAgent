@@ -1315,12 +1315,8 @@ class EvidenceAuditor:
             for term in terms:
                 df[term] = df.get(term, 0) + 1
 
-        def _discriminative_overlap(
-            claim_terms: set[str], obj_terms: set[str]
-        ) -> bool:
-            return any(
-                df.get(term, 0) <= generic_limit for term in claim_terms & obj_terms
-            )
+        def _discriminative_overlap(claim_terms: set[str], obj_terms: set[str]) -> bool:
+            return any(df.get(term, 0) <= generic_limit for term in claim_terms & obj_terms)
 
         coverage: list[ClaimCoverage] = []
         for claim in claims:

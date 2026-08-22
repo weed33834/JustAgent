@@ -157,7 +157,9 @@ class MistakeTrackerOptions:
     agent_id: str = ""
     get_conversation_id: Callable[[], str] = _noop_get_id
     get_active_run_id: Callable[[], str] = _noop_get_id
-    on_limit_reached: Callable[[ConsecutiveMistakeLimitContext], ConsecutiveMistakeLimitDecision] | None = None
+    on_limit_reached: (
+        Callable[[ConsecutiveMistakeLimitContext], ConsecutiveMistakeLimitDecision] | None
+    ) = None
     on_limit_telemetry: Callable[[ConsecutiveMistakeLimitContext], None] | None = None
     emit: EmitEvent = _noop_emit
     log: LeveledLog = _noop_log
@@ -197,17 +199,13 @@ def build_mistake_limit_stop_message(
     trimmed_stop_reason = stop_reason.strip() if stop_reason else ""
     if trimmed_stop_reason:
         parts.append(f"Decision: {trimmed_stop_reason}")
-    parts.append(
-        "Session state was preserved. Send a new prompt to resume from the latest state."
-    )
+    parts.append("Session state was preserved. Send a new prompt to resume from the latest state.")
     return " ".join(parts)
 
 
 def resolve_consecutive_mistake_decision(
     context: ConsecutiveMistakeLimitContext,
-    callback: (
-        Callable[[ConsecutiveMistakeLimitContext], ConsecutiveMistakeLimitDecision] | None
-    ),
+    callback: (Callable[[ConsecutiveMistakeLimitContext], ConsecutiveMistakeLimitDecision] | None),
 ) -> ConsecutiveMistakeLimitDecision:
     """Resolve the limit decision, defaulting to ``stop`` if no callback.
 
@@ -217,10 +215,7 @@ def resolve_consecutive_mistake_decision(
 
     if callback is None:
         return StopDecision(
-            reason=(
-                f"maximum consecutive mistakes reached "
-                f"({context.max_consecutive_mistakes})"
-            )
+            reason=(f"maximum consecutive mistakes reached ({context.max_consecutive_mistakes})")
         )
     try:
         return callback(context)
@@ -229,10 +224,7 @@ def resolve_consecutive_mistake_decision(
             reason=(
                 str(exc)
                 if str(exc)
-                else (
-                    f"maximum consecutive mistakes reached "
-                    f"({context.max_consecutive_mistakes})"
-                )
+                else (f"maximum consecutive mistakes reached ({context.max_consecutive_mistakes})")
             )
         )
 
@@ -293,9 +285,8 @@ class MistakeTracker:
         self._consecutive_mistakes = next_count
 
         error_message = (
-            (input_data.details or "").strip()
-            or f"consecutive mistake ({input_data.reason.value})"
-        )
+            input_data.details or ""
+        ).strip() or f"consecutive mistake ({input_data.reason.value})"
         self.options.emit(
             {
                 "type": "error",

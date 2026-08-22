@@ -232,9 +232,7 @@ def _make_emit_callback(
                 _display.print_assistant_message(event.content)
             if event.tool_calls and verbose:
                 for tc in event.tool_calls:
-                    _display.print_info(
-                        f"  → calling {tc.name}({tc.input})"
-                    )
+                    _display.print_info(f"  → calling {tc.name}({tc.input})")
         elif isinstance(event, ToolStartedEvent):
             _display.stop_spinner()
             _display.print_tool_start(event.tool_name, event.input)
@@ -255,15 +253,9 @@ def _make_emit_callback(
         elif isinstance(event, RunCompletedEvent):
             _display.stop_spinner()
             files_changed = (
-                _change_tracker.get_changed_files()
-                if _change_tracker is not None
-                else []
+                _change_tracker.get_changed_files() if _change_tracker is not None else []
             )
-            elapsed = (
-                event.timestamp - _run_start[0]
-                if _run_start[0] > 0
-                else 0.0
-            )
+            elapsed = event.timestamp - _run_start[0] if _run_start[0] > 0 else 0.0
             _display.print_run_summary(
                 iterations=event.iterations,
                 total_tokens=int(event.total_usage.get("total_tokens", 0)),
@@ -305,8 +297,7 @@ def _event_to_dict(event: RuntimeEvent) -> dict[str, Any]:
     elif isinstance(event, AssistantMessageEvent):
         data["content"] = event.content
         data["tool_calls"] = [
-            {"id": tc.id, "name": tc.name, "input": tc.input}
-            for tc in event.tool_calls
+            {"id": tc.id, "name": tc.name, "input": tc.input} for tc in event.tool_calls
         ]
         data["finish_reason"] = event.finish_reason
         data["usage"] = event.usage
@@ -361,9 +352,7 @@ def _status_to_exit_code(status: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _print_welcome_banner(
-    *, mode: str, model: str, cwd: str, json_mode: bool
-) -> None:
+def _print_welcome_banner(*, mode: str, model: str, cwd: str, json_mode: bool) -> None:
     """Print the interactive-mode welcome banner.
 
     Skipped in JSON mode (headless consumers don't need a banner).
@@ -372,9 +361,7 @@ def _print_welcome_banner(
     if json_mode:
         return
     width = 50
-    typer.secho(
-        "╭" + "─" * (width - 2) + "╮", fg=typer.colors.CYAN, bold=True
-    )
+    typer.secho("╭" + "─" * (width - 2) + "╮", fg=typer.colors.CYAN, bold=True)
     for line in (
         " JustAgent Agent (interactive)",
         f" Mode: {mode} | Model: {model} | CWD: {cwd}",
@@ -383,12 +370,8 @@ def _print_welcome_banner(
         pad = width - 2 - _display_width(line)
         if pad < 0:
             pad = 0
-        typer.secho(
-            "│" + line + " " * pad + "│", fg=typer.colors.CYAN, bold=True
-        )
-    typer.secho(
-        "╰" + "─" * (width - 2) + "╯", fg=typer.colors.CYAN, bold=True
-    )
+        typer.secho("│" + line + " " * pad + "│", fg=typer.colors.CYAN, bold=True)
+    typer.secho("╰" + "─" * (width - 2) + "╯", fg=typer.colors.CYAN, bold=True)
 
 
 def _display_width(text: str) -> int:
@@ -425,8 +408,7 @@ def _print_result(result: RunResult, *, json_mode: bool, turn: int) -> None:
 
     tokens = result.total_usage.get("total_tokens", 0)
     typer.secho(
-        f"[turn {turn} done] {result.iterations} iteration(s), "
-        f"{tokens} tokens",
+        f"[turn {turn} done] {result.iterations} iteration(s), {tokens} tokens",
         fg=typer.colors.GREEN,
         dim=True,
     )
@@ -476,9 +458,7 @@ async def _run_interactive(
             result = await runtime.run(initial_prompt)
             _print_result(result, json_mode=json_mode, turn=turn)
         except KeyboardInterrupt:
-            typer.secho(
-                "\n[turn aborted]", fg=typer.colors.YELLOW, err=True
-            )
+            typer.secho("\n[turn aborted]", fg=typer.colors.YELLOW, err=True)
             runtime.abort()
             runtime._abort.clear()  # reset for next turn
 
@@ -490,9 +470,7 @@ async def _run_interactive(
                 if not line:
                     break
             else:
-                typer.secho(
-                    "\njustagent> ", fg=typer.colors.CYAN, bold=True, nl=False
-                )
+                typer.secho("\njustagent> ", fg=typer.colors.CYAN, bold=True, nl=False)
                 line = input()
         except (EOFError, KeyboardInterrupt):
             typer.secho("\nGoodbye!", fg=typer.colors.YELLOW)
@@ -523,9 +501,7 @@ async def _run_interactive(
                 break
             elif cmd_result.action == CommandAction.CLEAR_HISTORY:
                 runtime.reset()
-                typer.secho(
-                    "Conversation cleared.", fg=typer.colors.GREEN
-                )
+                typer.secho("Conversation cleared.", fg=typer.colors.GREEN)
                 continue
             elif cmd_result.action == CommandAction.SWITCH_MODE:
                 new_mode = cmd_result.data.get("mode", "act")
@@ -536,14 +512,10 @@ async def _run_interactive(
                 )
                 continue
             elif cmd_result.action == CommandAction.COMPACT:
-                typer.secho(
-                    "Compacting context...", fg=typer.colors.YELLOW
-                )
+                typer.secho("Compacting context...", fg=typer.colors.YELLOW)
                 continue
             elif cmd_result.action == CommandAction.UNDO:
-                typer.secho(
-                    "Undoing last change...", fg=typer.colors.YELLOW
-                )
+                typer.secho("Undoing last change...", fg=typer.colors.YELLOW)
                 continue
             elif cmd_result.message:
                 typer.echo(cmd_result.message)
@@ -557,24 +529,18 @@ async def _run_interactive(
             result = await runtime.continue_run(line)
             _print_result(result, json_mode=json_mode, turn=turn)
         except KeyboardInterrupt:
-            typer.secho(
-                "\n[turn aborted]", fg=typer.colors.YELLOW, err=True
-            )
+            typer.secho("\n[turn aborted]", fg=typer.colors.YELLOW, err=True)
             runtime.abort()
             runtime._abort.clear()  # reset for next turn
         except MyAgentError as exc:
-            typer.secho(
-                f"  [error] {exc}", fg=typer.colors.RED, err=True
-            )
+            typer.secho(f"  [error] {exc}", fg=typer.colors.RED, err=True)
 
 
 @app.command(name="agent")
 def agent(
     ctx: typer.Context,
     prompt: str = typer.Argument("", help="用户的指令（用引号包起来；交互模式下可省略）"),
-    mode: str | None = typer.Option(
-        None, "--mode", help="初始模式：act / plan / yolo（默认 act）"
-    ),
+    mode: str | None = typer.Option(None, "--mode", help="初始模式：act / plan / yolo（默认 act）"),
     plan: bool = typer.Option(False, "--plan", help="Plan 模式快捷方式（等价 --mode plan）"),
     yolo: bool = typer.Option(
         False, "--yolo", help="Yolo 模式快捷方式（等价 --mode yolo，禁用权限提示）"
@@ -582,25 +548,13 @@ def agent(
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="交互式多轮聊天模式（REPL）"
     ),
-    max_iterations: int = typer.Option(
-        50, "--max-iterations", help="最大迭代次数（默认 50）"
-    ),
-    max_tokens: int | None = typer.Option(
-        None, "--max-tokens", help="LLM 响应最大 token 数"
-    ),
-    temperature: float = typer.Option(
-        0.7, "--temperature", help="LLM 采样温度（默认 0.7）"
-    ),
-    system_prompt: str | None = typer.Option(
-        None, "--system-prompt", help="覆盖默认系统提示词"
-    ),
+    max_iterations: int = typer.Option(50, "--max-iterations", help="最大迭代次数（默认 50）"),
+    max_tokens: int | None = typer.Option(None, "--max-tokens", help="LLM 响应最大 token 数"),
+    temperature: float = typer.Option(0.7, "--temperature", help="LLM 采样温度（默认 0.7）"),
+    system_prompt: str | None = typer.Option(None, "--system-prompt", help="覆盖默认系统提示词"),
     model: str | None = typer.Option(None, "--model", help="覆盖配置中的模型名"),
-    api_key: str | None = typer.Option(
-        None, "--api-key", help="覆盖配置中的 API key"
-    ),
-    base_url: str | None = typer.Option(
-        None, "--base-url", help="覆盖配置中的 base URL"
-    ),
+    api_key: str | None = typer.Option(None, "--api-key", help="覆盖配置中的 API key"),
+    base_url: str | None = typer.Option(None, "--base-url", help="覆盖配置中的 base URL"),
     json_output: bool = typer.Option(
         False, "--json", help="以 NDJSON 流式输出事件（适合程序化消费）"
     ),
@@ -609,12 +563,8 @@ def agent(
     resume: str | None = typer.Option(
         None, "--resume", help="恢复指定会话（加载历史后进入交互模式）"
     ),
-    memory: bool = typer.Option(
-        False, "--memory", help="启用长期记忆（跨会话上下文保留）"
-    ),
-    evaluate: bool = typer.Option(
-        False, "--evaluate", help="启用输出质量评估（LLM-as-Judge）"
-    ),
+    memory: bool = typer.Option(False, "--memory", help="启用长期记忆（跨会话上下文保留）"),
+    evaluate: bool = typer.Option(False, "--evaluate", help="启用输出质量评估（LLM-as-Judge）"),
 ) -> None:
     """运行本地 AI 智能体循环。
 
@@ -645,9 +595,7 @@ def agent(
 
     # In non-interactive mode, a prompt is required.
     if not interactive and not prompt.strip():
-        raise typer.BadParameter(
-            "Prompt is required (or use --interactive / -i for REPL mode)"
-        )
+        raise typer.BadParameter("Prompt is required (or use --interactive / -i for REPL mode)")
 
     config: AppConfig = ctx.obj["config"]
     global_yes = ctx.obj.get("yes", False) or yes
@@ -751,9 +699,7 @@ def agent(
         )
         approved = display.print_permission_prompt(tool, description)
         if approved:
-            remember = typer.confirm(
-                "  Remember for this session?", default=False
-            )
+            remember = typer.confirm("  Remember for this session?", default=False)
             if remember:
                 engine.remember(
                     tool,
@@ -762,9 +708,7 @@ def agent(
                     PermissionScope.ALWAYS,
                 )
         else:
-            remember = typer.confirm(
-                "  Remember denial for this session?", default=False
-            )
+            remember = typer.confirm("  Remember denial for this session?", default=False)
             if remember:
                 engine.remember(
                     tool,
@@ -870,9 +814,7 @@ def agent(
                 {
                     "status": "completed",
                     "interactive": True,
-                    "total_tokens": runtime._total_usage.get(
-                        "total_tokens", 0
-                    ),
+                    "total_tokens": runtime._total_usage.get("total_tokens", 0),
                 },
             )
         raise typer.Exit(code=0)

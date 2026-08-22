@@ -187,9 +187,7 @@ class AuditLogger:
                 continue
         return removed
 
-    def export_siem_bundle(
-        self, output: Path, since: datetime | None = None
-    ) -> Path:
+    def export_siem_bundle(self, output: Path, since: datetime | None = None) -> Path:
         """Export audit records as a SIEM ingestion bundle.
 
         Creates a directory at *output* containing ``audit.jsonl``,
@@ -201,9 +199,7 @@ class AuditLogger:
         try:
             bundle_dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            raise RuntimeError(
-                f"Cannot create SIEM bundle directory: {bundle_dir}"
-            ) from exc
+            raise RuntimeError(f"Cannot create SIEM bundle directory: {bundle_dir}") from exc
 
         jsonl_path = bundle_dir / "audit.jsonl"
         self.export(since=since, output=jsonl_path)

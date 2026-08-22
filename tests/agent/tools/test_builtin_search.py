@@ -39,9 +39,7 @@ def _seed_project(root: Path) -> None:
 async def test_search_basic_content_mode(tmp_path: Path) -> None:
     _seed_project(tmp_path)
     tool = make_search_tool()
-    result = await tool.invoke(
-        {"pattern": "match", "output_mode": "content"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"pattern": "match", "output_mode": "content"}, _make_ctx(tmp_path))
     assert not result.is_error
     assert "d.py" in result.output
     assert "data.txt" in result.output
@@ -66,9 +64,7 @@ async def test_search_files_with_matches_mode(tmp_path: Path) -> None:
 async def test_search_count_mode(tmp_path: Path) -> None:
     _seed_project(tmp_path)
     tool = make_search_tool()
-    result = await tool.invoke(
-        {"pattern": "import", "output_mode": "count"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"pattern": "import", "output_mode": "count"}, _make_ctx(tmp_path))
     assert not result.is_error
     assert "a.py" in result.output
     assert "b.py" in result.output
@@ -93,9 +89,7 @@ async def test_search_with_glob_filter(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_search_invalid_regex(tmp_path: Path) -> None:
     tool = make_search_tool()
-    result = await tool.invoke(
-        {"pattern": "[invalid"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"pattern": "[invalid"}, _make_ctx(tmp_path))
     assert result.is_error
     assert "regex" in result.error.lower()
 
@@ -103,9 +97,7 @@ async def test_search_invalid_regex(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_search_invalid_output_mode(tmp_path: Path) -> None:
     tool = make_search_tool()
-    result = await tool.invoke(
-        {"pattern": "x", "output_mode": "bogus"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"pattern": "x", "output_mode": "bogus"}, _make_ctx(tmp_path))
     assert result.is_error
     assert "output_mode" in result.error.lower()
 
@@ -113,9 +105,7 @@ async def test_search_invalid_output_mode(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_search_missing_path(tmp_path: Path) -> None:
     tool = make_search_tool()
-    result = await tool.invoke(
-        {"pattern": "x", "path": "nonexistent"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"pattern": "x", "path": "nonexistent"}, _make_ctx(tmp_path))
     assert result.is_error
 
 

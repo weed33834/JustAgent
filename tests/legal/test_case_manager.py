@@ -395,9 +395,7 @@ class TestMaterialImport:
     def test_import_document(self, manager: CaseManager) -> None:
         case = manager.create_case()
         doc = Document(title="起诉状", content="原告：张三", type=DocumentType.PLAIN_TEXT)
-        material = manager.import_document(
-            case.id, doc, material_type=MaterialType.COMPLAINT
-        )
+        material = manager.import_document(case.id, doc, material_type=MaterialType.COMPLAINT)
         assert material.material_type is MaterialType.COMPLAINT
         assert material.case_id == case.id
         assert manager.material_count == 1
@@ -405,7 +403,9 @@ class TestMaterialImport:
 
     def test_import_document_auto_extract(self, manager: CaseManager) -> None:
         case = manager.create_case()
-        content = "原告：张三\n被告：李四\n诉讼请求：判令被告支付10万元\n事实与理由：双方存在合同关系"
+        content = (
+            "原告：张三\n被告：李四\n诉讼请求：判令被告支付10万元\n事实与理由：双方存在合同关系"
+        )
         doc = Document(title="起诉状", content=content, type=DocumentType.PLAIN_TEXT)
         manager.import_document(case.id, doc, auto_extract=True)
         updated = manager.get_case(case.id)
@@ -427,9 +427,7 @@ class TestMaterialImport:
         case = manager.create_case()
         file_path = tmp_path / "complaint.txt"
         file_path.write_text("原告：张三\n被告：李四", encoding="utf-8")
-        material = manager.import_file(
-            case.id, file_path, material_type=MaterialType.COMPLAINT
-        )
+        material = manager.import_file(case.id, file_path, material_type=MaterialType.COMPLAINT)
         assert material.document.title == "complaint.txt"
         assert material.document.content == "原告：张三\n被告：李四"
 
@@ -519,12 +517,8 @@ class TestStructuredExtraction:
         case = manager.create_case()
         content1 = "原告：甲\n被告：乙"
         content2 = "诉讼请求：支付货款\n事实与理由：合同成立"
-        manager.import_document(
-            case.id, Document(title="d1", content=content1), auto_extract=False
-        )
-        manager.import_document(
-            case.id, Document(title="d2", content=content2), auto_extract=False
-        )
+        manager.import_document(case.id, Document(title="d1", content=content1), auto_extract=False)
+        manager.import_document(case.id, Document(title="d2", content=content2), auto_extract=False)
         total = manager.extract_all(case.id)
         assert "parties" in total
         assert "claims" in total
@@ -663,9 +657,7 @@ class TestAsyncMethods:
     async def test_extract_all_async(self, manager: CaseManager) -> None:
         case = manager.create_case()
         content = "原告：甲\n被告：乙"
-        manager.import_document(
-            case.id, Document(title="d", content=content), auto_extract=False
-        )
+        manager.import_document(case.id, Document(title="d", content=content), auto_extract=False)
         total = await manager.extract_all_async(case.id)
         assert len(total["parties"]) >= 2
 
@@ -709,9 +701,7 @@ class TestThreadSafety:
 
         def add_party(i: int) -> None:
             try:
-                manager.add_party(
-                    case.id, Party(name=f"当事人{i}", role=PartyRole.OTHER)
-                )
+                manager.add_party(case.id, Party(name=f"当事人{i}", role=PartyRole.OTHER))
             except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 

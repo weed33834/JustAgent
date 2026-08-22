@@ -253,10 +253,7 @@ class Compactor:
     def _placeholder(self, removed_count: int) -> str:
         """Return a basic-mode placeholder summary."""
 
-        return (
-            f"[context compacted: {removed_count} earlier message(s) "
-            f"removed from history]"
-        )
+        return f"[context compacted: {removed_count} earlier message(s) removed from history]"
 
     def _summarize(self, removable: list[Message]) -> str:
         """Ask the LLM to summarize ``removable`` and return the text.
@@ -309,15 +306,11 @@ class Compactor:
         for msg in messages:
             body = msg.content
             if msg.tool_calls:
-                calls = ", ".join(
-                    f"{tc.name}({tc.input})" for tc in msg.tool_calls
-                )
+                calls = ", ".join(f"{tc.name}({tc.input})" for tc in msg.tool_calls)
                 body = f"{body} [tool_calls: {calls}]".strip()
             if msg.tool_result is not None:
                 body = (
-                    f"{body} "
-                    f"[tool_result({msg.tool_result.name}): "
-                    f"{msg.tool_result.output}]"
+                    f"{body} [tool_result({msg.tool_result.name}): {msg.tool_result.output}]"
                 ).strip()
             lines.append(f"[{msg.role}] {body}")
         return "\n".join(lines)

@@ -76,9 +76,7 @@ class TestRecordWrite:
 
     def test_record_write_existing_file(self) -> None:
         tracker = ChangeTracker()
-        tracker.record_write(
-            "a.txt", "old\n", "new\nextra\n", "write_to_file"
-        )
+        tracker.record_write("a.txt", "old\n", "new\nextra\n", "write_to_file")
         changes = tracker.get_changes()
         assert len(changes) == 1
         ch = changes[0]

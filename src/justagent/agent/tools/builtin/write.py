@@ -14,9 +14,7 @@ class WriteToFileInput(BaseModel):
 
     path: str = Field(..., description="The path to write to.")
     content: str = Field(..., description="The full content to write.")
-    create_dirs: bool = Field(
-        True, description="Create parent directories if they don't exist."
-    )
+    create_dirs: bool = Field(True, description="Create parent directories if they don't exist.")
 
 
 _WRITE_DESCRIPTION = """\
@@ -65,10 +63,7 @@ async def _write_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         try:
             resolved.parent.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            return ToolResult.failure(
-                f"Cannot create parent directories for "
-                f"{args.path}: {exc}"
-            )
+            return ToolResult.failure(f"Cannot create parent directories for {args.path}: {exc}")
     elif not resolved.parent.exists():
         return ToolResult.failure(
             f"Parent directory does not exist: {resolved.parent} "
@@ -80,9 +75,7 @@ async def _write_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     except OSError as exc:
         return ToolResult.failure(f"Cannot write file {args.path}: {exc}")
 
-    line_count = args.content.count("\n") + (
-        0 if args.content.endswith("\n") else 1
-    )
+    line_count = args.content.count("\n") + (0 if args.content.endswith("\n") else 1)
     return ToolResult.success(
         f"Successfully wrote {line_count} lines to {args.path}",
         line_count=line_count,

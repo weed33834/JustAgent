@@ -30,13 +30,9 @@ from justagent.models.project import ManagedProject
 # ---------------------------------------------------------------------------
 
 
-def _completed(
-    returncode: int = 0, stdout: str = "", stderr: str = ""
-) -> CompletedProcess[str]:
+def _completed(returncode: int = 0, stdout: str = "", stderr: str = "") -> CompletedProcess[str]:
     """Build a fake :class:`subprocess.CompletedProcess`."""
-    return CompletedProcess(
-        args="fake", returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return CompletedProcess(args="fake", returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 def _make_task(
@@ -258,9 +254,7 @@ class TestScheduleStore:
     def test_atomic_write_uses_tmp_then_rename(self, tmp_path: Path) -> None:
         path = tmp_path / "schedules.json"
         store = ScheduleStore(store_path=path)
-        with patch(
-            "justagent.core.scheduler.atomic_write_text"
-        ) as mock_write:
+        with patch("justagent.core.scheduler.atomic_write_text") as mock_write:
             store.add(_make_task(name="alpha"))
         mock_write.assert_called_once()
         # Ensure the target path passed is the configured store path.
@@ -563,16 +557,12 @@ class TestSchedulerExecution:
         project_store = ProjectStore(store_path=tmp_path / "p.json")
         project_dir = tmp_path / "myproj"
         project_dir.mkdir()
-        project_store.add(
-            ManagedProject(name="myproj", path=str(project_dir), added_at=1.0)
-        )
+        project_store.add(ManagedProject(name="myproj", path=str(project_dir), added_at=1.0))
         scheduler = Scheduler(
             store=ScheduleStore(tmp_path / "s.json"),
             project_store=project_store,
         )
-        scheduler.add_task(
-            name="alpha", schedule="30m", command="pwd", project="myproj"
-        )
+        scheduler.add_task(name="alpha", schedule="30m", command="pwd", project="myproj")
         with patch(
             "justagent.core.scheduler.subprocess.run",
             return_value=_completed(0, str(project_dir), ""),
@@ -666,16 +656,12 @@ class TestEdgeCases:
         project_store = ProjectStore(store_path=tmp_path / "p.json")
         project_dir = tmp_path / "p"
         project_dir.mkdir()
-        project_store.add(
-            ManagedProject(name="p", path=str(project_dir), added_at=1.0)
-        )
+        project_store.add(ManagedProject(name="p", path=str(project_dir), added_at=1.0))
         scheduler = Scheduler(
             store=ScheduleStore(tmp_path / "s.json"),
             project_store=project_store,
         )
-        task = scheduler.add_task(
-            name="alpha", schedule="30m", command="pwd", project="p"
-        )
+        task = scheduler.add_task(name="alpha", schedule="30m", command="pwd", project="p")
         cwd = scheduler._resolve_cwd(task)
         assert cwd == str(project_dir)
 
@@ -685,9 +671,7 @@ class TestEdgeCases:
             store=ScheduleStore(tmp_path / "s.json"),
             project_store=project_store,
         )
-        task = scheduler.add_task(
-            name="alpha", schedule="30m", command="pwd", project="ghost"
-        )
+        task = scheduler.add_task(name="alpha", schedule="30m", command="pwd", project="ghost")
         assert scheduler._resolve_cwd(task) is None
 
     @freeze_time("2025-06-15 12:00:00", tz_offset=0)

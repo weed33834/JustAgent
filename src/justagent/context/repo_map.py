@@ -315,7 +315,9 @@ class RepoMapGenerator:
         symbols = self._extract_javascript_regex(content)
         for m in re.finditer(r"interface\s+(\w+)", content, re.MULTILINE):
             symbols.append(
-                Symbol(name=m.group(1), kind=SymbolKind.INTERFACE, line=_line_of(content, m.start()))
+                Symbol(
+                    name=m.group(1), kind=SymbolKind.INTERFACE, line=_line_of(content, m.start())
+                )
             )
         for m in re.finditer(r"type\s+(\w+)", content, re.MULTILINE):
             symbols.append(
@@ -341,7 +343,9 @@ class RepoMapGenerator:
             )
         for m in re.finditer(r"trait\s+(\w+)", content, re.MULTILINE):
             symbols.append(
-                Symbol(name=m.group(1), kind=SymbolKind.INTERFACE, line=_line_of(content, m.start()))
+                Symbol(
+                    name=m.group(1), kind=SymbolKind.INTERFACE, line=_line_of(content, m.start())
+                )
             )
         symbols.sort(key=lambda s: s.line)
         return symbols

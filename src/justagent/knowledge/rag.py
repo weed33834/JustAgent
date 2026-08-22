@@ -285,9 +285,7 @@ class RAGPipeline:
         # Remove old chunks if re-indexing.
         if document.id in self._indexed_docs:
             removed = self._store.remove_by_document(document.id)
-            logger.debug(
-                "Removed %d old chunks for document %s", removed, document.id
-            )
+            logger.debug("Removed %d old chunks for document %s", removed, document.id)
 
         # Chunk if needed.
         chunks = document.chunks
@@ -428,9 +426,7 @@ class RAGPipeline:
             document_ids=document_ids,
             min_score=min_score,
         )
-        logger.debug(
-            "Retrieved %d chunks for query: %s", len(results), question[:80]
-        )
+        logger.debug("Retrieved %d chunks for query: %s", len(results), question[:80])
 
         # Build citations.
         citations = [
@@ -488,23 +484,16 @@ class RAGPipeline:
 
         Returns a list of :class:`RAGAnswer` objects, one per question.
         """
-        return [
-            self.query(q, top_k=top_k, document_ids=document_ids)
-            for q in questions
-        ]
+        return [self.query(q, top_k=top_k, document_ids=document_ids) for q in questions]
 
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 
-    def _generate(
-        self, question: str, results: list[SearchResult]
-    ) -> str:
+    def _generate(self, question: str, results: list[SearchResult]) -> str:
         """Call the LLM gateway to generate an answer."""
         context = _build_context(results, max_chars=self._max_context_chars)
-        user_message = _CONTEXT_TEMPLATE.format(
-            context=context, question=question
-        )
+        user_message = _CONTEXT_TEMPLATE.format(context=context, question=question)
         request = ChatCompletionRequest(
             messages=[
                 ChatMessage(role="system", content=_SYSTEM_PROMPT),
@@ -520,8 +509,7 @@ class RAGPipeline:
             logger.error("LLM generation failed: %s", exc)
             return (
                 f"I encountered an error while generating the answer: {exc}. "
-                f"Here are the retrieved context snippets:\n\n"
-                + self._format_context_only(results)
+                f"Here are the retrieved context snippets:\n\n" + self._format_context_only(results)
             )
 
     @staticmethod

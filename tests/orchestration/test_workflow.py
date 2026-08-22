@@ -235,9 +235,7 @@ class TestWorkflowExecution:
     @pytest.mark.asyncio
     async def test_start_execution_terminal_raises(self) -> None:
         engine = WorkflowEngine()
-        wf = await engine.create_workflow(
-            name="once", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="once", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
         await engine.start_execution(execution.id)
         with pytest.raises(WorkflowError, match="terminal"):
@@ -246,9 +244,7 @@ class TestWorkflowExecution:
     @pytest.mark.asyncio
     async def test_get_execution_status_returns_snapshot(self) -> None:
         engine = WorkflowEngine()
-        wf = await engine.create_workflow(
-            name="snap", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="snap", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
         snapshot = await engine.get_execution_status(execution.id)
         assert snapshot is not None
@@ -292,9 +288,7 @@ class TestNodeStatusTracking:
             return {"task": node.name}
 
         engine.register_node_handler(NodeType.TASK, observing_handler)
-        wf = await engine.create_workflow(
-            name="statuses", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="statuses", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
 
         nodes_before = await engine.get_execution_nodes(execution.id)
@@ -446,9 +440,7 @@ class TestErrorHandling:
             return None  # type: ignore[return-value]
 
         engine.register_node_handler(NodeType.TASK, none_handler)
-        wf = await engine.create_workflow(
-            name="none", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="none", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
         result = await engine.start_execution(execution.id)
         assert result.status is WorkflowStatus.COMPLETED
@@ -509,9 +501,7 @@ class TestPauseResumeCancel:
             return {"task": node.name}
 
         engine.register_node_handler(NodeType.TASK, gated_handler)
-        wf = await engine.create_workflow(
-            name="cancel", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="cancel", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
         task = asyncio.create_task(engine.start_execution(execution.id))
 
@@ -564,9 +554,7 @@ class TestNodeHandlers:
             return {"custom": True}
 
         engine.register_node_handler(NodeType.TASK, custom)
-        wf = await engine.create_workflow(
-            name="custom", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="custom", nodes=[WorkflowNode(id="a", name="A")])
         execution = await engine.create_execution(wf.id)
         result = await engine.start_execution(execution.id)
         assert called == ["a"]
@@ -821,9 +809,7 @@ class TestReporting:
     async def test_stats_reflects_state(self) -> None:
         engine = WorkflowEngine()
         assert engine.stats() == {"workflows": 0, "executions": 0, "running": 0}
-        wf = await engine.create_workflow(
-            name="s", nodes=[WorkflowNode(id="a", name="A")]
-        )
+        wf = await engine.create_workflow(name="s", nodes=[WorkflowNode(id="a", name="A")])
         await engine.create_execution(wf.id)
         stats = engine.stats()
         assert stats["workflows"] == 1

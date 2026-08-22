@@ -282,9 +282,7 @@ class SkillLoader:
         project_root: Path | None = None,
     ) -> None:
         self._config = config or SkillConfig()
-        self._project_root = (
-            Path(project_root) if project_root is not None else Path.cwd()
-        )
+        self._project_root = Path(project_root) if project_root is not None else Path.cwd()
 
     @property
     def config(self) -> SkillConfig:
@@ -345,10 +343,7 @@ class SkillLoader:
     def summaries(self) -> list[SkillSummary]:
         """Return lightweight summaries for system-prompt injection."""
 
-        return [
-            SkillSummary(name=s.name, description=s.description)
-            for s in self.discover()
-        ]
+        return [SkillSummary(name=s.name, description=s.description) for s in self.discover()]
 
     def format_summaries_for_prompt(self) -> str:
         """Format summaries as a markdown block for the system prompt.

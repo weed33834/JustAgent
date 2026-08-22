@@ -84,11 +84,15 @@ class MetricsRegistry:
         self._metrics: dict[str, dict[str, Any]] = {}
 
     def inc(self, name: str, amount: int = 1, description: str = "") -> None:
-        entry = self._metrics.setdefault(name, {"type": "counter", "value": 0, "description": description})
+        entry = self._metrics.setdefault(
+            name, {"type": "counter", "value": 0, "description": description}
+        )
         entry["value"] = entry.get("value", 0) + amount
 
     def record(self, name: str, value: float, description: str = "") -> None:
-        entry = self._metrics.setdefault(name, {"type": "histogram", "values": [], "description": description})
+        entry = self._metrics.setdefault(
+            name, {"type": "histogram", "values": [], "description": description}
+        )
         entry.setdefault("values", []).append(value)
 
     def set(self, name: str, value: float, description: str = "") -> None:

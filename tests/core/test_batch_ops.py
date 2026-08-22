@@ -20,13 +20,9 @@ from justagent.core.project_store import ProjectStore
 from justagent.models.project import ManagedProject
 
 
-def _completed(
-    returncode: int = 0, stdout: str = "", stderr: str = ""
-) -> CompletedProcess[str]:
+def _completed(returncode: int = 0, stdout: str = "", stderr: str = "") -> CompletedProcess[str]:
     """Build a fake :class:`subprocess.CompletedProcess`."""
-    return CompletedProcess(
-        args=["fake"], returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return CompletedProcess(args=["fake"], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 def _add_project(store: ProjectStore, tmp_path: Path, name: str) -> Path:

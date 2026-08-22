@@ -52,9 +52,7 @@ class InvalidArgumentsError(ToolError):
     def __init__(self, tool: str, detail: str) -> None:
         self.tool = tool
         self.detail = detail
-        super().__init__(
-            f"The {tool} tool was called with invalid arguments: {detail}"
-        )
+        super().__init__(f"The {tool} tool was called with invalid arguments: {detail}")
 
 
 class ToolTimeoutError(ToolError):
@@ -195,9 +193,7 @@ class ToolContext:
         """
 
         if self.abort.is_set():
-            raise ToolAbortedError(
-                f"Tool call {self.tool_call_id} was aborted by the user"
-            )
+            raise ToolAbortedError(f"Tool call {self.tool_call_id} was aborted by the user")
 
 
 # ---------------------------------------------------------------------------

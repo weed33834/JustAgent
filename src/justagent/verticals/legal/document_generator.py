@@ -353,8 +353,14 @@ def _default_templates() -> dict[LegalDocumentType, LegalDocumentTemplate]:
             ),
         ],
         placeholders=[
-            "summary", "parties", "claims", "disputed", "facts",
-            "timeline", "legal_context", "evidence_analysis",
+            "summary",
+            "parties",
+            "claims",
+            "disputed",
+            "facts",
+            "timeline",
+            "legal_context",
+            "evidence_analysis",
         ],
     )
 
@@ -435,8 +441,13 @@ def _default_templates() -> dict[LegalDocumentType, LegalDocumentTemplate]:
             ),
         ],
         placeholders=[
-            "summary", "parties", "facts", "evidence_analysis",
-            "legal_context", "disputed", "claims",
+            "summary",
+            "parties",
+            "facts",
+            "evidence_analysis",
+            "legal_context",
+            "disputed",
+            "claims",
         ],
     )
 
@@ -469,7 +480,12 @@ def _default_templates() -> dict[LegalDocumentType, LegalDocumentTemplate]:
             ),
         ],
         placeholders=[
-            "summary", "facts", "timeline", "legal_context", "disputed", "claims",
+            "summary",
+            "facts",
+            "timeline",
+            "legal_context",
+            "disputed",
+            "claims",
         ],
     )
 
@@ -577,18 +593,14 @@ class LegalDocumentTemplateManager:
             self._type_index[template.doc_type] = template.id
         return template
 
-    def get_template(
-        self, doc_type: LegalDocumentType
-    ) -> LegalDocumentTemplate | None:
+    def get_template(self, doc_type: LegalDocumentType) -> LegalDocumentTemplate | None:
         """Return the template for a document type, or ``None``."""
 
         with self._lock:
             tid = self._type_index.get(doc_type)
             return self._templates.get(tid) if tid else None
 
-    def get_template_by_id(
-        self, template_id: str
-    ) -> LegalDocumentTemplate | None:
+    def get_template_by_id(self, template_id: str) -> LegalDocumentTemplate | None:
         """Return a template by ID, or ``None``."""
 
         with self._lock:
@@ -750,9 +762,7 @@ class LegalDocumentGenerator:
         # 1. Get the template.
         template = self._templates.get_template(doc_type)
         if template is None:
-            raise DocumentGenerationError(
-                f"No template registered for {doc_type.value}"
-            )
+            raise DocumentGenerationError(f"No template registered for {doc_type.value}")
 
         # 2. Build case context.
         ctx = self._case_manager.build_context(case_id)
@@ -857,9 +867,7 @@ class LegalDocumentGenerator:
     # Citation verification
     # ------------------------------------------------------------------
 
-    def verify_citations(
-        self, citations: list[str]
-    ) -> list[CitationVerification]:
+    def verify_citations(self, citations: list[str]) -> list[CitationVerification]:
         """Verify a list of statute citations against the knowledge base.
 
         For each citation, attempts to find a matching
@@ -881,16 +889,12 @@ class LegalDocumentGenerator:
             results.append(self._verify_single_citation(citation))
         return results
 
-    async def verify_citations_async(
-        self, citations: list[str]
-    ) -> list[CitationVerification]:
+    async def verify_citations_async(self, citations: list[str]) -> list[CitationVerification]:
         """Async wrapper for :meth:`verify_citations`."""
 
         return await asyncio.to_thread(self.verify_citations, citations)
 
-    def verify_document(
-        self, document: GeneratedDocument
-    ) -> GeneratedDocument:
+    def verify_document(self, document: GeneratedDocument) -> GeneratedDocument:
         """Verify all citations in an existing :class:`GeneratedDocument`.
 
         Updates the document's ``citation_verifications`` and
@@ -899,18 +903,16 @@ class LegalDocumentGenerator:
 
         verifications = self.verify_citations(document.citations)
         document.citation_verifications = verifications
-        document.all_citations_valid = all(
-            v.is_valid for v in verifications
-        ) if verifications else True
+        document.all_citations_valid = (
+            all(v.is_valid for v in verifications) if verifications else True
+        )
         return document
 
     # ------------------------------------------------------------------
     # Internal: generation
     # ------------------------------------------------------------------
 
-    def _retrieve_legal_context(
-        self, case_id: str, ctx: CaseContext
-    ) -> str:
+    def _retrieve_legal_context(self, case_id: str, ctx: CaseContext) -> str:
         """Retrieve relevant legal context via RAG or knowledge base."""
 
         parts: list[str] = []
@@ -922,9 +924,7 @@ class LegalDocumentGenerator:
             if query.strip():
                 results = self._kb.search_articles(query, top_k=5)
                 for ar in results:
-                    parts.append(
-                        f"{ar.article.citation}: {ar.article.content[:200]}"
-                    )
+                    parts.append(f"{ar.article.citation}: {ar.article.content[:200]}")
 
         # Use RAG pipeline for additional context.
         if self._rag is not None:
@@ -985,14 +985,10 @@ class LegalDocumentGenerator:
             content = ""
             if section.content_template:
                 try:
-                    content = _render_prompt(
-                        section.content_template, variables
-                    )
+                    content = _render_prompt(section.content_template, variables)
                 except (KeyError, IndexError):
                     content = section.content_template
-            sections.append(
-                GeneratedDocumentSection(title=section.title, content=content)
-            )
+            sections.append(GeneratedDocumentSection(title=section.title, content=content))
         return sections
 
     def _generate_with_llm(
@@ -1087,9 +1083,7 @@ class LegalDocumentGenerator:
             )
 
         if not sections:
-            sections.append(
-                GeneratedDocumentSection(title="正文", content=output.strip())
-            )
+            sections.append(GeneratedDocumentSection(title="正文", content=output.strip()))
         return sections
 
     # ------------------------------------------------------------------
@@ -1125,9 +1119,7 @@ class LegalDocumentGenerator:
         article = self._kb.find_article(law_name, article_number)
         if article is None:
             # Try a fuzzy search by law name + article number keywords.
-            results = self._kb.search_articles(
-                f"{law_name} {article_number}", top_k=3
-            )
+            results = self._kb.search_articles(f"{law_name} {article_number}", top_k=3)
             if results:
                 best = results[0].article
                 return CitationVerification(

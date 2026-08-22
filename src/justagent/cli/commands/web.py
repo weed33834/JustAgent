@@ -17,7 +17,9 @@ def web(
     ctx: typer.Context,
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host"),
     port: int = typer.Option(8000, "--port", "-p", help="Listen port"),
-    no_auth: bool = typer.Option(False, "--no-auth", help="Disable authentication (local development only)"),
+    no_auth: bool = typer.Option(
+        False, "--no-auth", help="Disable authentication (local development only)"
+    ),
 ) -> None:
     """Start a browser chat interface for JustAgent.
 
@@ -33,9 +35,7 @@ def web(
     try:
         from justagent.web.app import run
     except ImportError as exc:
-        raise typer.BadParameter(
-            f"Web support requires fastapi+uvicorn: {exc}"
-        ) from exc
+        raise typer.BadParameter(f"Web support requires fastapi+uvicorn: {exc}") from exc
 
     if no_auth:
         typer.secho(

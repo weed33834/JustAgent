@@ -227,10 +227,7 @@ def _state_path(ctx: typer.Context) -> Path:
     ``./.justagent/security_state.json``.
     """
 
-    env = (
-        os.environ.get("JUSTAGENT_SECURITY_STATE")
-        or os.environ.get("MYAGENT_SECURITY_STATE")
-    )
+    env = os.environ.get("JUSTAGENT_SECURITY_STATE") or os.environ.get("MYAGENT_SECURITY_STATE")
     if env:
         return Path(env).expanduser()
     config = _get_config(ctx)
@@ -251,12 +248,8 @@ class _SecurityState:
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.rbac_engine: RBACEngine | None = (
-            RBACEngine() if _RBAC_AVAILABLE else None
-        )
-        self.key_manager: KeyManager | None = (
-            KeyManager() if _ENCRYPTION_AVAILABLE else None
-        )
+        self.rbac_engine: RBACEngine | None = RBACEngine() if _RBAC_AVAILABLE else None
+        self.key_manager: KeyManager | None = KeyManager() if _ENCRYPTION_AVAILABLE else None
         self.compliance_checker: ComplianceChecker | None = (
             ComplianceChecker() if _COMPLIANCE_AVAILABLE else None
         )
@@ -291,9 +284,7 @@ class _SecurityState:
         data = self._snapshot()
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(
-                json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
+            self.path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         except OSError as exc:
             get_console().print(
                 f"[red]✗ 无法保存安全状态文件 {self.path}：{exc}[/red]", style="red"
@@ -315,13 +306,10 @@ class _SecurityState:
             result["roles"] = [r.model_dump(mode="json") for r in engine._roles.values()]
             result["users"] = [u.model_dump(mode="json") for u in engine._users.values()]
         if self.key_manager is not None:
-            result["keys"] = [
-                k.model_dump(mode="json") for k in self.key_manager._keys.values()
-            ]
+            result["keys"] = [k.model_dump(mode="json") for k in self.key_manager._keys.values()]
         if self.compliance_checker is not None:
             result["compliance_rules"] = [
-                r.model_dump(mode="json")
-                for r in self.compliance_checker._rules.values()
+                r.model_dump(mode="json") for r in self.compliance_checker._rules.values()
             ]
         if self.audit_manager is not None:
             result["audit_entries"] = [
@@ -369,9 +357,7 @@ class _SecurityState:
 
 
 @contextmanager
-def _state_session(
-    ctx: typer.Context, *, save: bool = True
-) -> Iterator[_SecurityState]:
+def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_SecurityState]:
     """Load state, yield it, and persist on exit (unless dry-run or read-only).
 
     Args:
@@ -423,9 +409,7 @@ def _parse_enum(value: str, enum_cls: type[Any], label: str) -> Any:
         return enum_cls(value)
     except ValueError:
         valid = ", ".join(str(m.value) for m in enum_cls)
-        raise typer.BadParameter(
-            f"无效的 {label}：{value!r}（可选值：{valid}）"
-        ) from None
+        raise typer.BadParameter(f"无效的 {label}：{value!r}（可选值：{valid}）") from None
 
 
 def _require_rbac() -> None:
@@ -433,8 +417,7 @@ def _require_rbac() -> None:
 
     if not _RBAC_AVAILABLE:
         raise typer.BadParameter(
-            "RBAC 子系统不可用（未能导入 justagent.security.rbac）。"
-            "请确认 pydantic 已安装。"
+            "RBAC 子系统不可用（未能导入 justagent.security.rbac）。请确认 pydantic 已安装。"
         )
 
 
@@ -463,8 +446,7 @@ def _require_compliance() -> None:
 
     if not _COMPLIANCE_AVAILABLE:
         raise typer.BadParameter(
-            "合规子系统不可用（未能导入 justagent.security.compliance）。"
-            "请确认 pydantic 已安装。"
+            "合规子系统不可用（未能导入 justagent.security.compliance）。请确认 pydantic 已安装。"
         )
 
 
@@ -529,9 +511,7 @@ def _parse_permissions(specs: list[str]) -> dict[Any, set[Any]]:
             if p_str:
                 perms.add(_parse_enum(p_str, Permission, "权限"))
         if not perms:
-            raise typer.BadParameter(
-                f"权限规格 {spec!r} 未指定任何权限"
-            )
+            raise typer.BadParameter(f"权限规格 {spec!r} 未指定任何权限")
         if rt in result:
             result[rt] |= perms
         else:
@@ -648,9 +628,7 @@ def rbac_add_role(
             )
         )
     else:
-        console.print(
-            f"[green]✓[/green] 已创建角色 [bold]{role.name}[/bold]（ID: {role.id}）"
-        )
+        console.print(f"[green]✓[/green] 已创建角色 [bold]{role.name}[/bold]（ID: {role.id}）")
 
 
 @rbac_app.command("list-roles", help="列出所有角色。")
@@ -677,8 +655,7 @@ def rbac_list_roles(
                 "description": r.description,
                 "system": r.system,
                 "permissions": {
-                    rt.value: sorted(p.value for p in perms)
-                    for rt, perms in r.permissions.items()
+                    rt.value: sorted(p.value for p in perms) for rt, perms in r.permissions.items()
                 },
                 "inherits_from": r.inherits_from,
                 "created_at": r.created_at,
@@ -721,9 +698,7 @@ def rbac_assign(
     display_name: str = typer.Option(
         "", "--display-name", help="用户显示名（仅在用户不存在时自动注册时使用）"
     ),
-    email: str = typer.Option(
-        "", "--email", help="用户邮箱（仅在用户不存在时自动注册时使用）"
-    ),
+    email: str = typer.Option("", "--email", help="用户邮箱（仅在用户不存在时自动注册时使用）"),
     department: str = typer.Option(
         "", "--department", help="用户部门（仅在用户不存在时自动注册时使用）"
     ),
@@ -1214,12 +1189,8 @@ def dlp_scan(
         readable=True,
         help="从文件读取要扫描的内容",
     ),
-    redact: bool = typer.Option(
-        False, "--redact", help="输出完全脱敏后的内容（替换为占位符）"
-    ),
-    mask: bool = typer.Option(
-        False, "--mask", help="输出部分遮罩后的内容（保留类型上下文）"
-    ),
+    redact: bool = typer.Option(False, "--redact", help="输出完全脱敏后的内容（替换为占位符）"),
+    mask: bool = typer.Option(False, "--mask", help="输出部分遮罩后的内容（保留类型上下文）"),
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
 ) -> None:
     """扫描文本或文件中的个人敏感信息（PII）。
@@ -1302,9 +1273,7 @@ def dlp_scan(
         console.print("[dim]未检测到 PII。内容是安全的。[/dim]")
         return
 
-    table = Table(
-        title=f"PII 扫描结果（共 {len(findings)} 处）", border_style="cyan"
-    )
+    table = Table(title=f"PII 扫描结果（共 {len(findings)} 处）", border_style="cyan")
     table.add_column("#", justify="right", style="dim")
     table.add_column("类型", style="bold")
     table.add_column("匹配值")
@@ -1330,8 +1299,7 @@ def dlp_scan(
     # Summary.
     summary = scanner.summary(content)
     console.print(
-        f"[dim]按类型: {summary['by_type']}  |  "
-        f"按敏感度: {summary['by_sensitivity']}[/dim]"
+        f"[dim]按类型: {summary['by_type']}  |  按敏感度: {summary['by_sensitivity']}[/dim]"
     )
     if summary.get("has_critical"):
         console.print("[red]⚠ 检测到 CRITICAL 级别的敏感信息！[/red]")
@@ -1374,9 +1342,7 @@ def compliance_check(
         return
 
     fw_filter = (
-        _parse_enum(framework, ComplianceFramework, "合规框架")
-        if framework is not None
-        else None
+        _parse_enum(framework, ComplianceFramework, "合规框架") if framework is not None else None
     )
 
     with _state_session(ctx, save=False) as state:
@@ -1390,8 +1356,7 @@ def compliance_check(
                 r for r in decision.violated_rules if r.framework is fw_filter
             ]
             has_blocking = any(
-                r.severity in (Severity.HIGH, Severity.CRITICAL)
-                for r in decision.violated_rules
+                r.severity in (Severity.HIGH, Severity.CRITICAL) for r in decision.violated_rules
             )
             decision.allowed = not has_blocking
 
@@ -1493,9 +1458,7 @@ def compliance_audit(
         None, "--result", help="按结果过滤（success/failure/denied/error）"
     ),
     limit: int = typer.Option(50, "--limit", help="返回条目数量上限"),
-    verify: bool = typer.Option(
-        False, "--verify", help="验证审计链完整性（SHA-256 哈希链）"
-    ),
+    verify: bool = typer.Option(False, "--verify", help="验证审计链完整性（SHA-256 哈希链）"),
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
 ) -> None:
     """查看安全审计追踪记录。
@@ -1510,9 +1473,7 @@ def compliance_audit(
         _require_compliance()
         return
 
-    result_filter = (
-        _parse_enum(result, AuditResult, "结果") if result is not None else None
-    )
+    result_filter = _parse_enum(result, AuditResult, "结果") if result is not None else None
 
     with _state_session(ctx, save=False) as state:
         manager = state.audit_manager
@@ -1618,9 +1579,7 @@ def compliance_audit(
     console.print(table)
 
     # Summary line.
-    by_result_str = ", ".join(
-        f"{k}: {v}" for k, v in sorted(summary["by_result"].items())
-    )
+    by_result_str = ", ".join(f"{k}: {v}" for k, v in sorted(summary["by_result"].items()))
     console.print(f"[dim]结果分布: {by_result_str or '(无)'}[/dim]")
 
 

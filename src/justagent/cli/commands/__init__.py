@@ -23,7 +23,9 @@ def _register_vertical_commands(parent: typer.Typer) -> None:
         try:
             mod = ep.load()
         except Exception as exc:  # noqa: BLE001 - 不让单个垂直拖垮 CLI 启动
-            warnings.warn(f"跳过命令入口 {ep.name}（加载失败：{exc}）。", RuntimeWarning, stacklevel=2)
+            warnings.warn(
+                f"跳过命令入口 {ep.name}（加载失败：{exc}）。", RuntimeWarning, stacklevel=2
+            )
             continue
         register = getattr(mod, "register", None)
         if callable(register):

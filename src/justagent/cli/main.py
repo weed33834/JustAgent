@@ -51,7 +51,9 @@ def main_callback(
     verbose: bool = typer.Option(False, "--verbose", "-v", help=_i18n._("option.verbose")),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help=_i18n._("option.dry_run")),
     yes: bool = typer.Option(False, "--yes", "-y", help=_i18n._("option.yes")),
-    config_path: Path | None = typer.Option(None, "--config", "-c", help=_i18n._("option.config_path")),
+    config_path: Path | None = typer.Option(
+        None, "--config", "-c", help=_i18n._("option.config_path")
+    ),
     lang: str | None = typer.Option(
         None, "--lang", help=_i18n._("option.lang"), show_default=False
     ),
@@ -177,7 +179,9 @@ def cli_entrypoint() -> int:
 
     if _is_unknown_command(command):
         typer.secho(_i18n._("cli.unknown_command", command=command), fg=typer.colors.RED, err=True)
-        typer.secho(f"💡 {_i18n._('cli.unknown_command.suggestion')}", fg=typer.colors.CYAN, err=True)
+        typer.secho(
+            f"💡 {_i18n._('cli.unknown_command.suggestion')}", fg=typer.colors.CYAN, err=True
+        )
         # 用法错误，退出码 2 与 Unix "调用错误" 约定一致。
         return ExitCode.CONFIG_ERROR
 

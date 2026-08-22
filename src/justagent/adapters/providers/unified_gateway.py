@@ -89,7 +89,7 @@ def _normalize_base_url(raw: str) -> str:
         r"172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)",
         url,
     ):
-        url = "https://" + url[len("http://"):]
+        url = "https://" + url[len("http://") :]
     # Append /v1 if the URL is a bare root without an API version segment.
     if not re.search(r"/(v\d+|api)/?$", url):
         url += "/v1"
@@ -127,8 +127,7 @@ class UnifiedGateway(ModelGateway):
         self._provider = cfg.provider
         self._model = cfg.model or "gpt-4o-mini"
         self._base_url = _normalize_base_url(
-            str(cfg.base_url) if cfg.base_url
-            else _PROVIDER_BASE_URLS.get(cfg.provider, "")
+            str(cfg.base_url) if cfg.base_url else _PROVIDER_BASE_URLS.get(cfg.provider, "")
         )
         self._api_key = cfg.api_key or _PLACEHOLDER_KEY
         self._api_version = cfg.api_version
@@ -165,9 +164,7 @@ class UnifiedGateway(ModelGateway):
             )
             return bool(response and response.choices)
         except Exception:
-            logger.debug(
-                "Health check failed for provider %s", self._provider.value, exc_info=True
-            )
+            logger.debug("Health check failed for provider %s", self._provider.value, exc_info=True)
             return False
 
     def list_models(self) -> list[str]:
@@ -183,8 +180,7 @@ class UnifiedGateway(ModelGateway):
             return cast(list[str], ids)
         except Exception as exc:
             raise ModelGatewayError(
-                f"Failed to list models from {self._provider.value}: "
-                f"{_classify_error(exc)} — {exc}"
+                f"Failed to list models from {self._provider.value}: {_classify_error(exc)} — {exc}"
             ) from exc
 
     def chat(self, req: ChatCompletionRequest) -> ChatCompletionResponse:
@@ -198,7 +194,9 @@ class UnifiedGateway(ModelGateway):
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
-                messages=cast("Any", [{"role": m.role, "content": m.content} for m in req.messages]),
+                messages=cast(
+                    "Any", [{"role": m.role, "content": m.content} for m in req.messages]
+                ),
                 temperature=req.temperature if req.temperature is not None else 0.7,
                 max_tokens=req.max_tokens if req.max_tokens is not None else 512,
             )

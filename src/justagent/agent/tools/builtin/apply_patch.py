@@ -62,17 +62,14 @@ async def _patch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     # capture old/new content for the change tracker.
     changes_meta: list[dict[str, Any]] = []
     try:
-        computed, _fuzz = compute_patch_changes(
-            args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True
-        )
+        computed, _fuzz = compute_patch_changes(args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True)
         for fpath, change in computed.items():
             changes_meta.append(
                 {
                     "path": fpath,
                     "action": (
                         "created"
-                        if change.old_content is None
-                        and change.new_content is not None
+                        if change.old_content is None and change.new_content is not None
                         else "deleted"
                         if change.new_content is None
                         else "modified"
@@ -87,9 +84,7 @@ async def _patch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         pass
 
     try:
-        touched, _count = apply_patch_text(
-            args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True
-        )
+        touched, _count = apply_patch_text(args.patch, cwd=Path(ctx.cwd), restrict_to_cwd=True)
     except DiffError as exc:
         return ToolResult.failure(f"Failed to apply patch: {exc}")
     except Exception as exc:  # noqa: BLE001
@@ -102,8 +97,7 @@ async def _patch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
         )
 
     return ToolResult.success(
-        f"Successfully applied patch to {len(touched)} file(s): "
-        f"{', '.join(touched)}",
+        f"Successfully applied patch to {len(touched)} file(s): {', '.join(touched)}",
         touched=touched,
         changes=changes_meta,
     )

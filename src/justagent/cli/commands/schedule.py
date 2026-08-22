@@ -65,7 +65,12 @@ def list_tasks() -> None:
 @app.command("add")
 def add_task(
     name: str = typer.Argument(..., help="Unique task name."),
-    schedule: str = typer.Option(..., "--schedule", "-s", help="Schedule expression (e.g. '30m', 'daily 09:00', '*/5 * * * *')."),
+    schedule: str = typer.Option(
+        ...,
+        "--schedule",
+        "-s",
+        help="Schedule expression (e.g. '30m', 'daily 09:00', '*/5 * * * *').",
+    ),
     command: str = typer.Option(..., "--command", "-c", help="Shell command to run."),
     project: str = typer.Option("", "--project", "-p", help="Managed project name (optional)."),
     disabled: bool = typer.Option(False, "--disabled", help="Add the task in a disabled state."),
@@ -177,8 +182,7 @@ def daemon(
     """Run the scheduler daemon: poll for due tasks until interrupted."""
     scheduler = _make_scheduler()
     typer.echo(
-        f"Scheduler daemon running (check_interval={check_interval}s). "
-        "Press Ctrl+C to stop."
+        f"Scheduler daemon running (check_interval={check_interval}s). Press Ctrl+C to stop."
     )
     try:
         scheduler.run_daemon(check_interval=check_interval)

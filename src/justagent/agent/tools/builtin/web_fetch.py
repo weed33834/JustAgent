@@ -48,8 +48,7 @@ async def _web_fetch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
 
     if args.format not in {"markdown", "text", "raw"}:
         return ToolResult.failure(
-            f"Invalid format: {args.format!r}. "
-            "Must be one of: markdown, text, raw."
+            f"Invalid format: {args.format!r}. Must be one of: markdown, text, raw."
         )
 
     # Enforce HTTPS.
@@ -57,19 +56,14 @@ async def _web_fetch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
     if url.startswith("http://"):
         url = "https://" + url[len("http://") :]
     elif not url.startswith("https://"):
-        return ToolResult.failure(
-            f"URL must start with http:// or https:// (got: {url!r})"
-        )
+        return ToolResult.failure(f"URL must start with http:// or https:// (got: {url!r})")
 
     timeout = (args.timeout_ms or DEFAULT_TIMEOUT_MS) / 1000
 
     try:
         import httpx
     except ImportError as exc:
-        return ToolResult.failure(
-            f"httpx is not installed: {exc}. "
-            "Install with: pip install httpx"
-        )
+        return ToolResult.failure(f"httpx is not installed: {exc}. Install with: pip install httpx")
 
     try:
         async with httpx.AsyncClient(
@@ -93,8 +87,7 @@ async def _web_fetch_execute(args: BaseModel, ctx: ToolContext) -> ToolResult:
             body = response.text[:MAX_RESPONSE_BYTES]
     except httpx.HTTPStatusError as exc:
         return ToolResult.failure(
-            f"HTTP error fetching {url}: {exc.response.status_code} "
-            f"{exc.response.reason_phrase}"
+            f"HTTP error fetching {url}: {exc.response.status_code} {exc.response.reason_phrase}"
         )
     except httpx.RequestError as exc:
         return ToolResult.failure(f"Network error fetching {url}: {exc}")

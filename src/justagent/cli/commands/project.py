@@ -60,7 +60,9 @@ def list_projects(ctx: typer.Context) -> None:
 def add_project(
     ctx: typer.Context,
     path: Path = typer.Argument(..., help="Path to the project directory."),
-    name: str | None = typer.Option(None, "--name", help="Project name (default: directory basename)."),
+    name: str | None = typer.Option(
+        None, "--name", help="Project name (default: directory basename)."
+    ),
     tag: list[str] | None = typer.Option(None, "--tag", help="Tag to attach (repeatable)."),
 ) -> None:
     """Add a project to the managed list."""
@@ -135,9 +137,7 @@ def scan(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="List discovered projects without registering them."
     ),
-    max_depth: int = typer.Option(
-        4, "--max-depth", help="Maximum directory depth to scan."
-    ),
+    max_depth: int = typer.Option(4, "--max-depth", help="Maximum directory depth to scan."),
 ) -> None:
     """Scan a directory for projects and optionally register them."""
     target = root.resolve() if root else Path.cwd()
@@ -169,9 +169,7 @@ def scan(
         return
     typer.echo(f"{'NAME':<24} {'TYPE':<8} PATH")
     for found in discovered:
-        typer.echo(
-            f"{found.name:<24} {found.project_type.value:<8} {found.path}"
-        )
+        typer.echo(f"{found.name:<24} {found.project_type.value:<8} {found.path}")
     typer.echo(f"Found {len(discovered)} project(s) (dry run, not registered).")
 
 
@@ -218,11 +216,7 @@ def batch_ship(
 ) -> None:
     """Run workflow stages across managed projects."""
     try:
-        stage_list = [
-            BatchOperation(token.strip())
-            for token in stages.split(",")
-            if token.strip()
-        ]
+        stage_list = [BatchOperation(token.strip()) for token in stages.split(",") if token.strip()]
     except ValueError as exc:
         typer.secho(f"Invalid stage: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc

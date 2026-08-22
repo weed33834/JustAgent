@@ -22,13 +22,9 @@ from justagent.models.project import ManagedProject
 runner = CliRunner()
 
 
-def _completed(
-    returncode: int = 0, stdout: str = "", stderr: str = ""
-) -> CompletedProcess[str]:
+def _completed(returncode: int = 0, stdout: str = "", stderr: str = "") -> CompletedProcess[str]:
     """Build a fake :class:`subprocess.CompletedProcess`."""
-    return CompletedProcess(
-        args="fake", returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return CompletedProcess(args="fake", returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 def _patch_scheduler(store: ScheduleStore) -> patch[Scheduler]:
@@ -58,9 +54,13 @@ def test_add_task(tmp_path: Path) -> None:
         add_result = runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "echo hi",
             ],
         )
     assert add_result.exit_code == 0, add_result.output
@@ -77,9 +77,7 @@ def test_add_task_with_project(tmp_path: Path) -> None:
     project_store = ProjectStore(store_path=tmp_path / "projects.json")
     project_dir = tmp_path / "myproj"
     project_dir.mkdir()
-    project_store.add(
-        ManagedProject(name="myproj", path=str(project_dir), added_at=1.0)
-    )
+    project_store.add(ManagedProject(name="myproj", path=str(project_dir), added_at=1.0))
     schedule_store = ScheduleStore(store_path=tmp_path / "schedules.json")
 
     with patch(
@@ -89,10 +87,15 @@ def test_add_task_with_project(tmp_path: Path) -> None:
         add_result = runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "1h",
-                "--command", "pwd",
-                "--project", "myproj",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "1h",
+                "--command",
+                "pwd",
+                "--project",
+                "myproj",
             ],
         )
     assert add_result.exit_code == 0, add_result.output
@@ -111,9 +114,13 @@ def test_remove_task(tmp_path: Path) -> None:
         runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "echo hi",
             ],
         )
         remove_result = runner.invoke(app, ["schedule", "remove", "alpha"])
@@ -128,9 +135,13 @@ def test_enable_disable(tmp_path: Path) -> None:
         runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "echo hi",
             ],
         )
         disable_result = runner.invoke(app, ["schedule", "disable", "alpha"])
@@ -149,16 +160,23 @@ def test_run_task(tmp_path: Path) -> None:
         runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "echo hi",
             ],
         )
 
-    with _patch_scheduler(store), patch(
-        "justagent.core.scheduler.subprocess.run",
-        return_value=_completed(0, "hi\n", ""),
-    ) as mock_run:
+    with (
+        _patch_scheduler(store),
+        patch(
+            "justagent.core.scheduler.subprocess.run",
+            return_value=_completed(0, "hi\n", ""),
+        ) as mock_run,
+    ):
         run_result = runner.invoke(app, ["schedule", "run", "alpha"])
     assert run_result.exit_code == 0, run_result.output
     mock_run.assert_called_once()
@@ -188,10 +206,13 @@ def test_due(tmp_path: Path) -> None:
         )
     )
 
-    with _patch_scheduler(store), patch(
-        "justagent.core.scheduler.subprocess.run",
-        return_value=_completed(0, "", ""),
-    ) as mock_run:
+    with (
+        _patch_scheduler(store),
+        patch(
+            "justagent.core.scheduler.subprocess.run",
+            return_value=_completed(0, "", ""),
+        ) as mock_run,
+    ):
         result = runner.invoke(app, ["schedule", "due"])
     assert result.exit_code == 0, result.output
     mock_run.assert_called_once()
@@ -213,9 +234,13 @@ def test_add_invalid_schedule(tmp_path: Path) -> None:
         result = runner.invoke(
             app,
             [
-                "schedule", "add", "bad",
-                "--schedule", "not a schedule",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "bad",
+                "--schedule",
+                "not a schedule",
+                "--command",
+                "echo hi",
             ],
         )
     assert result.exit_code == 1, result.output
@@ -262,14 +287,21 @@ def test_run_task_failure_exit_code(tmp_path: Path) -> None:
         runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "false",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "false",
             ],
         )
-    with _patch_scheduler(store), patch(
-        "justagent.core.scheduler.subprocess.run",
-        return_value=_completed(2, "", "boom"),
+    with (
+        _patch_scheduler(store),
+        patch(
+            "justagent.core.scheduler.subprocess.run",
+            return_value=_completed(2, "", "boom"),
+        ),
     ):
         result = runner.invoke(app, ["schedule", "run", "alpha"])
     assert result.exit_code != 0
@@ -283,9 +315,13 @@ def test_add_with_disabled_flag(tmp_path: Path) -> None:
         runner.invoke(
             app,
             [
-                "schedule", "add", "alpha",
-                "--schedule", "30m",
-                "--command", "echo hi",
+                "schedule",
+                "add",
+                "alpha",
+                "--schedule",
+                "30m",
+                "--command",
+                "echo hi",
                 "--disabled",
             ],
         )
@@ -309,9 +345,12 @@ def test_due_failure_propagates_exit_code(tmp_path: Path) -> None:
             next_run=time.time() - 60,
         )
     )
-    with _patch_scheduler(store), patch(
-        "justagent.core.scheduler.subprocess.run",
-        return_value=_completed(1, "", ""),
+    with (
+        _patch_scheduler(store),
+        patch(
+            "justagent.core.scheduler.subprocess.run",
+            return_value=_completed(1, "", ""),
+        ),
     ):
         result = runner.invoke(app, ["schedule", "due"])
     assert result.exit_code == 1

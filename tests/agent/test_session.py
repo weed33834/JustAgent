@@ -214,9 +214,7 @@ class TestSerializeMessage:
         assert restored.name == "read_file"
 
     def test_with_error_tool_result(self) -> None:
-        tr = ToolResultPart(
-            tool_call_id="c2", name="run", output="boom", is_error=True
-        )
+        tr = ToolResultPart(tool_call_id="c2", name="run", output="boom", is_error=True)
         msg = Message(role="tool", tool_result=tr)
         data = serialize_message(msg)
         assert data["tool_result"]["is_error"] is True
@@ -225,9 +223,7 @@ class TestSerializeMessage:
         assert restored.tool_result.is_error is True
 
     def test_with_metadata(self) -> None:
-        msg = Message(
-            role="assistant", content="ok", metadata={"iteration": 4}
-        )
+        msg = Message(role="assistant", content="ok", metadata={"iteration": 4})
         data = serialize_message(msg)
         assert data["metadata"] == {"iteration": 4}
         restored = deserialize_message(data)
@@ -260,9 +256,7 @@ class TestSessionStore:
 
     def test_create_session(self, tmp_path: Path) -> None:
         store = SessionStore(tmp_path / "sessions")
-        s = store.create_session(
-            mode="act", model="gpt-4o", cwd="/proj", initial_prompt="do thing"
-        )
+        s = store.create_session(mode="act", model="gpt-4o", cwd="/proj", initial_prompt="do thing")
         assert s.metadata.id
         assert len(s.metadata.id) > 0
         assert s.metadata.status is SessionStatus.ACTIVE
@@ -280,16 +274,12 @@ class TestSessionStore:
     def test_create_session_truncates_preview(self, tmp_path: Path) -> None:
         store = SessionStore(tmp_path / "sessions")
         long_prompt = "x" * 500
-        s = store.create_session(
-            mode="act", model="m", cwd=".", initial_prompt=long_prompt
-        )
+        s = store.create_session(mode="act", model="m", cwd=".", initial_prompt=long_prompt)
         assert len(s.metadata.prompt_preview) == 200
 
     def test_save_and_load_round_trip(self, tmp_path: Path) -> None:
         store = SessionStore(tmp_path / "sessions")
-        s = store.create_session(
-            mode="plan", model="claude", cwd="/proj", initial_prompt="hello"
-        )
+        s = store.create_session(mode="plan", model="claude", cwd="/proj", initial_prompt="hello")
         s.messages = [serialize_message(Message(role="user", content="hi"))]
         s.usage = {"prompt_tokens": 10, "total_tokens": 10}
         store.save(s)
@@ -461,16 +451,12 @@ class TestSessionStore:
 
 
 class TestGetSessionStore:
-    def test_explicit_store_dir_wins(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_explicit_store_dir_wins(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(tmp_path / "env"))
         store = get_session_store(tmp_path / "explicit")
         assert store.store_dir == tmp_path / "explicit"
 
-    def test_env_var_override(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_var_override(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         env_dir = tmp_path / "env-sessions"
         monkeypatch.setenv("MYAGENT_SESSIONS_DIR", str(env_dir))
         store = get_session_store()

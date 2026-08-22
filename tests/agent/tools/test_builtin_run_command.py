@@ -71,9 +71,7 @@ async def test_run_command_with_custom_cwd(tmp_path: Path) -> None:
     sub.mkdir()
     tool = make_run_command_tool()
     cmd = "pwd" if sys.platform != "win32" else "cd"
-    result = await tool.invoke(
-        {"command": cmd, "cwd": "sub"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"command": cmd, "cwd": "sub"}, _make_ctx(tmp_path))
     assert not result.is_error
     assert "sub" in result.output
 
@@ -82,9 +80,7 @@ async def test_run_command_with_custom_cwd(tmp_path: Path) -> None:
 async def test_run_command_rejects_cwd_escape(tmp_path: Path) -> None:
     tool = make_run_command_tool()
     cmd = "echo hi" if sys.platform != "win32" else "echo hi"
-    result = await tool.invoke(
-        {"command": cmd, "cwd": "../escape"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"command": cmd, "cwd": "../escape"}, _make_ctx(tmp_path))
     assert result.is_error
 
 
@@ -93,9 +89,7 @@ async def test_run_command_timeout(tmp_path: Path) -> None:
     tool = make_run_command_tool()
     # sleep for 2 seconds, timeout after 100ms.
     cmd = "sleep 2" if sys.platform != "win32" else "timeout /t 2 /nobreak"
-    result = await tool.invoke(
-        {"command": cmd, "timeout_ms": 100}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"command": cmd, "timeout_ms": 100}, _make_ctx(tmp_path))
     assert result.is_error
     assert "timed out" in result.error.lower()
 
@@ -132,9 +126,7 @@ async def test_run_command_input_validation_timeout_zero(tmp_path: Path) -> None
     """timeout_ms must be >= 1."""
     tool = make_run_command_tool()
     with pytest.raises(InvalidArgumentsError):
-        await tool.invoke(
-            {"command": "echo hi", "timeout_ms": 0}, _make_ctx(tmp_path)
-        )
+        await tool.invoke({"command": "echo hi", "timeout_ms": 0}, _make_ctx(tmp_path))
 
 
 @pytest.mark.asyncio

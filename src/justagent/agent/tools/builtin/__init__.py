@@ -75,7 +75,9 @@ def vertical_tool_factories() -> list:
             if callable(obj):
                 factories.append(obj)
         except Exception as exc:  # noqa: BLE001 - broken optional integration
-            warnings.warn(f"Skipping tool entry point {ep.name}: {exc}", RuntimeWarning, stacklevel=2)
+            warnings.warn(
+                f"Skipping tool entry point {ep.name}: {exc}", RuntimeWarning, stacklevel=2
+            )
     return factories
 
 
@@ -105,7 +107,9 @@ def make_default_tools(project_root: str | None = None) -> list[Tool]:
             try:
                 tool = factory(root)
             except Exception as exc:  # noqa: BLE001 - broken optional integration
-                warnings.warn(f"Vertical tool factory {factory} failed: {exc}", RuntimeWarning, stacklevel=2)
+                warnings.warn(
+                    f"Vertical tool factory {factory} failed: {exc}", RuntimeWarning, stacklevel=2
+                )
                 continue
             if tool is not None:
                 tools.append(tool)

@@ -108,8 +108,7 @@ def test_store_persists_across_instances(tmp_path: Path) -> None:
 def test_store_skips_invalid_entries(tmp_path: Path) -> None:
     path = tmp_path / "projects.json"
     path.write_text(
-        '{"good": {"name": "good", "path": "/tmp/good", "added_at": 1.0}, '
-        '"bad": {"name": "bad"}}',
+        '{"good": {"name": "good", "path": "/tmp/good", "added_at": 1.0}, "bad": {"name": "bad"}}',
         encoding="utf-8",
     )
     store = ProjectStore(store_path=path)
@@ -140,17 +139,22 @@ def test_project_add_then_list(tmp_path: Path) -> None:
         add_result = runner.invoke(
             app,
             [
-                "--config", str(config_path),
-                "project", "add", str(project_dir), "--tag", "web", "--tag", "py",
+                "--config",
+                str(config_path),
+                "project",
+                "add",
+                str(project_dir),
+                "--tag",
+                "web",
+                "--tag",
+                "py",
             ],
         )
     assert add_result.exit_code == 0, add_result.output
     assert "myproj" in add_result.output
 
     with patch("justagent.cli.commands.project.ProjectStore", return_value=store):
-        list_result = runner.invoke(
-            app, ["--config", str(config_path), "project", "list"]
-        )
+        list_result = runner.invoke(app, ["--config", str(config_path), "project", "list"])
     assert list_result.exit_code == 0, list_result.output
     assert "myproj" in list_result.output
     assert "web,py" in list_result.output
@@ -186,9 +190,7 @@ def test_project_run_invokes_subprocess_in_project_cwd(tmp_path: Path) -> None:
     store = ProjectStore(store_path=tmp_path / "projects.json")
     project_dir = tmp_path / "runproj"
     project_dir.mkdir()
-    store.add(
-        ManagedProject(name="runproj", path=str(project_dir), added_at=1.0)
-    )
+    store.add(ManagedProject(name="runproj", path=str(project_dir), added_at=1.0))
     config_path = _write_config(tmp_path)
 
     fake_result = MagicMock(returncode=0)

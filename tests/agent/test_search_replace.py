@@ -227,10 +227,7 @@ def test_apply_tolerates_uniform_outdent(tmp_path: Path) -> None:
         ]
     )
     apply_search_replace(content, tmp_path)
-    assert (
-        target.read_text(encoding="utf-8")
-        == "def f():\n    alpha\n    BETA\n    gamma\n"
-    )
+    assert target.read_text(encoding="utf-8") == "def f():\n    alpha\n    BETA\n    gamma\n"
 
 
 def test_apply_handles_dotdotdot_elision(tmp_path: Path) -> None:
@@ -278,10 +275,7 @@ def test_apply_fuzzy_fallback(tmp_path: Path) -> None:
         ]
     )
     apply_search_replace(content, tmp_path)
-    assert (
-        target.read_text(encoding="utf-8")
-        == "THE QUICK BROWN FOX\njumps over the lazy dog\n"
-    )
+    assert target.read_text(encoding="utf-8") == "THE QUICK BROWN FOX\njumps over the lazy dog\n"
 
 
 def test_apply_failed_match_collected_not_raised(tmp_path: Path) -> None:

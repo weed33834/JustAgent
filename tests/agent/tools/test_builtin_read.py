@@ -91,7 +91,9 @@ async def test_read_file_path_escape_rejected(tmp_path: Path) -> None:
     tool = make_read_file_tool()
     result = await tool.invoke({"path": "../escape.txt"}, _make_ctx(tmp_path))
     assert result.is_error
-    assert "must stay within cwd" in result.error.lower() or "cannot resolve" in result.error.lower()
+    assert (
+        "must stay within cwd" in result.error.lower() or "cannot resolve" in result.error.lower()
+    )
 
 
 @pytest.mark.asyncio
@@ -144,9 +146,7 @@ async def test_read_file_with_subpath(tmp_path: Path) -> None:
     (tmp_path / "dir").mkdir()
     (tmp_path / "dir" / "nested.txt").write_text("nested content\n")
     tool = make_read_file_tool()
-    result = await tool.invoke(
-        {"path": "dir/nested.txt"}, _make_ctx(tmp_path)
-    )
+    result = await tool.invoke({"path": "dir/nested.txt"}, _make_ctx(tmp_path))
     assert not result.is_error
     assert "nested content" in result.output
 

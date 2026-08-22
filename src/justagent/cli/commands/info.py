@@ -34,7 +34,10 @@ def _git_branch(root: Path) -> str | None:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=root, capture_output=True, text=True, timeout=5,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         branch = out.stdout.strip()
         return branch if out.returncode == 0 and branch else None
@@ -46,7 +49,10 @@ def _git_dirty(root: Path) -> bool | None:
     try:
         out = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=root, capture_output=True, text=True, timeout=5,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if out.returncode != 0:
             return None
@@ -78,7 +84,9 @@ def info(ctx: typer.Context) -> None:
         typer.echo(f"  model backends: {len(backends)} ({providers})")
         for b in backends[:6]:
             key = "set" if b.api_key else "none"
-            typer.echo(f"    - {b.provider.value:<12} {b.model or '-':<20} tier={b.tier} key={key} {b.base_url}")
+            typer.echo(
+                f"    - {b.provider.value:<12} {b.model or '-':<20} tier={b.tier} key={key} {b.base_url}"
+            )
         if len(backends) > 6:
             typer.echo(f"    ... and {len(backends) - 6} more")
     else:
@@ -87,6 +95,7 @@ def info(ctx: typer.Context) -> None:
     # Plugins
     try:
         from justagent.core.plugin_registry import PluginRegistry
+
         plugins = PluginRegistry().list()
         typer.echo(f"  plugins       : {len(plugins)}")
     except Exception:  # noqa: BLE001

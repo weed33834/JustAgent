@@ -91,9 +91,7 @@ class BatchRunner:
     # Public API
     # ------------------------------------------------------------------
 
-    def run_status(
-        self, project_names: list[str] | None = None
-    ) -> BatchSummary:
+    def run_status(self, project_names: list[str] | None = None) -> BatchSummary:
         """Run ``git status --porcelain`` across projects.
 
         Read-only, so when ``parallel`` is enabled the checks run
@@ -102,9 +100,7 @@ class BatchRunner:
         """
         projects, missing = self._select_projects(project_names)
         operation = BatchOperation.STATUS
-        results: list[BatchResult] = [
-            self._missing_result(name, operation) for name in missing
-        ]
+        results: list[BatchResult] = [self._missing_result(name, operation) for name in missing]
 
         if self.parallel and len(projects) > 1:
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -118,11 +114,7 @@ class BatchRunner:
                     results.append(future.result())
         else:
             for project in projects:
-                results.append(
-                    self._exec(
-                        project, operation, ["git", "status", "--porcelain"]
-                    )
-                )
+                results.append(self._exec(project, operation, ["git", "status", "--porcelain"]))
         return self._summarize(operation, results)
 
     def run_command(
@@ -136,9 +128,7 @@ class BatchRunner:
         """
         projects, missing = self._select_projects(project_names)
         operation = BatchOperation.RUN
-        results: list[BatchResult] = [
-            self._missing_result(name, operation) for name in missing
-        ]
+        results: list[BatchResult] = [self._missing_result(name, operation) for name in missing]
         for project in projects:
             results.append(self._exec(project, operation, command))
         return self._summarize(operation, results)
@@ -185,10 +175,7 @@ class BatchRunner:
         lines.append("-" * 44)
         for result in summary.results:
             status = "OK" if result.success else "FAIL"
-            lines.append(
-                f"{result.project_name:<24} {status:<8} "
-                f"{result.elapsed_seconds:>7.2f}s"
-            )
+            lines.append(f"{result.project_name:<24} {status:<8} {result.elapsed_seconds:>7.2f}s")
         lines.append("-" * 44)
         lines.append(
             f"Total: {summary.total}  Succeeded: {summary.succeeded}  "
@@ -220,9 +207,7 @@ class BatchRunner:
                 found.append(project)
         return found, missing
 
-    def _missing_result(
-        self, name: str, operation: BatchOperation
-    ) -> BatchResult:
+    def _missing_result(self, name: str, operation: BatchOperation) -> BatchResult:
         """Build a failure result for a project that is not in the store."""
         return BatchResult(
             project_name=name,
@@ -284,13 +269,9 @@ class BatchRunner:
             elapsed_seconds=elapsed,
         )
 
-    def _summarize(
-        self, operation: BatchOperation, results: list[BatchResult]
-    ) -> BatchSummary:
+    def _summarize(self, operation: BatchOperation, results: list[BatchResult]) -> BatchSummary:
         """Build a :class:`BatchSummary`, sorting results deterministically."""
-        ordered = sorted(
-            results, key=lambda r: (r.project_name, r.operation.value)
-        )
+        ordered = sorted(results, key=lambda r: (r.project_name, r.operation.value))
         succeeded = sum(1 for r in ordered if r.success)
         failed = len(ordered) - succeeded
         total_elapsed = sum(r.elapsed_seconds for r in ordered)

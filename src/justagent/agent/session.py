@@ -128,8 +128,7 @@ def serialize_message(msg: Any) -> dict[str, Any]:
     result: dict[str, Any] = {"role": msg.role, "content": msg.content}
     if msg.tool_calls:
         result["tool_calls"] = [
-            {"id": tc.id, "name": tc.name, "input": tc.input}
-            for tc in msg.tool_calls
+            {"id": tc.id, "name": tc.name, "input": tc.input} for tc in msg.tool_calls
         ]
     if msg.tool_result is not None:
         result["tool_result"] = {
@@ -271,15 +270,11 @@ class SessionStore:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise SessionError(
-                f"Failed to load session {session_id}: {exc}"
-            ) from exc
+            raise SessionError(f"Failed to load session {session_id}: {exc}") from exc
         try:
             return _session_from_dict(data)
         except (KeyError, TypeError, ValueError) as exc:
-            raise SessionError(
-                f"Corrupt session file {session_id}: {exc}"
-            ) from exc
+            raise SessionError(f"Corrupt session file {session_id}: {exc}") from exc
 
     def list_sessions(self) -> list[SessionMetadata]:
         """Return all sessions, sorted by ``updated_at`` descending.
@@ -381,10 +376,7 @@ def get_session_store(store_dir: Path | None = None) -> SessionStore:
 
     if store_dir is not None:
         return SessionStore(store_dir)
-    env_dir = (
-        os.environ.get("JUSTAGENT_SESSIONS_DIR")
-        or os.environ.get("MYAGENT_SESSIONS_DIR")
-    )
+    env_dir = os.environ.get("JUSTAGENT_SESSIONS_DIR") or os.environ.get("MYAGENT_SESSIONS_DIR")
     if env_dir:
         return SessionStore(Path(env_dir))
     return SessionStore()

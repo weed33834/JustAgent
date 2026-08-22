@@ -14,9 +14,7 @@ from justagent.cli.main import app
 runner = CliRunner()
 
 
-def _invoke(
-    args: list[str], *, sessions_dir: Path, monkeypatch: pytest.MonkeyPatch
-):
+def _invoke(args: list[str], *, sessions_dir: Path, monkeypatch: pytest.MonkeyPatch):
     # Set the canonical env var explicitly. Config loading runs
     # ``_migrate_legacy_env()`` which would otherwise copy the legacy
     # ``MYAGENT_*`` value into ``JUSTAGENT_*`` as an untracked side effect
@@ -54,9 +52,7 @@ class TestSessionList:
         assert result.exit_code == 0
         assert "没有保存的会话" in result.output or "No saved sessions" in result.output
 
-    def test_list_with_sessions(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_with_sessions(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         sessions_dir = tmp_path / "s"
         store = SessionStore(sessions_dir)
         sid = _seed_session(store, prompt="refactor the module")
@@ -89,16 +85,12 @@ class TestSessionList:
 
 
 class TestSessionShow:
-    def test_show_existing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_show_existing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         sessions_dir = tmp_path / "s"
         store = SessionStore(sessions_dir)
         sid = _seed_session(store, prompt="hello there", model="claude-3")
 
-        result = _invoke(
-            ["show", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch
-        )
+        result = _invoke(["show", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch)
         assert result.exit_code == 0
         assert sid in result.output
         assert "claude-3" in result.output
@@ -107,9 +99,7 @@ class TestSessionShow:
         # Message count derived from saved messages.
         assert "Messages:" in result.output
 
-    def test_show_nonexistent(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_show_nonexistent(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         result = _invoke(
             ["show", "no-such-session"],
             sessions_dir=tmp_path / "s",
@@ -125,24 +115,18 @@ class TestSessionShow:
 
 
 class TestSessionDelete:
-    def test_delete_existing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_delete_existing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         sessions_dir = tmp_path / "s"
         store = SessionStore(sessions_dir)
         sid = _seed_session(store)
 
-        result = _invoke(
-            ["delete", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch
-        )
+        result = _invoke(["delete", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch)
         assert result.exit_code == 0
         assert sid in result.output
         # Actually removed from the store.
         assert not store.exists(sid)
 
-    def test_delete_nonexistent(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_delete_nonexistent(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         result = _invoke(
             ["delete", "missing-id"],
             sessions_dir=tmp_path / "s",
@@ -158,9 +142,7 @@ class TestSessionDelete:
 
 
 class TestSessionResume:
-    def test_resume_existing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_resume_existing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         sessions_dir = tmp_path / "s"
         store = SessionStore(sessions_dir)
         sid = _seed_session(store)
@@ -177,9 +159,7 @@ class TestSessionResume:
         # Don't actually spawn an interactive subprocess in the unit test.
         monkeypatch.setattr("subprocess.run", _fake_run)
 
-        result = _invoke(
-            ["resume", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch
-        )
+        result = _invoke(["resume", sid], sessions_dir=sessions_dir, monkeypatch=monkeypatch)
         assert result.exit_code == 0
         assert sid in result.output
         # The interactive agent is launched with the session restored.
@@ -189,9 +169,7 @@ class TestSessionResume:
         assert "--resume" in cmd
         assert sid in cmd
 
-    def test_resume_nonexistent(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_resume_nonexistent(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         result = _invoke(
             ["resume", "ghost-id"],
             sessions_dir=tmp_path / "s",

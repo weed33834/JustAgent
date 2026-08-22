@@ -155,10 +155,7 @@ def _state_dir(ctx: typer.Context) -> Path:
     env var > ``<project_root>/.justagent/knowledge/`` > ``./.justagent/knowledge/``.
     """
 
-    env = (
-        os.environ.get("JUSTAGENT_KNOWLEDGE_STATE")
-        or os.environ.get("MYAGENT_KNOWLEDGE_STATE")
-    )
+    env = os.environ.get("JUSTAGENT_KNOWLEDGE_STATE") or os.environ.get("MYAGENT_KNOWLEDGE_STATE")
     if env:
         return Path(env).expanduser()
     config = _get_config(ctx)
@@ -275,15 +272,11 @@ class _KnowledgeState:
                 doc = Document.model_validate(raw)
                 self.doc_manager._documents[doc.id] = doc
             except Exception as exc:  # noqa: BLE001 - skip corrupt entries
-                get_console().print(
-                    f"[yellow]⚠ 跳过无效文档记录：{exc}[/yellow]"
-                )
+                get_console().print(f"[yellow]⚠ 跳过无效文档记录：{exc}[/yellow]")
 
 
 @contextmanager
-def _state_session(
-    ctx: typer.Context, *, save: bool = True
-) -> Iterator[_KnowledgeState]:
+def _state_session(ctx: typer.Context, *, save: bool = True) -> Iterator[_KnowledgeState]:
     """Load state, yield it, and persist on exit (unless dry-run or read-only).
 
     Args:
@@ -336,9 +329,7 @@ def _require_document(state: _KnowledgeState, doc_id: str) -> Document:
 
     doc = state.doc_manager.get(doc_id)
     if doc is None:
-        matches = [
-            d for d in state.doc_manager.list_documents() if d.id.startswith(doc_id)
-        ]
+        matches = [d for d in state.doc_manager.list_documents() if d.id.startswith(doc_id)]
         if len(matches) == 1:
             return matches[0]
         raise typer.BadParameter(f"未找到文档：{doc_id}")
@@ -352,9 +343,7 @@ def _parse_enum(value: str, enum_cls: type[Any], label: str) -> Any:
         return enum_cls(value)
     except ValueError:
         valid = ", ".join(str(m.value) for m in enum_cls)
-        raise typer.BadParameter(
-            f"无效的 {label}：{value!r}（可选值：{valid}）"
-        ) from None
+        raise typer.BadParameter(f"无效的 {label}：{value!r}（可选值：{valid}）") from None
 
 
 def _get_gateway(ctx: typer.Context) -> Any:
@@ -390,18 +379,10 @@ def doc_add(
         readable=True,
         help="要添加的文件路径（支持 PDF/Word/Excel/PPT/Markdown/HTML/纯文本）",
     ),
-    title: str | None = typer.Option(
-        None, "--title", "-t", help="文档标题（默认取文件名）"
-    ),
-    no_index: bool = typer.Option(
-        False, "--no-index", help="仅解析注册，不索引到向量库"
-    ),
-    chunk_size: int = typer.Option(
-        1000, "--chunk-size", help="分块大小（字符数）"
-    ),
-    chunk_overlap: int = typer.Option(
-        200, "--chunk-overlap", help="分块重叠（字符数）"
-    ),
+    title: str | None = typer.Option(None, "--title", "-t", help="文档标题（默认取文件名）"),
+    no_index: bool = typer.Option(False, "--no-index", help="仅解析注册，不索引到向量库"),
+    chunk_size: int = typer.Option(1000, "--chunk-size", help="分块大小（字符数）"),
+    chunk_overlap: int = typer.Option(200, "--chunk-overlap", help="分块重叠（字符数）"),
 ) -> None:
     """解析文件、注册文档并索引到向量库。
 
@@ -487,9 +468,7 @@ def doc_add(
             )
         )
     else:
-        index_part = (
-            f"，已索引 {indexed_count} 块" if indexed_count else "，未索引"
-        )
+        index_part = f"，已索引 {indexed_count} 块" if indexed_count else "，未索引"
         console.print(
             f"[green]✓[/green] 已添加文档 [bold]{doc.title}[/bold]"
             f"（类型: {doc.type.value}，分块: {len(doc.chunks)}"
@@ -510,17 +489,11 @@ def doc_list(
 ) -> None:
     """列出知识库中的所有文档，可按状态或类型过滤。"""
 
-    status_filter = (
-        _parse_enum(status, DocumentStatus, "状态") if status is not None else None
-    )
-    type_filter = (
-        _parse_enum(doc_type, DocumentType, "文档类型") if doc_type is not None else None
-    )
+    status_filter = _parse_enum(status, DocumentStatus, "状态") if status is not None else None
+    type_filter = _parse_enum(doc_type, DocumentType, "文档类型") if doc_type is not None else None
 
     with _state_session(ctx, save=False) as state:
-        documents = state.doc_manager.list_documents(
-            status=status_filter, doc_type=type_filter
-        )
+        documents = state.doc_manager.list_documents(status=status_filter, doc_type=type_filter)
         vector_count = state.vector_store.count()
 
     if json_output:
@@ -554,7 +527,9 @@ def doc_list(
         console.print("[dim]暂无文档。使用 `knowledge doc add <文件>` 添加一个。[/dim]")
         return
 
-    table = Table(title=f"文档列表（共 {len(documents)} 篇，向量记录 {vector_count} 条）", border_style="cyan")
+    table = Table(
+        title=f"文档列表（共 {len(documents)} 篇，向量记录 {vector_count} 条）", border_style="cyan"
+    )
     table.add_column("ID", style="dim", width=8)
     table.add_column("标题", style="white")
     table.add_column("类型")
@@ -609,15 +584,11 @@ def doc_show(
         f"[bold]创建时间:[/bold]    {_format_ts(doc.created_at)}\n"
         f"[bold]更新时间:[/bold]    {_format_ts(doc.updated_at)}"
     )
-    console.print(
-        Panel(header, title=f"文档 {doc.title}", border_style="cyan")
-    )
+    console.print(Panel(header, title=f"文档 {doc.title}", border_style="cyan"))
 
     # Metadata.
     if doc.metadata:
-        meta_lines = "\n".join(
-            f"  {k}: {_short(str(v), 60)}" for k, v in doc.metadata.items()
-        )
+        meta_lines = "\n".join(f"  {k}: {_short(str(v), 60)}" for k, v in doc.metadata.items())
         console.print(Panel(meta_lines, title="元数据", border_style="blue"))
     else:
         console.print("[dim]元数据：（暂无）[/dim]")
@@ -729,11 +700,7 @@ def doc_search(
     table.add_column("内容预览")
 
     for r in results:
-        score_style = (
-            "green" if r.score >= 0.5
-            else "yellow" if r.score >= 0.2
-            else "dim"
-        )
+        score_style = "green" if r.score >= 0.5 else "yellow" if r.score >= 0.2 else "dim"
         table.add_row(
             str(r.rank),
             Text(f"{r.score:.3f}", style=score_style),
@@ -752,12 +719,8 @@ def doc_search(
 @graph_app.command("build", help="从文档构建知识图谱。")
 def graph_build(
     ctx: typer.Context,
-    doc_id: str | None = typer.Option(
-        None, "--doc-id", help="从指定文档构建（支持前缀匹配）"
-    ),
-    all_docs: bool = typer.Option(
-        False, "--all", help="从所有活动文档构建"
-    ),
+    doc_id: str | None = typer.Option(None, "--doc-id", help="从指定文档构建（支持前缀匹配）"),
+    all_docs: bool = typer.Option(False, "--all", help="从所有活动文档构建"),
     no_capitalized: bool = typer.Option(
         False, "--no-capitalized", help="跳过大写短语实体抽取（仅抽取邮箱/URL/日期等）"
     ),
@@ -780,14 +743,10 @@ def graph_build(
             doc = _require_document(state, doc_id)
             documents = [doc]
         else:
-            documents = state.doc_manager.list_documents(
-                status=DocumentStatus.ACTIVE
-            )
+            documents = state.doc_manager.list_documents(status=DocumentStatus.ACTIVE)
 
         if not documents:
-            console.print(
-                "[dim]没有可用的活动文档。请先使用 `knowledge doc add` 添加文档。[/dim]"
-            )
+            console.print("[dim]没有可用的活动文档。请先使用 `knowledge doc add` 添加文档。[/dim]")
             return
 
         if dry_run:
@@ -841,13 +800,15 @@ def graph_build(
 def graph_query(
     ctx: typer.Context,
     entity_type: str | None = typer.Option(
-        None, "--entity-type", help="按实体类型过滤（person/organization/location/date/email/url/phone/money/concept）"
+        None,
+        "--entity-type",
+        help="按实体类型过滤（person/organization/location/date/email/url/phone/money/concept）",
     ),
-    name_contains: str | None = typer.Option(
-        None, "--name", help="按名称子串过滤（不区分大小写）"
-    ),
+    name_contains: str | None = typer.Option(None, "--name", help="按名称子串过滤（不区分大小写）"),
     relation_type: str | None = typer.Option(
-        None, "--relation-type", help="按关系类型过滤（works_at/located_in/is_a/founded_by/related_to/...）"
+        None,
+        "--relation-type",
+        help="按关系类型过滤（works_at/located_in/is_a/founded_by/related_to/...）",
     ),
     entity_id: str | None = typer.Option(
         None, "--entity-id", help="查询与指定实体相关的关系（支持前缀匹配）"
@@ -922,11 +883,13 @@ def graph_query(
                 {
                     "id": r.id,
                     "source_entity_id": r.source_entity_id,
-                    "source_name": (src.name
-                                    if (src := graph.get_entity(r.source_entity_id)) else "-"),
+                    "source_name": (
+                        src.name if (src := graph.get_entity(r.source_entity_id)) else "-"
+                    ),
                     "target_entity_id": r.target_entity_id,
-                    "target_name": (dst.name
-                                    if (dst := graph.get_entity(r.target_entity_id)) else "-"),
+                    "target_name": (
+                        dst.name if (dst := graph.get_entity(r.target_entity_id)) else "-"
+                    ),
                     "relation_type": r.relation_type,
                     "weight": r.weight,
                     "source_documents": r.source_documents,
@@ -1017,9 +980,7 @@ def graph_query(
             all_entities.sort(key=lambda e: graph.degree(e.id), reverse=True)
             top = all_entities[:limit]
             if top:
-                ttable = Table(
-                    title=f"度数最高的实体（前 {len(top)} 个）", border_style="magenta"
-                )
+                ttable = Table(title=f"度数最高的实体（前 {len(top)} 个）", border_style="magenta")
                 ttable.add_column("排名", justify="right", style="bold")
                 ttable.add_column("名称", style="white")
                 ttable.add_column("类型", style="bold")
@@ -1049,9 +1010,7 @@ def rag_index(
         readable=True,
         help="要索引的文件路径（支持 PDF/Word/Excel/PPT/Markdown/HTML/纯文本）",
     ),
-    title: str | None = typer.Option(
-        None, "--title", "-t", help="文档标题（默认取文件名）"
-    ),
+    title: str | None = typer.Option(None, "--title", "-t", help="文档标题（默认取文件名）"),
 ) -> None:
     """解析文件并索引到 RAG 向量库。
 
@@ -1066,9 +1025,7 @@ def rag_index(
     if dry_run:
         console.print(
             Panel(
-                f"[dry-run] 将索引文件\n"
-                f"文件: {file_path}\n"
-                f"标题: {title or file_path.name}",
+                f"[dry-run] 将索引文件\n文件: {file_path}\n标题: {title or file_path.name}",
                 title="Dry Run",
                 border_style="yellow",
             )
@@ -1136,9 +1093,7 @@ def rag_query(
     question: str = typer.Argument(..., help="问题"),
     top_k: int = typer.Option(5, "--top-k", help="检索块数量"),
     min_score: float = typer.Option(0.01, "--min-score", help="最低相似度分数（0~1）"),
-    no_llm: bool = typer.Option(
-        False, "--no-llm", help="不调用 LLM，仅返回检索到的上下文片段"
-    ),
+    no_llm: bool = typer.Option(False, "--no-llm", help="不调用 LLM，仅返回检索到的上下文片段"),
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
 ) -> None:
     """使用 RAG（检索增强生成）回答问题。
@@ -1167,9 +1122,7 @@ def rag_query(
 
     with _state_session(ctx, save=False) as state:
         if state.vector_store.count() == 0:
-            console.print(
-                "[dim]向量库为空。请先使用 `knowledge rag index <文件>` 索引文档。[/dim]"
-            )
+            console.print("[dim]向量库为空。请先使用 `knowledge rag index <文件>` 索引文档。[/dim]")
             return
 
         gateway = None if no_llm else _get_gateway(ctx)
@@ -1242,11 +1195,7 @@ def rag_query(
         ctable.add_column("片段预览")
 
         for i, c in enumerate(answer.citations, start=1):
-            score_style = (
-                "green" if c.score >= 0.5
-                else "yellow" if c.score >= 0.2
-                else "dim"
-            )
+            score_style = "green" if c.score >= 0.5 else "yellow" if c.score >= 0.2 else "dim"
             ctable.add_row(
                 str(i),
                 Text(f"{c.score:.3f}", style=score_style),
@@ -1260,9 +1209,7 @@ def rag_query(
 
     # Verbose metadata.
     if verbose and answer.metadata:
-        meta_lines = "\n".join(
-            f"  {k}: {v}" for k, v in answer.metadata.items()
-        )
+        meta_lines = "\n".join(f"  {k}: {v}" for k, v in answer.metadata.items())
         console.print(Panel(meta_lines, title="元数据", border_style="dim"))
 
 

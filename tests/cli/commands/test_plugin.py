@@ -177,7 +177,10 @@ def test_plugin_update_dry_run() -> None:
 def test_plugin_update_skips_builtin() -> None:
     plugins = [
         PluginSpec(
-            name="security-scan", version="1.0.0", source="justagent", trust_level=TrustLevel.BUILTIN
+            name="security-scan",
+            version="1.0.0",
+            source="justagent",
+            trust_level=TrustLevel.BUILTIN,
         ),
     ]
     with (

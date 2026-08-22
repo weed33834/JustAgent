@@ -515,8 +515,7 @@ class OpenAIEmbedder(EmbeddingProvider):
             from openai import OpenAI
         except ImportError as exc:  # pragma: no cover - depends on env
             raise ImportError(
-                "The openai package is not installed. "
-                "Install it with: pip install openai"
+                "The openai package is not installed. Install it with: pip install openai"
             ) from exc
         return OpenAI(
             api_key=self._api_key or "placeholder",
@@ -626,8 +625,7 @@ class HuggingFaceEmbedder(EmbeddingProvider):
             from huggingface_hub import InferenceClient
         except ImportError as exc:  # pragma: no cover - depends on env
             raise ImportError(
-                "huggingface-hub is not installed. "
-                "Install it with: pip install huggingface-hub"
+                "huggingface-hub is not installed. Install it with: pip install huggingface-hub"
             ) from exc
         self._client = InferenceClient(model=self._model, token=self._api_key)
         return self._client
@@ -730,7 +728,9 @@ def create_embedder(
 
     api_key = cfg.api_key or os.environ.get("OPENAI_API_KEY", "")
     if api_key and _can_import("openai"):
-        logger.info("Auto-selected OpenAI embedder (%s)", cfg.model_name or "text-embedding-3-small")
+        logger.info(
+            "Auto-selected OpenAI embedder (%s)", cfg.model_name or "text-embedding-3-small"
+        )
         return OpenAIEmbedder(
             cfg.model_name or "text-embedding-3-small",
             api_key=api_key,
@@ -739,9 +739,7 @@ def create_embedder(
             batch_size=cfg.batch_size,
         )
 
-    logger.info(
-        "No real embedding backend available; falling back to HashingEmbedder"
-    )
+    logger.info("No real embedding backend available; falling back to HashingEmbedder")
     return create_default_embedder(dim=cfg.hashing_dim)
 
 
@@ -972,9 +970,7 @@ class InMemoryVectorStore(VectorStore):
         for rid in record_ids:
             self._records.pop(rid, None)
         if record_ids:
-            logger.debug(
-                "Removed %d records for document %s", len(record_ids), document_id
-            )
+            logger.debug("Removed %d records for document %s", len(record_ids), document_id)
         return len(record_ids)
 
     def count(self) -> int:
@@ -1020,9 +1016,7 @@ class InMemoryVectorStore(VectorStore):
         # Filter records by document_ids if specified.
         if document_ids is not None:
             doc_set = set(document_ids)
-            candidates = [
-                rec for rec in self._records.values() if rec.document_id in doc_set
-            ]
+            candidates = [rec for rec in self._records.values() if rec.document_id in doc_set]
         else:
             candidates = list(self._records.values())
 
@@ -1148,9 +1142,7 @@ class ChromaVectorStore(VectorStore):
         embedding_function: Any = None,
     ) -> None:
         self._collection_name = collection_name
-        self._persist_directory = (
-            str(persist_directory) if persist_directory is not None else None
-        )
+        self._persist_directory = str(persist_directory) if persist_directory is not None else None
         self._host = host
         self._port = port
         self._embedding_function = embedding_function
@@ -1170,14 +1162,11 @@ class ChromaVectorStore(VectorStore):
             import chromadb
         except ImportError as exc:  # pragma: no cover - depends on env
             raise ImportError(
-                "chromadb is not installed. "
-                "Install it with: pip install chromadb"
+                "chromadb is not installed. Install it with: pip install chromadb"
             ) from exc
 
         if self._host is not None:
-            self._client = chromadb.HttpClient(
-                host=self._host, port=self._port
-            )
+            self._client = chromadb.HttpClient(host=self._host, port=self._port)
         elif self._persist_directory is not None:
             self._client = chromadb.PersistentClient(path=self._persist_directory)
         else:
@@ -1289,9 +1278,7 @@ class ChromaVectorStore(VectorStore):
             return None
         metas = result.get("metadatas", []) if isinstance(result, dict) else []
         embs = result.get("embeddings", []) if isinstance(result, dict) else []
-        record = self._chroma_to_record(
-            ids[0], metas[0] if metas else None
-        )
+        record = self._chroma_to_record(ids[0], metas[0] if metas else None)
         if record is None:
             return None
         if embs:
@@ -1302,9 +1289,7 @@ class ChromaVectorStore(VectorStore):
         """Remove a record by ID. Returns True if removed."""
         collection = self._ensure_client()
         existing = collection.get(ids=[record_id])
-        existing_ids = (
-            existing.get("ids", []) if isinstance(existing, dict) else []
-        )
+        existing_ids = existing.get("ids", []) if isinstance(existing, dict) else []
         if not existing_ids:
             return False
         collection.delete(ids=[record_id])
@@ -1335,9 +1320,7 @@ class ChromaVectorStore(VectorStore):
     def list_records(self) -> list[VectorRecord]:
         """Return all stored records (for inspection / export)."""
         collection = self._ensure_client()
-        result = collection.get(
-            include=["metadatas", "documents", "embeddings"]
-        )
+        result = collection.get(include=["metadatas", "documents", "embeddings"])
         if not isinstance(result, dict):
             return []
         ids = result.get("ids", [])
@@ -1463,9 +1446,7 @@ def index_document_chunks(
         )
         records.append(record)
     store.add_batch(records)
-    logger.debug(
-        "Indexed %d chunks for document %s", len(records), chunks[0].document_id
-    )
+    logger.debug("Indexed %d chunks for document %s", len(records), chunks[0].document_id)
     return records
 
 

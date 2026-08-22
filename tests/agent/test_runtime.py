@@ -115,9 +115,7 @@ class TestMessageModel:
     def test_tool_message_to_dict(self) -> None:
         msg = Message(
             role="tool",
-            tool_result=ToolResultPart(
-                tool_call_id="tc1", name="echo", output="result"
-            ),
+            tool_result=ToolResultPart(tool_call_id="tc1", name="echo", output="result"),
         )
         d = msg.to_dict()
         assert d["role"] == "tool"
@@ -141,9 +139,7 @@ class TestAgentRuntimeHappyPath:
     async def test_simple_completion_no_tools(self) -> None:
         """LLM responds with text only → run completes immediately."""
 
-        client = _FakeLLMClient(
-            [_assistant_response(content="Hello!", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="Hello!", finish_reason="stop")])
         runtime = AgentRuntime(
             client=client,
             tools=[_make_echo_tool()],
@@ -168,9 +164,7 @@ class TestAgentRuntimeHappyPath:
             [
                 _assistant_response(
                     content="",
-                    tool_calls=[
-                        ToolCall(id="tc1", name="echo", input={"value": "test"})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="echo", input={"value": "test"})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="Got: echo: test", finish_reason="stop"),
@@ -191,9 +185,7 @@ class TestAgentRuntimeHappyPath:
 
     @pytest.mark.asyncio
     async def test_system_prompt_prepended(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(
             client=client,
             tools=[],
@@ -213,9 +205,7 @@ class TestAgentRuntimeHappyPath:
             [
                 _assistant_response(
                     content="",
-                    tool_calls=[
-                        ToolCall(id="tc1", name="echo", input={"value": "x"})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="echo", input={"value": "x"})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="done", finish_reason="stop"),
@@ -247,9 +237,7 @@ class TestAgentRuntimeEvents:
         async def _emit(event: Any) -> None:
             events.append(event)
 
-        client = _FakeLLMClient(
-            [_assistant_response(content="hi", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="hi", finish_reason="stop")])
         runtime = AgentRuntime(
             client=client,
             tools=[],
@@ -273,9 +261,7 @@ class TestAgentRuntimeEvents:
             [
                 _assistant_response(
                     content="",
-                    tool_calls=[
-                        ToolCall(id="tc1", name="echo", input={"value": "v"})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="echo", input={"value": "v"})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="done", finish_reason="stop"),
@@ -309,9 +295,7 @@ class TestAgentRuntimeEvents:
         client = _FakeLLMClient(
             [
                 _assistant_response(
-                    tool_calls=[
-                        ToolCall(id="tc1", name="echo", input={"value": "x"})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="echo", input={"value": "x"})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="done", finish_reason="stop"),
@@ -342,9 +326,7 @@ class TestAgentRuntimeAbort:
         client = _FakeLLMClient(
             [
                 _assistant_response(
-                    tool_calls=[
-                        ToolCall(id="tc1", name="echo", input={"value": "x"})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="echo", input={"value": "x"})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="done", finish_reason="stop"),
@@ -382,9 +364,7 @@ class TestAgentRuntimeUnknownTool:
         client = _FakeLLMClient(
             [
                 _assistant_response(
-                    tool_calls=[
-                        ToolCall(id="tc1", name="nonexistent", input={})
-                    ],
+                    tool_calls=[ToolCall(id="tc1", name="nonexistent", input={})],
                     finish_reason="tool_calls",
                 ),
                 _assistant_response(content="sorry", finish_reason="stop"),
@@ -393,9 +373,7 @@ class TestAgentRuntimeUnknownTool:
         runtime = AgentRuntime(
             client=client,
             tools=[_make_echo_tool()],
-            config=AgentRuntimeConfig(
-                max_iterations=5, max_consecutive_mistakes=5
-            ),
+            config=AgentRuntimeConfig(max_iterations=5, max_consecutive_mistakes=5),
         )
         result = await runtime.run("hi")
         # After the unknown tool error, the LLM gets another turn.
@@ -420,9 +398,7 @@ class TestAgentRuntimeMaxIterations:
         # Build a list of tool-call responses long enough to hit the cap.
         responses = [
             _assistant_response(
-                tool_calls=[
-                    ToolCall(id=f"tc{i}", name="echo", input={"value": "x"})
-                ],
+                tool_calls=[ToolCall(id=f"tc{i}", name="echo", input={"value": "x"})],
                 finish_reason="tool_calls",
             )
             for i in range(10)
@@ -450,18 +426,14 @@ class TestAgentRuntimeToolSources:
     async def test_accepts_tool_registry(self) -> None:
         registry = ToolRegistry()
         registry.register(_make_echo_tool())
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=registry)
         result = await runtime.run("hi")
         assert result.status == "completed"
 
     @pytest.mark.asyncio
     async def test_accepts_tool_list(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[_make_echo_tool()])
         result = await runtime.run("hi")
         assert result.status == "completed"
@@ -480,9 +452,7 @@ class TestAgentRuntimeLoopDetection:
         # The LLM makes 5 identical calls; the 5th triggers hard loop.
         responses = [
             _assistant_response(
-                tool_calls=[
-                    ToolCall(id=f"tc{i}", name="echo", input={"value": "same"})
-                ],
+                tool_calls=[ToolCall(id=f"tc{i}", name="echo", input={"value": "same"})],
                 finish_reason="tool_calls",
             )
             for i in range(5)
@@ -506,9 +476,7 @@ class TestAgentRuntimeLoopDetection:
         assert any(tm.tool_result and tm.tool_result.is_error for tm in tool_msgs)
         # The error message should mention "loop".
         loop_errors = [
-            tm.tool_result.output
-            for tm in tool_msgs
-            if tm.tool_result and tm.tool_result.is_error
+            tm.tool_result.output for tm in tool_msgs if tm.tool_result and tm.tool_result.is_error
         ]
         assert any("loop" in e.lower() for e in loop_errors)
 
@@ -597,17 +565,13 @@ class TestAgentRuntimeAPIErrorRetry:
                 self._call_count += 1
                 if self._call_count == 1:
                     raise RuntimeError("transient API error")
-                return _assistant_response(
-                    content="recovered", finish_reason="stop"
-                )
+                return _assistant_response(content="recovered", finish_reason="stop")
 
         client = _FlakyClient()
         runtime = AgentRuntime(
             client=client,
             tools=[],
-            config=AgentRuntimeConfig(
-                max_iterations=5, max_consecutive_mistakes=3
-            ),
+            config=AgentRuntimeConfig(max_iterations=5, max_consecutive_mistakes=3),
         )
         result = await runtime.run("hi")
         assert result.status == "completed", f"failed: {result.error}"
@@ -634,9 +598,7 @@ class TestAgentRuntimeAPIErrorRetry:
         runtime = AgentRuntime(
             client=client,
             tools=[],
-            config=AgentRuntimeConfig(
-                max_iterations=10, max_consecutive_mistakes=2
-            ),
+            config=AgentRuntimeConfig(max_iterations=10, max_consecutive_mistakes=2),
         )
         result = await runtime.run("hi")
         assert result.status == "stopped"
@@ -679,9 +641,7 @@ class TestAgentRuntimeConfig:
 class TestAgentRuntimeMessages:
     @pytest.mark.asyncio
     async def test_messages_property_returns_copy(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[])
         result = await runtime.run("hi")
         snapshot1 = runtime.messages
@@ -694,9 +654,7 @@ class TestAgentRuntimeMessages:
 
     @pytest.mark.asyncio
     async def test_iteration_property(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[])
         assert runtime.iteration == 0
         await runtime.run("hi")
@@ -760,8 +718,9 @@ class TestAgentRuntimeParallelTools:
         assert len(ends) == 2
         # Both starts should come before any end.
         assert execution_order.index("start:a") < execution_order.index("end:a")
-        assert execution_order.index("start:b") < execution_order.index("end:a") or \
-               execution_order.index("start:b") < execution_order.index("end:b")
+        assert execution_order.index("start:b") < execution_order.index(
+            "end:a"
+        ) or execution_order.index("start:b") < execution_order.index("end:b")
 
 
 # ---------------------------------------------------------------------------
@@ -786,9 +745,7 @@ class TestAgentRuntimeContinueRun:
                 _assistant_response(content="Hi again!", finish_reason="stop"),
             ]
         )
-        runtime = AgentRuntime(
-            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
-        )
+        runtime = AgentRuntime(client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5))
         # First turn — seeds system prompt + user + assistant (3 messages).
         result1 = await runtime.run("first message")
         assert result1.status == "completed"
@@ -812,9 +769,7 @@ class TestAgentRuntimeContinueRun:
                 _assistant_response(content="two", finish_reason="stop"),
             ]
         )
-        runtime = AgentRuntime(
-            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
-        )
+        runtime = AgentRuntime(client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5))
         result1 = await runtime.run("first")
         # Each scripted response contributes 15 tokens.
         assert result1.total_usage["total_tokens"] == 15
@@ -833,9 +788,7 @@ class TestAgentRuntimeContinueRun:
                 _assistant_response(content="two", finish_reason="stop"),
             ]
         )
-        runtime = AgentRuntime(
-            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
-        )
+        runtime = AgentRuntime(client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5))
         await runtime.run("first")
         run_id_after_run = runtime._run_id
         await runtime.continue_run("second")
@@ -851,9 +804,7 @@ class TestAgentRuntimeContinueRun:
                 _assistant_response(content="two", finish_reason="stop"),
             ]
         )
-        runtime = AgentRuntime(
-            client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5)
-        )
+        runtime = AgentRuntime(client=client, tools=[], config=AgentRuntimeConfig(max_iterations=5))
         await runtime.run("first")
         assert runtime.iteration == 1
         await runtime.continue_run("second")
@@ -891,9 +842,7 @@ class TestAgentRuntimeReset:
 
     @pytest.mark.asyncio
     async def test_reset_clears_messages(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[])
         await runtime.run("hello")
         assert len(runtime.messages) > 0
@@ -902,9 +851,7 @@ class TestAgentRuntimeReset:
 
     @pytest.mark.asyncio
     async def test_reset_clears_usage(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[])
         await runtime.run("hello")
         assert runtime._total_usage["total_tokens"] > 0
@@ -913,9 +860,7 @@ class TestAgentRuntimeReset:
 
     @pytest.mark.asyncio
     async def test_reset_clears_iteration(self) -> None:
-        client = _FakeLLMClient(
-            [_assistant_response(content="ok", finish_reason="stop")]
-        )
+        client = _FakeLLMClient([_assistant_response(content="ok", finish_reason="stop")])
         runtime = AgentRuntime(client=client, tools=[])
         await runtime.run("hello")
         assert runtime.iteration == 1

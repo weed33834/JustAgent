@@ -85,7 +85,9 @@ def check_clean_toolchain(config: AppConfig) -> CheckResult:
     project_type = config.project_type
     if project_type not in ("python", "unknown", ""):
         return CheckResult(
-            "clean-toolchain", Status.OK, i18n._("doctor.clean_skipped_non_python", type=project_type)
+            "clean-toolchain",
+            Status.OK,
+            i18n._("doctor.clean_skipped_non_python", type=project_type),
         )
     tools = config.clean.tools
     missing = [tool for tool in tools if shutil.which(tool) is None]
@@ -143,7 +145,9 @@ def check_plugin_dependencies() -> CheckResult:
 
 
 def _resolve_directory_paths(config: AppConfig) -> list[Path]:
-    audit_dir = config.audit_log_dir or config.audit.log_dir or (Path.home() / ".justagent" / "logs")
+    audit_dir = (
+        config.audit_log_dir or config.audit.log_dir or (Path.home() / ".justagent" / "logs")
+    )
     cache_dir = Path.home() / ".justagent" / "cache"
     return [config.project_root, audit_dir, cache_dir]
 
@@ -247,7 +251,12 @@ def doctor(
         data: dict[str, object] = {
             "summary": {"ok": ok, "warning": warnings, "error": errors},
             "checks": [
-                {"name": c.name, "status": c.status.value.lower(), "message": c.message, "suggestion": c.suggestion}
+                {
+                    "name": c.name,
+                    "status": c.status.value.lower(),
+                    "message": c.message,
+                    "suggestion": c.suggestion,
+                }
                 for c in report.checks
             ],
         }

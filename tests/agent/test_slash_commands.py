@@ -384,9 +384,7 @@ class TestModeCommand:
         assert result.data == {"mode": "yolo"}
 
     def test_no_arg_shows_current(self) -> None:
-        result = self.registry.execute(
-            "/mode", context={"current_mode": "plan"}
-        )
+        result = self.registry.execute("/mode", context={"current_mode": "plan"})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "plan" in result.message
@@ -475,18 +473,14 @@ class TestCheckpointCommand:
             {"id": "abc123", "message": "first"},
             {"id": "def456", "message": "second"},
         ]
-        result = self.registry.execute(
-            "/checkpoint list", context={"checkpoints": cps}
-        )
+        result = self.registry.execute("/checkpoint list", context={"checkpoints": cps})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "abc123" in result.message
         assert "def456" in result.message
 
     def test_list_empty(self) -> None:
-        result = self.registry.execute(
-            "/checkpoint list", context={"checkpoints": []}
-        )
+        result = self.registry.execute("/checkpoint list", context={"checkpoints": []})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "No checkpoints" in result.message
@@ -497,9 +491,7 @@ class TestCheckpointCommand:
         assert "No checkpoints" in result.message
 
     def test_restore_returns_restore_action(self) -> None:
-        result = self.registry.execute(
-            "/checkpoint restore abc123", context={}
-        )
+        result = self.registry.execute("/checkpoint restore abc123", context={})
         assert result is not None
         assert result.action is CommandAction.RESTORE_CHECKPOINT
         assert result.data == {"checkpoint_id": "abc123"}
@@ -537,18 +529,14 @@ class TestSkillsCommand:
             {"name": "git-sop", "description": "Git SOP"},
             {"name": "registry", "description": "Tool registry"},
         ]
-        result = self.registry.execute(
-            "/skills list", context={"available_skills": skills}
-        )
+        result = self.registry.execute("/skills list", context={"available_skills": skills})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "git-sop" in result.message
         assert "registry" in result.message
 
     def test_list_empty(self) -> None:
-        result = self.registry.execute(
-            "/skills list", context={"available_skills": []}
-        )
+        result = self.registry.execute("/skills list", context={"available_skills": []})
         assert result is not None
         assert "No skills" in result.message
 
@@ -561,17 +549,13 @@ class TestSkillsCommand:
         skills = [
             {"name": "git-sop", "content": "## Git SOP\n- commit often"},
         ]
-        result = self.registry.execute(
-            "/skills load git-sop", context={"available_skills": skills}
-        )
+        result = self.registry.execute("/skills load git-sop", context={"available_skills": skills})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "## Git SOP" in result.message
 
     def test_load_missing_skill(self) -> None:
-        result = self.registry.execute(
-            "/skills load nonexistent", context={"available_skills": []}
-        )
+        result = self.registry.execute("/skills load nonexistent", context={"available_skills": []})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "not found" in result.message.lower()
@@ -690,9 +674,7 @@ class TestEdgeCases:
         # The quoted text is split across args; /skills load falls
         # back to a "not found" because the skill name doesn't match.
         registry = create_default_registry()
-        result = registry.execute(
-            '/skills load "my skill"', context={"available_skills": []}
-        )
+        result = registry.execute('/skills load "my skill"', context={"available_skills": []})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
 
@@ -728,9 +710,7 @@ class TestEdgeCases:
 
     def test_multiple_spaces_in_command_args(self) -> None:
         registry = create_default_registry()
-        result = registry.execute(
-            "/checkpoint    restore    abc123", context={}
-        )
+        result = registry.execute("/checkpoint    restore    abc123", context={})
         assert result is not None
         assert result.action is CommandAction.RESTORE_CHECKPOINT
         assert result.data == {"checkpoint_id": "abc123"}
@@ -832,9 +812,7 @@ class TestTestCommand:
             stdout="1 passed",
             stderr="",
         )
-        result = self.registry.execute(
-            '/test -k "test_foo"', context={"cwd": "/proj"}
-        )
+        result = self.registry.execute('/test -k "test_foo"', context={"cwd": "/proj"})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
         assert "1 passed" in result.message
@@ -884,9 +862,7 @@ class TestTestCommand:
 
     @patch("justagent.agent.slash_commands.subprocess.run")
     def test_timeout_handling(self, mock_run: Any) -> None:
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd=["pytest"], timeout=300
-        )
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd=["pytest"], timeout=300)
         result = self.registry.execute("/test", context={})
         assert result is not None
         assert result.action is CommandAction.DISPLAY
