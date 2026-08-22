@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Dead `resources/database.py` gateway (644 lines).** Hand-rolled
+  connection pool + five database backends (SQLite/MySQL/PostgreSQL/Redis/
+  MongoDB) had zero runtime callers — the knowledge ETL uses stdlib
+  `sqlite3` directly. Barrel exports removed from `justagent.resources`;
+  re-introduce a DB layer via SQLAlchemy only when a real consumer appears.
+
+### Changed
+
+- **Lint debt cleared; CI now gates on ruff.** All ~80 ruff violations fixed
+  across `src` and `tests`; new `lint` job runs `ruff check src tests`
+  (blocking) plus a non-blocking `mypy` report (type coverage tracked
+  separately, currently ~71 errors in 18 files).
+- **Web console: evidence audit entry point.** The evidence panel gains an
+  "证据链审计" button that calls `POST /api/judicial/evidence/audit` and
+  reports verdict, per-category issues, and claim coverage in chat.
+
 ### Added
 
 - **Legal vertical: full evidence-chain audit (M4).** New

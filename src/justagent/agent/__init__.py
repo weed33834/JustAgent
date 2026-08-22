@@ -22,6 +22,19 @@ Sub-modules:
 
 from __future__ import annotations
 
+from justagent.agent.evaluation import (
+    CriterionSet,
+    CriterionWeight,
+    EvaluationCriterion,
+    EvaluationPipeline,
+    EvaluationRegistry,
+    EvaluationResult,
+    EvaluationScore,
+    EvaluationStatus,
+    EvaluatorType,
+    LLMJudgeEvaluator,
+    RuleBasedEvaluator,
+)
 from justagent.agent.loop_detection import (
     LoopCheckResult,
     LoopDetectionCall,
@@ -34,6 +47,11 @@ from justagent.agent.loop_detection import (
     create_loop_detection_state,
     reset_loop_detection_state,
     tool_call_signature,
+)
+from justagent.agent.memory import (
+    MemoryEntry,
+    MemoryManager,
+    MemoryStore,
 )
 from justagent.agent.mistake_tracker import (
     AppendRecoveryNotice,
@@ -64,6 +82,17 @@ from justagent.agent.patch import (
     compute_patch_changes,
     parse_patch,
 )
+from justagent.agent.planning import (
+    ExecutionStrategy,
+    Plan,
+    Planner,
+    PlanStatus,
+    Task,
+    TaskDecomposer,
+    TaskPriority,
+    TaskStatus,
+    topological_sort,
+)
 from justagent.agent.search_replace import (
     DEFAULT_FENCE,
     SearchReplaceEdit,
@@ -90,35 +119,6 @@ from justagent.agent.tools import (
     TruncationService,
     make_error_tool,
     make_invalid_tool,
-)
-from justagent.agent.evaluation import (
-    CriterionSet,
-    CriterionWeight,
-    EvaluationCriterion,
-    EvaluationPipeline,
-    EvaluationRegistry,
-    EvaluationResult,
-    EvaluationScore,
-    EvaluationStatus,
-    EvaluatorType,
-    LLMJudgeEvaluator,
-    RuleBasedEvaluator,
-)
-from justagent.agent.planning import (
-    ExecutionStrategy,
-    Plan,
-    PlanStatus,
-    Planner,
-    Task,
-    TaskDecomposer,
-    TaskPriority,
-    TaskStatus,
-    topological_sort,
-)
-from justagent.agent.memory import (
-    MemoryEntry,
-    MemoryManager,
-    MemoryStore,
 )
 
 __all__ = [

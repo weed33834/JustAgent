@@ -34,15 +34,16 @@ Design:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
-import os
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -51,8 +52,6 @@ from pydantic import BaseModel, Field
 from justagent.knowledge.document import (
     Document,
     DocumentParser,
-    DocumentType,
-    detect_type,
 )
 
 logger = logging.getLogger("justagent.knowledge")
@@ -481,10 +480,8 @@ class DatabaseSource(ETLSource):
                     if isinstance(raw_ts, (int, float)):
                         modified_at = float(raw_ts)
                     elif isinstance(raw_ts, str):
-                        try:
+                        with contextlib.suppress(ValueError):
                             modified_at = float(raw_ts)
-                        except ValueError:
-                            pass
 
                 yield RawItem(
                     source_id=self._source_id,
@@ -692,10 +689,8 @@ class APISource(ETLSource):
             if isinstance(raw_ts, (int, float)):
                 modified_at = float(raw_ts)
             elif isinstance(raw_ts, str):
-                try:
+                with contextlib.suppress(ValueError):
                     modified_at = float(raw_ts)
-                except ValueError:
-                    pass
 
         return RawItem(
             source_id=self._source_id,
@@ -854,7 +849,7 @@ class ETLPipeline:
         error_msg = ""
 
         try:
-            for item, doc in source.extract_and_transform(since=since):
+            for _item, doc in source.extract_and_transform(since=since):
                 item_count += 1
                 if doc is not None:
                     documents.append(doc)

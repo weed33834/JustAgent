@@ -215,7 +215,8 @@ async function loadDocTypes(){
 }
 function renderEvidence(){
   const el=document.getElementById('evidence-list');
-  el.innerHTML = state.evidence.length ? state.evidence.map(e=>`<div class="item"><div class="t">${esc(e.name)}<span class="badge">${esc(e.admissible)}</span></div><div class="d">${esc(e.type)} · 证明力: ${esc(e.strength)}</div></div>`).join('') + '<button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>' : '<div class="empty">暂无证据</div><button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>';
+  const auditBtn='<button class="btn" style="margin-top:8px" onclick="auditEvidence(\'\')">⚖️ 证据链审计</button>';
+  el.innerHTML = state.evidence.length ? state.evidence.map(e=>`<div class="item"><div class="t">${esc(e.name)}<span class="badge">${esc(e.admissible)}</span></div><div class="d">${esc(e.type)} · 证明力: ${esc(e.strength)}</div></div>`).join('') + '<button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>' + auditBtn : '<div class="empty">暂无证据</div><button class="btn" style="margin-top:8px" onclick="analyzeEvidence(\'\')">🔍 证据链分析</button>' + auditBtn;
 }
 function renderLaws(){
   const el=document.getElementById('law-list');
@@ -352,6 +353,25 @@ async function analyzeEvidence(caseId){
   const r=await fetch('/api/judicial/evidence/analyze',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},projHeaders()),body:JSON.stringify({case_id:caseId||''})});
   const d=await r.json();
   addMsg('assistant','证据链分析：完整度 '+d.completeness_score+'，矛盾 '+d.contradiction_count+' 处\n'+(d.summary||''));
+}
+async function auditEvidence(caseId){
+  const r=await fetch('/api/judicial/evidence/audit',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},projHeaders()),body:JSON.stringify({case_id:caseId||''})});
+  if(!r.ok){ addMsg('assistant','证据链审计失败：'+r.status); return; }
+  const d=await r.json();
+  const icon={'通过':'✅','有瑕疵':'⚠️'}[d.verdict]||'❌';
+  const cov=(d.claim_coverage||[]).map(c=>(c.covered?'✅ ':'❌ ')+c.claim_description).join('\n');
+  const lines=[
+    icon+' 证据链审计结论：'+d.verdict+'（完整度 '+(d.chain? d.chain.completeness_score : '-')+'）',
+    '保管链条问题 '+(d.custody_issues||[]).length+' 项',
+    ...(d.custody_issues||[]).map(i=>'  • '+i),
+    '时间线问题 '+(d.timeline_issues||[]).length+' 项',
+    ...(d.timeline_issues||[]).map(i=>'  • '+i),
+    '同源佐证警告 '+(d.independence_warnings||[]).length+' 项',
+    ...(d.independence_warnings||[]).map(i=>'  • '+i),
+  ];
+  if(cov) lines.push('诉请覆盖：\n'+cov);
+  if(d.summary) lines.push(d.summary);
+  addMsg('assistant',lines.join('\n'));
 }
 async function generateDoc(caseId){
   const dt=(document.getElementById('docType')&&document.getElementById('docType').value)||'evidence_list';

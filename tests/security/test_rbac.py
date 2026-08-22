@@ -9,8 +9,8 @@ from justagent.security.rbac import (
     Permission,
     RBACEngine,
     RBACError,
-    Role,
     ResourceType,
+    Role,
     User,
     UserStatus,
 )

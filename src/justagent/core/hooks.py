@@ -21,18 +21,17 @@ are identical.
 
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import structlog
 
-from justagent.utils import glob_to_regex, matches_any
+from justagent.utils import matches_any
 
 if TYPE_CHECKING:
     from justagent.core.audit_logger import AuditLogger

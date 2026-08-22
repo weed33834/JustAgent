@@ -31,10 +31,11 @@ import sys
 import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field

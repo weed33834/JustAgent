@@ -26,7 +26,6 @@ from __future__ import annotations
 import fnmatch
 import json
 import logging
-import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any

@@ -10,40 +10,20 @@ across enterprise infrastructure:
   (timeout, retry, cancellation).
 * :mod:`justagent.resources.storage` — unified file API over local / NAS /
   S3 / MinIO backends with quota management and path abstraction.
-* :mod:`justagent.resources.database` — database gateway with connection
-  pooling, read/write splitting and query caching (SQLite default, with
-  lazy MySQL / PostgreSQL / MongoDB / Redis drivers).
+* :mod:`justagent.resources.storage` — unified file API over local / NAS /
+  S3 / MinIO backends with quota management and path abstraction.
 * :mod:`justagent.resources.monitor` — psutil-backed metrics collection,
   configurable threshold alerts, health checks and utilisation reporting.
 
 All public types are re-exported here so callers can do::
 
     from justagent.resources import (
-        ResourceRegistry, TaskScheduler, StorageManager,
-        DatabaseGateway, ResourceMonitor,
+        ResourceRegistry, TaskScheduler, StorageManager, ResourceMonitor,
     )
 """
 
 from __future__ import annotations
 
-from justagent.resources.database import (
-    ConnectionConfig,
-    ConnectionPool,
-    ConnectionRole,
-    DatabaseBackend,
-    DatabaseDriver,
-    DatabaseError,
-    DatabaseGateway,
-    MongoDBBackend,
-    MySQLBackend,
-    NoSQLBackend,
-    PoolExhaustedError,
-    PostgresBackend,
-    QueryResult,
-    RedisBackend,
-    SqliteBackend,
-    create_backend,
-)
 from justagent.resources.monitor import (
     DEFAULT_HISTORY,
     DEFAULT_INTERVAL,
@@ -139,23 +119,6 @@ __all__ = [
     "StorageBackend",
     "StorageError",
     "StorageManager",
-    # Database
-    "ConnectionConfig",
-    "ConnectionPool",
-    "ConnectionRole",
-    "DatabaseBackend",
-    "DatabaseDriver",
-    "DatabaseError",
-    "DatabaseGateway",
-    "MongoDBBackend",
-    "MySQLBackend",
-    "NoSQLBackend",
-    "PoolExhaustedError",
-    "PostgresBackend",
-    "QueryResult",
-    "RedisBackend",
-    "SqliteBackend",
-    "create_backend",
     # Monitor
     "DEFAULT_HISTORY",
     "DEFAULT_INTERVAL",

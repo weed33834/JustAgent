@@ -269,9 +269,7 @@ def skill_show(
         f"[bold]路径:[/bold]        {skill.path}"
     )
     console.print(Panel(header, title=f"技能 — {skill.name}", border_style="cyan"))
-    console.print(
-        Panel(skill.body or "(空正文)", title="正文", border_style="blue")
-    )
+    console.print(Panel(skill.body or "(空正文)", title="正文", border_style="blue"))
 
 
 # ---------------------------------------------------------------------------
@@ -286,9 +284,7 @@ def skill_create(
     description: str | None = typer.Option(
         None, "--description", "-d", help="技能描述；未提供则交互式询问"
     ),
-    body: str | None = typer.Option(
-        None, "--body", "-b", help="技能正文；未提供则交互式询问"
-    ),
+    body: str | None = typer.Option(None, "--body", "-b", help="技能正文；未提供则交互式询问"),
     body_file: Path | None = typer.Option(
         None,
         "--body-file",
@@ -366,10 +362,7 @@ def skill_create(
         _emit_json(_skill_to_dict(skill, include_body=True))
         return
 
-    get_console().print(
-        f"[green]✓[/green] 已创建技能 [bold]{skill.name}[/bold]"
-        f"（{skill.path}）"
-    )
+    get_console().print(f"[green]✓[/green] 已创建技能 [bold]{skill.name}[/bold]（{skill.path}）")
 
 
 # ---------------------------------------------------------------------------
@@ -432,9 +425,7 @@ def skill_delete(
 def skill_update(
     ctx: typer.Context,
     name: str = typer.Argument(..., help="技能名称"),
-    description: str | None = typer.Option(
-        None, "--description", "-d", help="新的描述"
-    ),
+    description: str | None = typer.Option(None, "--description", "-d", help="新的描述"),
     body: str | None = typer.Option(None, "--body", "-b", help="新的正文"),
     body_file: Path | None = typer.Option(
         None,
@@ -468,14 +459,8 @@ def skill_update(
         _parse_triggers(trigger) if trigger is not None else None
     )
 
-    if (
-        description is None
-        and resolved_body is None
-        and new_triggers is None
-    ):
-        raise typer.BadParameter(
-            "请至少指定 --description / --body / --body-file / --trigger 之一"
-        )
+    if description is None and resolved_body is None and new_triggers is None:
+        raise typer.BadParameter("请至少指定 --description / --body / --body-file / --trigger 之一")
 
     if dry_run:
         changes: list[str] = []
@@ -485,8 +470,7 @@ def skill_update(
             changes.append(f"正文: {_short(existing.body, 30)} → {_short(resolved_body, 30)}")
         if new_triggers is not None:
             changes.append(
-                f"触发器: {_format_triggers(existing.triggers)} → "
-                f"{_format_triggers(new_triggers)}"
+                f"触发器: {_format_triggers(existing.triggers)} → {_format_triggers(new_triggers)}"
             )
         get_console().print(
             Panel(
@@ -535,9 +519,7 @@ def skill_import(
     name: str | None = typer.Option(
         None, "--name", "-n", help="导入后重命名技能（默认沿用源文件中的 name）"
     ),
-    force: bool = typer.Option(
-        False, "--force", help="目标技能已存在时强制覆盖"
-    ),
+    force: bool = typer.Option(False, "--force", help="目标技能已存在时强制覆盖"),
     json_output: bool = typer.Option(False, "--json", help="以 JSON 输出"),
 ) -> None:
     """从外部 ``SKILL.md`` 文件导入一个技能。
@@ -559,9 +541,7 @@ def skill_import(
 
     final_name = target_name or source_skill.name
     if loader.get(final_name) is not None and not force:
-        raise typer.BadParameter(
-            f"技能已存在：{final_name}（使用 --force 覆盖）"
-        )
+        raise typer.BadParameter(f"技能已存在：{final_name}（使用 --force 覆盖）")
 
     if dry_run:
         get_console().print(
@@ -592,9 +572,7 @@ def skill_import(
         _emit_json(_skill_to_dict(skill, include_body=True))
         return
 
-    get_console().print(
-        f"[green]✓[/green] 已导入技能 [bold]{skill.name}[/bold]（{skill.path}）"
-    )
+    get_console().print(f"[green]✓[/green] 已导入技能 [bold]{skill.name}[/bold]（{skill.path}）")
 
 
 # ---------------------------------------------------------------------------
@@ -644,7 +622,7 @@ def _build_model_router(config: AppConfig) -> Any:
     from pydantic import HttpUrl
 
     from justagent.adapters.providers.unified_gateway import (
-        _PROVIDER_BASE_URLS as _default_urls,
+        _PROVIDER_BASE_URLS as PROVIDER_BASE_URLS,
     )
     from justagent.core.model_router import ModelRouter
     from justagent.models.config import LlmProvider, ModelBackendConfig, Provider
@@ -654,14 +632,12 @@ def _build_model_router(config: AppConfig) -> Any:
         LlmProvider.OPENROUTER: Provider.OPENROUTER,
         LlmProvider.OLLAMA: Provider.OLLAMA,
     }
-    # ``_default_urls`` is imported from ``unified_gateway._PROVIDER_BASE_URLS``
+    # ``PROVIDER_BASE_URLS`` is imported from ``unified_gateway._PROVIDER_BASE_URLS``
     # (single source of truth for provider -> base URL defaults).
 
     if not config.model.backends and config.llm.provider in _provider_map:
         backend_provider = _provider_map[config.llm.provider]
-        base_url = config.llm.base_url or cast(
-            HttpUrl, _default_urls[backend_provider]
-        )
+        base_url = config.llm.base_url or cast(HttpUrl, PROVIDER_BASE_URLS[backend_provider])
         legacy_backend = ModelBackendConfig(
             provider=backend_provider,
             base_url=base_url,
@@ -781,9 +757,7 @@ def skill_generate(
             raw_output = router.chat(messages, "skill-generate")
     except ModelGatewayError as exc:
         console.print(f"[red]✗ 模型后端不可用：{exc}[/red]")
-        console.print(
-            "[dim]请先配置模型后端（[[model.backends]] 或 [llm] 段）后重试。[/dim]"
-        )
+        console.print("[dim]请先配置模型后端（[[model.backends]] 或 [llm] 段）后重试。[/dim]")
         raise typer.Exit(code=1) from exc
     finally:
         with suppress(Exception):
@@ -800,9 +774,7 @@ def skill_generate(
 
     # Parse the LLM output into a Skill via the shared parser.
     skill_content = _extract_skill_markdown(raw_output)
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False, encoding="utf-8"
-    ) as tmp:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as tmp:
         tmp.write(skill_content)
         tmp_path = Path(tmp.name)
     try:
@@ -847,9 +819,7 @@ def skill_generate(
         _emit_json(_skill_to_dict(skill, include_body=True))
         return
 
-    console.print(
-        f"[green]✓[/green] 已生成并创建技能 [bold]{skill.name}[/bold]（{skill.path}）"
-    )
+    console.print(f"[green]✓[/green] 已生成并创建技能 [bold]{skill.name}[/bold]（{skill.path}）")
 
 
 __all__ = ["app", "register"]

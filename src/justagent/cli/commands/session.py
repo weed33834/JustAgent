@@ -53,10 +53,7 @@ def list_sessions(ctx: typer.Context) -> None:
         typer.echo(i18n._("session.empty"))
         return
 
-    typer.echo(
-        f"{'ID':<18} {'Date':<16} {'Mode':<6} {'Model':<18} "
-        f"{'Tokens':>8}  Preview"
-    )
+    typer.echo(f"{'ID':<18} {'Date':<16} {'Mode':<6} {'Model':<18} {'Tokens':>8}  Preview")
     typer.echo("-" * 90)
     for m in sessions:
         typer.echo(
@@ -164,7 +161,7 @@ def resume_session(
             fg=typer.colors.RED,
             err=True,
         )
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
     raise typer.Exit(code=result.returncode)
 
 

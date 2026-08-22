@@ -32,13 +32,12 @@ import os
 import shutil
 import threading
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from justagent.utils import utcnow
 
@@ -99,18 +98,14 @@ class QuotaUsage(BaseModel):
 
         if spec.max_bytes and self.used_bytes > spec.max_bytes:
             return True
-        if spec.max_files and self.used_files > spec.max_files:
-            return True
-        return False
+        return bool(spec.max_files and self.used_files > spec.max_files)
 
     def would_exceed(self, spec: QuotaSpec, *, extra_bytes: int = 0, extra_files: int = 0) -> bool:
         """True if adding ``extra_bytes``/``extra_files`` would breach ``spec``."""
 
         if spec.max_bytes and self.used_bytes + extra_bytes > spec.max_bytes:
             return True
-        if spec.max_files and self.used_files + extra_files > spec.max_files:
-            return True
-        return False
+        return bool(spec.max_files and self.used_files + extra_files > spec.max_files)
 
 
 class StorageError(Exception):
@@ -223,7 +218,7 @@ class StorageBackend(ABC):
                     stack.append(entry.key)
         return sorted(results, key=lambda f: f.key)
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: B027 - optional hook; default no-op is intentional
         """Release backend resources (default: no-op)."""
 
 
@@ -441,8 +436,7 @@ class S3StorageBackend(_ObjectStorageBackend):
                 import boto3  # type: ignore[import-not-found]
             except ImportError as exc:  # pragma: no cover - optional dep
                 raise StorageError(
-                    "boto3 is required for the S3 backend; install with "
-                    "`pip install boto3`"
+                    "boto3 is required for the S3 backend; install with `pip install boto3`"
                 ) from exc
             self._client = boto3.client(
                 "s3",
@@ -550,8 +544,7 @@ class MinioStorageBackend(_ObjectStorageBackend):
                 from minio import Minio  # type: ignore[import-not-found]
             except ImportError as exc:  # pragma: no cover - optional dep
                 raise StorageError(
-                    "minio is required for the MinIO backend; install with "
-                    "`pip install minio`"
+                    "minio is required for the MinIO backend; install with `pip install minio`"
                 ) from exc
             from urllib.parse import urlparse as _urlparse
 
@@ -584,9 +577,7 @@ class MinioStorageBackend(_ObjectStorageBackend):
 
         client = self._ensure_client()
         try:
-            client.put_object(
-                self.bucket, key, io.BytesIO(data), length=len(data)
-            )
+            client.put_object(self.bucket, key, io.BytesIO(data), length=len(data))
         except Exception as exc:  # noqa: BLE001
             raise StorageError(f"MinIO put failed for {key!r}: {exc}") from exc
 
@@ -665,9 +656,7 @@ class QuotaManager:
     def set_quota(self, namespace: str, *, max_bytes: int = 0, max_files: int = 0) -> QuotaSpec:
         """Set (or replace) the quota for ``namespace``."""
 
-        spec = QuotaSpec(
-            namespace=namespace, max_bytes=max_bytes, max_files=max_files
-        )
+        spec = QuotaSpec(namespace=namespace, max_bytes=max_bytes, max_files=max_files)
         with self._lock:
             self._specs[namespace] = spec
             self._usage.setdefault(namespace, QuotaUsage(namespace=namespace))
@@ -691,13 +680,9 @@ class QuotaManager:
 
     def usage(self, namespace: str) -> QuotaUsage:
         with self._lock:
-            return self._usage.get(
-                namespace, QuotaUsage(namespace=namespace)
-            ).model_copy()
+            return self._usage.get(namespace, QuotaUsage(namespace=namespace)).model_copy()
 
-    def check(
-        self, namespace: str, *, extra_bytes: int = 0, extra_files: int = 0
-    ) -> bool:
+    def check(self, namespace: str, *, extra_bytes: int = 0, extra_files: int = 0) -> bool:
         """Return True if a write of the given size/count is allowed."""
 
         with self._lock:
@@ -705,13 +690,9 @@ class QuotaManager:
             if spec is None:
                 return True
             usage = self._usage.get(namespace, QuotaUsage(namespace=namespace))
-            return not usage.would_exceed(
-                spec, extra_bytes=extra_bytes, extra_files=extra_files
-            )
+            return not usage.would_exceed(spec, extra_bytes=extra_bytes, extra_files=extra_files)
 
-    def record(
-        self, namespace: str, *, delta_bytes: int, delta_files: int
-    ) -> QuotaUsage:
+    def record(self, namespace: str, *, delta_bytes: int, delta_files: int) -> QuotaUsage:
         """Apply a usage delta to ``namespace`` and return the new usage.
 
         Clamps at zero so deletes of already-removed files don't drift
@@ -719,9 +700,7 @@ class QuotaManager:
         """
 
         with self._lock:
-            usage = self._usage.setdefault(
-                namespace, QuotaUsage(namespace=namespace)
-            )
+            usage = self._usage.setdefault(namespace, QuotaUsage(namespace=namespace))
             usage.used_bytes = max(0, usage.used_bytes + delta_bytes)
             usage.used_files = max(0, usage.used_files + delta_files)
             return usage.model_copy()
@@ -745,9 +724,7 @@ class QuotaManager:
                     total_bytes += entry.size
                     total_files += 1
         with self._lock:
-            usage = self._usage.setdefault(
-                namespace, QuotaUsage(namespace=namespace)
-            )
+            usage = self._usage.setdefault(namespace, QuotaUsage(namespace=namespace))
             usage.used_bytes = total_bytes
             usage.used_files = total_files
             return usage.model_copy()
@@ -877,9 +854,7 @@ class StorageManager:
                 f"quota exceeded for {namespace}: writing {len(data)} bytes",
             )
         written = backend.write(key, data)
-        self._quota.record(
-            namespace, delta_bytes=written, delta_files=1
-        )
+        self._quota.record(namespace, delta_bytes=written, delta_files=1)
         return written
 
     def write_text(self, path: str, text: str, encoding: str = "utf-8") -> int:
@@ -899,9 +874,7 @@ class StorageManager:
             logger.debug("stat failed: %s", exc)
         removed = backend.delete(key)
         if removed:
-            self._quota.record(
-                namespace, delta_bytes=-size, delta_files=-files
-            )
+            self._quota.record(namespace, delta_bytes=-size, delta_files=-files)
         return removed
 
     def exists(self, path: str) -> bool:

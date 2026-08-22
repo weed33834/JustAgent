@@ -15,7 +15,12 @@ from packaging.version import parse as parse_version
 
 from justagent.core.i18n import I18n, get_i18n_from_ctx
 from justagent.core.package_verifier import PackageVerificationError, download_and_verify
-from justagent.core.plugin_registry import CapabilityManifest, PluginRegistry, PluginSpec, TrustLevel
+from justagent.core.plugin_registry import (
+    CapabilityManifest,
+    PluginRegistry,
+    PluginSpec,
+    TrustLevel,
+)
 from justagent.core.plugin_stats import PluginStats
 from justagent.core.registry_index import RegistryIndex
 from justagent.core.sandbox import SandboxRunner

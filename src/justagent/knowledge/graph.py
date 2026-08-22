@@ -29,9 +29,10 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -182,7 +183,7 @@ _CAPITALIZED_STOPWORDS = frozenset({
     "There", "Here", "Now", "Today", "Tomorrow", "Yesterday",
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
     "Saturday", "Sunday",
-    "January", "February", "March", "April", "May", "June",
+    "January", "February", "March", "April", "June",
     "July", "August", "September", "October", "November", "December",
     "Some", "Any", "All", "Each", "Every", "No", "None",
     "Which", "What", "Who", "Whom", "Whose", "How", "Why",

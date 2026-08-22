@@ -8,17 +8,16 @@ import pytest
 
 from justagent.security.encryption import (
     DataClassification,
+    EncryptedPayload,
     EncryptionAlgorithm,
     EncryptionEngine,
     EncryptionError,
     EncryptionKey,
-    EncryptedPayload,
     KeyDerivationMethod,
     KeyManagementError,
     KeyManager,
     SecurityError,
 )
-
 
 # ---------------------------------------------------------------------------
 # KeyManager

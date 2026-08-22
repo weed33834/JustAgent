@@ -83,9 +83,9 @@ except ImportError:  # pragma: no cover - depends on environment
 
 try:
     from justagent.security.data_protection import (
-        DLPScanner,
         DataSanitizer,
         DataSensitivityLevel,
+        DLPScanner,
         PIIFinding,
     )
 
@@ -1290,10 +1290,7 @@ def dlp_scan(
     # Sanitised output modes.
     if redact or mask:
         sanitizer = DataSanitizer(scanner)
-        if redact:
-            result = sanitizer.redact_pii(content)
-        else:
-            result = sanitizer.mask_partial(content)
+        result = sanitizer.redact_pii(content) if redact else sanitizer.mask_partial(content)
         console.print(Panel(result, title="脱敏结果", border_style="yellow"))
         if findings:
             console.print(f"[dim]检测到 {len(findings)} 处 PII，已脱敏。[/dim]")

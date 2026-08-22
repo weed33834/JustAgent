@@ -447,8 +447,8 @@ def _evidence_review_criterion_set() -> CriterionSet:
 def _case_analysis_criterion_set() -> CriterionSet:
     """Criterion set for case-analysis outputs.
 
-    Case analysis must be accurate (correct application of law to
-facts), coherent (logical reasoning chain), and legally compliant."""
+        Case analysis must be accurate (correct application of law to
+    facts), coherent (logical reasoning chain), and legally compliant."""
 
     return CriterionSet(
         name="case_analysis",
@@ -488,9 +488,7 @@ _CITATION_RE = re.compile(
 )
 
 #: Email address pattern.
-_PII_EMAIL_RE = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-)
+_PII_EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
 #: Chinese mobile phone number pattern (11 digits starting with 1).
 _PII_PHONE_CN_RE = re.compile(r"\b1[3-9]\d{9}\b")
@@ -508,19 +506,56 @@ _PII_PHONE_INTL_RE = re.compile(r"\+\d{1,3}[\s-]?\d{4,14}")
 _HARMFUL_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("violence", re.compile(r"\b(kill|murder|assassinate|slaughter|bomb|massacre)\b", re.I)),
     ("self_harm", re.compile(r"\b(suicide|self[- ]?harm|kill myself|end my life)\b", re.I)),
-    ("weapon_synthesis", re.compile(r"\b(how to make|synthesize|manufacture)\s+(bomb|weapon|explosive|poison)\b", re.I)),
-    ("drug_synthesis", re.compile(r"\b(synthesize|manufacture|produce)\s+(meth|heroin|cocaine|fentanyl)\b", re.I)),
+    (
+        "weapon_synthesis",
+        re.compile(
+            r"\b(how to make|synthesize|manufacture)\s+(bomb|weapon|explosive|poison)\b", re.I
+        ),
+    ),
+    (
+        "drug_synthesis",
+        re.compile(r"\b(synthesize|manufacture|produce)\s+(meth|heroin|cocaine|fentanyl)\b", re.I),
+    ),
     ("illegal_activity", re.compile(r"\b(how to (hack|steal|launder|smuggle|forge))\b", re.I)),
     ("hate_speech", re.compile(r"\b(subhuman|vermin|inferior race|ethnic cleansing)\b", re.I)),
 ]
 
 #: Patterns indicating jailbreak / prompt-injection attempts.
 _JAILBREAK_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
-    ("ignore_instructions", re.compile(r"\b(ignore|disregard|forget)\b.{0,30}\b(previous|prior|above|all)\b.{0,30}\b(instruction|prompt|rule|direction)\b", re.I)),
-    ("role_override", re.compile(r"\byou are now\b.{0,40}\b(DAN|developer mode|jailbroken|unrestricted|no restrictions)\b", re.I)),
-    ("system_prompt_extraction", re.compile(r"\b(reveal|show|repeat|print|output)\b.{0,30}\b(system prompt|initial prompt|hidden instruction)\b", re.I)),
-    ("pretend_mode", re.compile(r"\b(pretend|act as|simulate)\b.{0,40}\b(no rules|no restrictions|unfiltered|unlimited)\b", re.I)),
-    ("encoding_bypass", re.compile(r"\b(base64|decode|rot13|hex decode)\b.{0,30}\b(prompt|instruction|command)\b", re.I)),
+    (
+        "ignore_instructions",
+        re.compile(
+            r"\b(ignore|disregard|forget)\b.{0,30}\b(previous|prior|above|all)\b.{0,30}\b(instruction|prompt|rule|direction)\b",
+            re.I,
+        ),
+    ),
+    (
+        "role_override",
+        re.compile(
+            r"\byou are now\b.{0,40}\b(DAN|developer mode|jailbroken|unrestricted|no restrictions)\b",
+            re.I,
+        ),
+    ),
+    (
+        "system_prompt_extraction",
+        re.compile(
+            r"\b(reveal|show|repeat|print|output)\b.{0,30}\b(system prompt|initial prompt|hidden instruction)\b",
+            re.I,
+        ),
+    ),
+    (
+        "pretend_mode",
+        re.compile(
+            r"\b(pretend|act as|simulate)\b.{0,40}\b(no rules|no restrictions|unfiltered|unlimited)\b",
+            re.I,
+        ),
+    ),
+    (
+        "encoding_bypass",
+        re.compile(
+            r"\b(base64|decode|rot13|hex decode)\b.{0,30}\b(prompt|instruction|command)\b", re.I
+        ),
+    ),
 ]
 
 
@@ -642,15 +677,13 @@ class RuleBasedEvaluator:
             if EvaluationCriterion.SAFETY in requested:
                 scores.append(safety_score)
 
-        if self._enable_legal:
-            if EvaluationCriterion.LEGAL_COMPLIANCE in requested:
-                legal_score = self.check_legal_compliance(output, task_input)
-                scores.append(legal_score)
+        if self._enable_legal and EvaluationCriterion.LEGAL_COMPLIANCE in requested:
+            legal_score = self.check_legal_compliance(output, task_input)
+            scores.append(legal_score)
 
-        if self._enable_code:
-            if EvaluationCriterion.ACCURACY in requested:
-                code_score = self.check_code_quality(output)
-                scores.append(code_score)
+        if self._enable_code and EvaluationCriterion.ACCURACY in requested:
+            code_score = self.check_code_quality(output)
+            scores.append(code_score)
 
         # Ensure at least one score so the result is meaningful.
         if not scores:
@@ -761,11 +794,7 @@ class RuleBasedEvaluator:
 
         score = _clamp(score)
         if issues:
-            reasoning = (
-                f"Detected {len(issues)} safety issue(s): "
-                + "; ".join(issues)
-                + "."
-            )
+            reasoning = f"Detected {len(issues)} safety issue(s): " + "; ".join(issues) + "."
         else:
             reasoning = "No harmful content or jailbreak patterns detected."
 
@@ -842,7 +871,9 @@ class RuleBasedEvaluator:
             issues.append(f"pii_detected: {', '.join(pii_types)} ({len(pii_found)} item(s))")
             for pii_type, value in pii_found[:5]:
                 # Mask the PII in evidence.
-                masked = value[:2] + "*" * (len(value) - 4) + value[-2:] if len(value) > 4 else "***"
+                masked = (
+                    value[:2] + "*" * (len(value) - 4) + value[-2:] if len(value) > 4 else "***"
+                )
                 evidence.append(f"pii [{pii_type}]: {masked}")
 
         # --- Document structure (heuristic) ---
@@ -862,8 +893,7 @@ class RuleBasedEvaluator:
             )
         else:
             reasoning = (
-                f"No legal compliance issues. {len(citations)} valid "
-                f"citation(s), no PII detected."
+                f"No legal compliance issues. {len(citations)} valid citation(s), no PII detected."
             )
 
         return EvaluationScore(
@@ -999,9 +1029,7 @@ class RuleBasedEvaluator:
 
         # Heuristic: if the output looks like raw Python code.
         stripped = output.strip()
-        if stripped and re.match(
-            r"^(def |class |import |from |if __name__|#\s*!)", stripped
-        ):
+        if stripped and re.match(r"^(def |class |import |from |if __name__|#\s*!)", stripped):
             blocks.append(stripped)
 
         return blocks
@@ -1020,14 +1048,10 @@ class RuleBasedEvaluator:
                     )
                 elif score.criterion is EvaluationCriterion.LEGAL_COMPLIANCE:
                     recs.append(
-                        "Fix citation formatting and remove any leaked PII "
-                        "from the output."
+                        "Fix citation formatting and remove any leaked PII from the output."
                     )
                 elif score.criterion is EvaluationCriterion.ACCURACY:
-                    recs.append(
-                        "Address code syntax errors and style issues before "
-                        "delivery."
-                    )
+                    recs.append("Address code syntax errors and style issues before delivery.")
             elif score.score < 0.8:
                 if score.criterion is EvaluationCriterion.SAFETY:
                     recs.append("Minor safety concerns detected; review recommended.")
@@ -1251,9 +1275,7 @@ class LLMJudgeEvaluator:
             )
 
         resolved_criteria = self._resolve_criteria(criteria, criterion_set)
-        prompt = self._build_single_prompt(
-            output, task_input, resolved_criteria, context
-        )
+        prompt = self._build_single_prompt(output, task_input, resolved_criteria, context)
         raw_response = self._call_gateway(prompt)
         scores, feedback, recommendations = self._parse_judge_response(
             raw_response, resolved_criteria
@@ -1332,14 +1354,10 @@ class LLMJudgeEvaluator:
         """
 
         if self._gateway is None:
-            raise EvaluationError(
-                "No ModelGateway configured; cannot perform pairwise evaluation."
-            )
+            raise EvaluationError("No ModelGateway configured; cannot perform pairwise evaluation.")
 
         resolved_criteria = self._resolve_criteria(criteria, criterion_set)
-        prompt = self._build_pairwise_prompt(
-            output_a, output_b, task_input, resolved_criteria
-        )
+        prompt = self._build_pairwise_prompt(output_a, output_b, task_input, resolved_criteria)
         raw_response = self._call_gateway(prompt)
         scores, feedback, recommendations, winner = self._parse_pairwise_response(
             raw_response, resolved_criteria
@@ -1417,9 +1435,7 @@ class LLMJudgeEvaluator:
         """
 
         if self._gateway is None:
-            raise EvaluationError(
-                "No ModelGateway configured; cannot perform rubric evaluation."
-            )
+            raise EvaluationError("No ModelGateway configured; cannot perform rubric evaluation.")
 
         prompt = self._build_rubric_prompt(output, task_input, rubric)
         raw_response = self._call_gateway(prompt)
@@ -1481,8 +1497,7 @@ class LLMJudgeEvaluator:
         """Build the prompt for single-output evaluation."""
 
         criteria_desc = "\n".join(
-            f"  - {c.value}: {self._criterion_description(c)}"
-            for c in criteria
+            f"  - {c.value}: {self._criterion_description(c)}" for c in criteria
         )
         parts: list[str] = [self._SINGLE_INSTRUCTION, ""]
         if task_input:
@@ -1503,20 +1518,21 @@ class LLMJudgeEvaluator:
         """Build the prompt for pairwise comparison."""
 
         criteria_desc = "\n".join(
-            f"  - {c.value}: {self._criterion_description(c)}"
-            for c in criteria
+            f"  - {c.value}: {self._criterion_description(c)}" for c in criteria
         )
-        return "\n".join([
-            self._PAIRWISE_INSTRUCTION,
-            "",
-            f"Task / User Request:\n{task_input}\n",
-            f"Evaluation Criteria:\n{criteria_desc}\n",
-            "Output A:",
-            output_a,
-            "",
-            "Output B:",
-            output_b,
-        ])
+        return "\n".join(
+            [
+                self._PAIRWISE_INSTRUCTION,
+                "",
+                f"Task / User Request:\n{task_input}\n",
+                f"Evaluation Criteria:\n{criteria_desc}\n",
+                "Output A:",
+                output_a,
+                "",
+                "Output B:",
+                output_b,
+            ]
+        )
 
     def _build_rubric_prompt(
         self,
@@ -1574,13 +1590,13 @@ class LLMJudgeEvaluator:
 
         assert self._gateway is not None  # checked by callers
 
-        ChatCompletionRequest, ChatMessage = self._import_request_types()
+        request_cls, message_cls = self._import_request_types()
 
         try:
-            request = ChatCompletionRequest(
+            request = request_cls(
                 messages=[
-                    ChatMessage(role="system", content=self._SYSTEM_PROMPT),
-                    ChatMessage(role="user", content=prompt),
+                    message_cls(role="system", content=self._SYSTEM_PROMPT),
+                    message_cls(role="user", content=prompt),
                 ],
                 temperature=self._temperature,
                 max_tokens=self._max_tokens,
@@ -1643,9 +1659,7 @@ class LLMJudgeEvaluator:
         scores: list[EvaluationScore] = []
         raw_scores = data.get("scores", [])
         for entry in raw_scores:
-            criterion = self._parse_criterion(
-                entry.get("criterion", ""), criteria, rubric_items
-            )
+            criterion = self._parse_criterion(entry.get("criterion", ""), criteria, rubric_items)
             score_val = self._safe_float(entry.get("score", 0.5))
             reasoning = str(entry.get("reasoning", ""))
             evidence_raw = entry.get("evidence", [])
@@ -1666,9 +1680,7 @@ class LLMJudgeEvaluator:
         feedback = str(data.get("overall_feedback", ""))
         recs_raw = data.get("recommendations", [])
         recommendations = (
-            [str(r) for r in recs_raw]
-            if isinstance(recs_raw, list)
-            else [str(recs_raw)]
+            [str(r) for r in recs_raw] if isinstance(recs_raw, list) else [str(recs_raw)]
         )
 
         # Fill in any missing criteria with neutral scores.
@@ -1714,9 +1726,7 @@ class LLMJudgeEvaluator:
         if winner not in ("A", "B"):
             winner = "A"
 
-        scores, feedback, recommendations = self._parse_judge_response(
-            raw, criteria
-        )
+        scores, feedback, recommendations = self._parse_judge_response(raw, criteria)
         return scores, feedback, recommendations, winner
 
     @staticmethod
@@ -2167,10 +2177,7 @@ class EvaluationPipeline:
                 )
             return result, weight
 
-        tasks = [
-            _run_one(name, config)
-            for name, config in evaluator_configs.items()
-        ]
+        tasks = [_run_one(name, config) for name, config in evaluator_configs.items()]
         sub_results = await asyncio.gather(*tasks)
 
         return self.aggregate_scores(
@@ -2224,7 +2231,7 @@ class EvaluationPipeline:
 
         # Merge per-criterion scores (highest-weight evaluator wins).
         criterion_best: dict[EvaluationCriterion, EvaluationScore] = {}
-        for result, weight in sorted(results, key=lambda x: x[1], reverse=True):
+        for result, _weight in sorted(results, key=lambda x: x[1], reverse=True):
             for score in result.scores:
                 if score.criterion not in criterion_best:
                     criterion_best[score.criterion] = score
@@ -2250,13 +2257,15 @@ class EvaluationPipeline:
             recommendations.extend(result.recommendations)
             if result.evaluator_name:
                 evaluator_names.append(result.evaluator_name)
-            metadata["sub_results"].append({
-                "evaluator": result.evaluator_name,
-                "overall_score": result.overall_score,
-                "weight": weight,
-                "status": result.status.value,
-                "score_count": len(result.scores),
-            })
+            metadata["sub_results"].append(
+                {
+                    "evaluator": result.evaluator_name,
+                    "overall_score": result.overall_score,
+                    "weight": weight,
+                    "status": result.status.value,
+                    "score_count": len(result.scores),
+                }
+            )
 
         # Deduplicate recommendations while preserving order.
         seen: set[str] = set()
@@ -2274,7 +2283,9 @@ class EvaluationPipeline:
             evaluator_type = EvaluatorType.HUMAN
 
         any_failed = any(r.status is EvaluationStatus.FAILED for r, _ in results)
-        status = EvaluationStatus.FAILED if any_failed and overall == 0 else EvaluationStatus.COMPLETED
+        status = (
+            EvaluationStatus.FAILED if any_failed and overall == 0 else EvaluationStatus.COMPLETED
+        )
 
         return EvaluationResult(
             task_id=task_id,
@@ -2307,9 +2318,7 @@ class EvaluationPipeline:
         # It's a string — look up in the registry.
         resolved = self._registry.get_criterion_set(criterion_set)
         if resolved is None:
-            raise EvaluationError(
-                f"Criterion set '{criterion_set}' not found in registry."
-            )
+            raise EvaluationError(f"Criterion set '{criterion_set}' not found in registry.")
         return resolved
 
     @staticmethod
@@ -2419,8 +2428,7 @@ class EvaluationRegistry:
         with self._lock:
             if name in self._sets and not overwrite:
                 raise EvaluationError(
-                    f"Criterion set '{name}' already exists; "
-                    f"use overwrite=True to replace."
+                    f"Criterion set '{name}' already exists; use overwrite=True to replace."
                 )
             self._sets[name] = criterion_set
         logger.info("Registered criterion set '%s' (%d criteria)", name, len(criterion_set.weights))

@@ -562,7 +562,7 @@ class TestCaseSearch:
         assert len(results) == 0
 
     def test_search_with_status_filter(self, manager: CaseManager) -> None:
-        c1 = manager.create_case(case_number="001", cause_of_action="纠纷")
+        manager.create_case(case_number="001", cause_of_action="纠纷")
         c2 = manager.create_case(case_number="002", cause_of_action="纠纷")
         manager.update_status(c2.id, CaseStatus.ACTIVE)
         results = manager.search_cases("纠纷", status=CaseStatus.ACTIVE)
