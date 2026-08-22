@@ -38,8 +38,9 @@ import asyncio
 import logging
 import threading
 import uuid
+from datetime import date
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -49,6 +50,9 @@ from justagent.knowledge.graph import (
     KnowledgeGraph,
 )
 from justagent.utils import now
+
+if TYPE_CHECKING:
+    from justagent.verticals.legal.case_manager import Claim
 
 logger = logging.getLogger("justagent.verticals.legal.evidence")
 
@@ -205,6 +209,7 @@ class Evidence(BaseModel):
     probative_strength: ProbativeStrength = ProbativeStrength.MEDIUM
     probative_score: float = 0.0
     metadata: dict[str, Any] = Field(default_factory=dict)
+    custody_chain: list[CustodyEvent] = Field(default_factory=list)
     created_at: float = Field(default_factory=now)
     reviewed: bool = False
 
@@ -241,6 +246,43 @@ class EvidenceRelation(BaseModel):
     description: str = ""
     weight: float = 1.0
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CustodyEvent(BaseModel):
+    """One link in an evidence's chain of custody (保管链条).
+
+    Attributes:
+        date: When the event happened (ISO ``YYYY-MM-DD``).
+        actor: Person / unit taking custody action.
+        action: One of 收集 / 封存 / 移交 / 退回 / 鉴定 / 其他.
+        location: Where the item was held or the event occurred.
+        notes: Free-form detail.
+    """
+
+    date: str = ""
+    actor: str = ""
+    action: str = "其他"
+    location: str = ""
+    notes: str = ""
+
+
+class ClaimCoverage(BaseModel):
+    """Whether a litigation claim is covered by admissible evidence.
+
+    Attributes:
+        claim_id: The :class:`Claim` id.
+        claim_description: The claim text.
+        supporting_evidence_ids: Admissible evidence IDs whose proving
+            object overlaps the claim.
+        covered: True when at least one admissible evidence supports it.
+        note: Human-readable explanation when not covered.
+    """
+
+    claim_id: str
+    claim_description: str
+    supporting_evidence_ids: list[str] = Field(default_factory=list)
+    covered: bool = False
+    note: str = ""
 
 
 class ReviewResult(BaseModel):
@@ -295,6 +337,34 @@ class ChainAnalysisResult(BaseModel):
     summary: str = ""
 
 
+class ChainAuditResult(BaseModel):
+    """Full evidence-chain audit — chain analysis + custody + timeline +
+    independence + claim coverage.
+
+    Attributes:
+        case_id: The audited case ID.
+        chain: The embedded :class:`ChainAnalysisResult`.
+        custody_issues: Chain-of-custody problems (missing links, ordering,
+            malformed or future dates).
+        timeline_issues: Temporal inconsistencies (collection after filing,
+            before incident, ...).
+        independence_warnings: Support/corroborate relations whose two ends
+            share the same source document — not independent corroboration.
+        claim_coverage: Per-claim evidence coverage mapping.
+        verdict: One of ``通过`` / ``有瑕疵`` / ``严重缺陷``.
+        summary: Human-readable audit summary.
+    """
+
+    case_id: str
+    chain: ChainAnalysisResult
+    custody_issues: list[str] = Field(default_factory=list)
+    timeline_issues: list[str] = Field(default_factory=list)
+    independence_warnings: list[str] = Field(default_factory=list)
+    claim_coverage: list[ClaimCoverage] = Field(default_factory=list)
+    verdict: str = ""
+    summary: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -315,8 +385,30 @@ def _tokenize(text: str) -> set[str]:
     except ImportError:
         tokens = set(text.split())
 
-    # Remove empty strings, single punctuation, and common stop words.
-    stop_words = {"的", "了", "和", "是", "在", "有", "与", "对", "为", "及", "或"}
+    # Remove empty strings, single punctuation, common stop words, and
+    # litigation-structure words (party roles etc.) that carry no
+    # discriminative meaning for claim-evidence matching.
+    stop_words = {
+        "的",
+        "了",
+        "和",
+        "是",
+        "在",
+        "有",
+        "与",
+        "对",
+        "为",
+        "及",
+        "或",
+        "被告",
+        "原告",
+        "当事人",
+        "双方",
+        "事实",
+        "情况",
+        "相关",
+        "判令",
+    }
     return {t for t in tokens if len(t) >= 2 and t not in stop_words}
 
 
@@ -428,9 +520,7 @@ class EvidenceChain:
         with self._lock:
             return self._evidence.get(evidence_id)
 
-    def list_evidence(
-        self, *, case_id: str | None = None
-    ) -> list[Evidence]:
+    def list_evidence(self, *, case_id: str | None = None) -> list[Evidence]:
         """List evidence items, optionally filtered by case."""
 
         with self._lock:
@@ -450,8 +540,7 @@ class EvidenceChain:
             to_remove = [
                 rid
                 for rid, rel in self._relations.items()
-                if rel.evidence_a_id == evidence_id
-                or rel.evidence_b_id == evidence_id
+                if rel.evidence_a_id == evidence_id or rel.evidence_b_id == evidence_id
             ]
             for rid in to_remove:
                 self._relations.pop(rid, None)
@@ -520,8 +609,7 @@ class EvidenceChain:
             result = [
                 r
                 for r in result
-                if r.evidence_a_id == evidence_id
-                or r.evidence_b_id == evidence_id
+                if r.evidence_a_id == evidence_id or r.evidence_b_id == evidence_id
             ]
         return result
 
@@ -545,9 +633,7 @@ class EvidenceChain:
 
         with self._lock:
             if case_id:
-                evidence_list = [
-                    e for e in self._evidence.values() if e.case_id == case_id
-                ]
+                evidence_list = [e for e in self._evidence.values() if e.case_id == case_id]
             else:
                 evidence_list = list(self._evidence.values())
             relations = list(self._relations.values())
@@ -571,8 +657,7 @@ class EvidenceChain:
         supporting = sum(
             1
             for r in relations
-            if r.relation_type
-            in (EvidenceRelationType.SUPPORTS, EvidenceRelationType.CORROBORATES)
+            if r.relation_type in (EvidenceRelationType.SUPPORTS, EvidenceRelationType.CORROBORATES)
         )
 
         # Identify gaps: proving objects without any admissible evidence.
@@ -589,9 +674,7 @@ class EvidenceChain:
         # Completeness score: ratio of admissible evidence with non-empty
         # proving objects, penalised by contradictions and gaps.
         admissible_with_object = sum(
-            1
-            for e in evidence_list
-            if e.is_admissible and e.proving_object
+            1 for e in evidence_list if e.is_admissible and e.proving_object
         )
         base_score = admissible_with_object / total if total > 0 else 0.0
         penalty = min(0.3, len(contradictions) * 0.1 + len(gaps) * 0.05)
@@ -661,9 +744,7 @@ class EvidenceChain:
                 "evidence_id": evidence.id,
                 "case_id": evidence.case_id,
             },
-            source_documents=[evidence.source_document_id]
-            if evidence.source_document_id
-            else [],
+            source_documents=[evidence.source_document_id] if evidence.source_document_id else [],
         )
         # Add the proving object as an entity (if specified).
         if evidence.proving_object:
@@ -835,9 +916,7 @@ class EvidenceReviewer:
     # Probative-value rating
     # ------------------------------------------------------------------
 
-    def rate_probative_value(
-        self, evidence_id: str
-    ) -> tuple[ProbativeStrength, float, str]:
+    def rate_probative_value(self, evidence_id: str) -> tuple[ProbativeStrength, float, str]:
         """Rate the probative value of an evidence item.
 
         Combines the relevance score, the evidence type's inherent
@@ -974,17 +1053,303 @@ class EvidenceReviewer:
 
         return await asyncio.to_thread(self.review, evidence_id)
 
-    async def review_all_async(
-        self, *, case_id: str | None = None
-    ) -> list[ReviewResult]:
+    async def review_all_async(self, *, case_id: str | None = None) -> list[ReviewResult]:
         """Async wrapper for :meth:`review_all`."""
 
         return await asyncio.to_thread(self.review_all, case_id=case_id)
 
 
+# ---------------------------------------------------------------------------
+# Evidence auditor (M4 — full chain audit)
+# ---------------------------------------------------------------------------
+
+
+_CUSTODY_REQUIRED_METHODS = {"扣押", "调取", "提取", "查封"}
+_VALID_CUSTODY_ACTIONS = {"收集", "封存", "移交", "退回", "鉴定", "其他"}
+
+
+def _parse_iso_date(value: str) -> date | None:
+    """Parse an ISO ``YYYY-MM-DD`` date, returning ``None`` when malformed."""
+    try:
+        return date.fromisoformat(value.strip())
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
+class EvidenceAuditor:
+    """Full evidence-chain auditor for a case.
+
+    Combines the existing :meth:`EvidenceChain.analyze` with four
+    deterministic checks that need no LLM:
+
+    * **Custody** — collection methods that require an official custody
+      trail must have one; custody dates must be well-formed, ordered,
+      and not in the future.
+    * **Timeline** — evidence collected after the case filing date is
+      flagged; malformed collection dates are reported.
+    * **Independence** — support/corroborate relations whose two ends cite
+      the same source document are not independent corroboration.
+    * **Claim coverage** — every litigation claim should have at least one
+      admissible evidence item whose proving object overlaps it.
+
+    Args:
+        chain: The :class:`EvidenceChain` holding the case evidence.
+
+    Example::
+
+        >>> auditor = EvidenceAuditor(chain)
+        >>> result = auditor.audit_case("case_1", claims=case.claims)
+        >>> result.verdict in ("通过", "有瑕疵", "严重缺陷")
+        True
+    """
+
+    def __init__(self, chain: EvidenceChain) -> None:
+        self._chain = chain
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def audit_case(
+        self,
+        case_id: str,
+        *,
+        claims: list[Claim] | None = None,
+        filing_date: str = "",
+    ) -> ChainAuditResult:
+        """Audit all evidence of ``case_id``.
+
+        Args:
+            case_id: The case to audit (empty = all evidence).
+            claims: Litigation claims for coverage mapping. When omitted,
+                no coverage analysis is produced.
+            filing_date: Case filing date (ISO). When given, evidence
+                collected after it is flagged as a timeline issue.
+
+        Returns:
+            A :class:`ChainAuditResult` with verdict ``通过`` / ``有瑕疵``
+            / ``严重缺陷``.
+        """
+        evidence_list = self._chain.list_evidence(case_id=case_id)
+        base = self._chain.analyze(case_id)
+
+        custody_issues = self.audit_custody(evidence_list)
+        timeline_issues = self.audit_timeline(evidence_list, filing_date=filing_date)
+        independence = self.audit_independence(evidence_list)
+        coverage = self.audit_claims(claims, evidence_list) if claims else []
+
+        hard = len(base.contradictions) + sum(1 for c in coverage if not c.covered)
+        soft = len(custody_issues) + len(timeline_issues) + len(independence)
+        if hard > 0:
+            verdict = "严重缺陷"
+        elif soft > 0 or base.completeness_score < 0.6:
+            verdict = "有瑕疵"
+        else:
+            verdict = "通过"
+
+        summary_parts = [base.summary]
+        if custody_issues:
+            summary_parts.append(f"保管链条问题 {len(custody_issues)} 项。")
+        if timeline_issues:
+            summary_parts.append(f"时间线问题 {len(timeline_issues)} 项。")
+        if independence:
+            summary_parts.append(f"同源佐证警告 {len(independence)} 项。")
+        uncovered = [c for c in coverage if not c.covered]
+        if uncovered:
+            summary_parts.append(f"{len(uncovered)}/{len(coverage)} 项诉讼请求缺乏证据支持。")
+        summary_parts.append(f"审计结论: {verdict}。")
+
+        return ChainAuditResult(
+            case_id=case_id,
+            chain=base,
+            custody_issues=custody_issues,
+            timeline_issues=timeline_issues,
+            independence_warnings=independence,
+            claim_coverage=coverage,
+            verdict=verdict,
+            summary=" ".join(summary_parts),
+        )
+
+    async def audit_case_async(
+        self,
+        case_id: str,
+        *,
+        claims: list[Claim] | None = None,
+        filing_date: str = "",
+    ) -> ChainAuditResult:
+        """Async wrapper for :meth:`audit_case`."""
+        return await asyncio.to_thread(
+            self.audit_case, case_id, claims=claims, filing_date=filing_date
+        )
+
+    # ------------------------------------------------------------------
+    # Custody checks
+    # ------------------------------------------------------------------
+
+    def audit_custody(self, evidence_list: list[Evidence]) -> list[str]:
+        """Detect chain-of-custody problems.
+
+        Rules:
+
+        * Official collection methods (扣押/调取/提取/查封) require at least
+          one custody event.
+        * Custody events must carry well-formed ISO dates.
+        * Custody event dates must be non-decreasing along the chain.
+        * No custody date may lie in the future.
+        * Custody actions must be from the known vocabulary.
+        """
+        issues: list[str] = []
+        today = date.today()
+        for ev in evidence_list:
+            label = f"证据「{ev.name}」"
+            needs_trail = any(m in ev.collection_method for m in _CUSTODY_REQUIRED_METHODS)
+            if needs_trail and not ev.custody_chain:
+                issues.append(
+                    f"{label}采用官方收集方式（{ev.collection_method}）但无保管链条记录。"
+                )
+            prev: date | None = None
+            for i, event in enumerate(ev.custody_chain, start=1):
+                tag = f"{label}第{i}环节"
+                if event.action not in _VALID_CUSTODY_ACTIONS:
+                    issues.append(f"{tag}动作未知：{event.action!r}。")
+                parsed = _parse_iso_date(event.date)
+                if parsed is None:
+                    issues.append(f"{tag}日期缺失或格式错误（应为 YYYY-MM-DD）。")
+                    continue
+                if parsed > today:
+                    issues.append(f"{tag}日期 {event.date} 在未来。")
+                if prev is not None and parsed < prev:
+                    issues.append(f"{tag}日期 {event.date} 早于前一环节，链条乱序。")
+                prev = parsed
+        return issues
+
+    # ------------------------------------------------------------------
+    # Timeline checks
+    # ------------------------------------------------------------------
+
+    def audit_timeline(self, evidence_list: list[Evidence], *, filing_date: str = "") -> list[str]:
+        """Detect temporal inconsistencies.
+
+        Rules:
+
+        * ``collection_date`` must be well-formed when present.
+        * Collection dates must not be in the future.
+        * When ``filing_date`` is given, collection strictly after it is
+          suspicious (evidence should pre-date filing).
+        """
+        issues: list[str] = []
+        today = date.today()
+        filed = _parse_iso_date(filing_date) if filing_date else None
+        if filing_date and filed is None:
+            issues.append(f"立案日期格式错误：{filing_date!r}（应为 YYYY-MM-DD）。")
+        for ev in evidence_list:
+            label = f"证据「{ev.name}」"
+            if not ev.collection_date:
+                continue
+            collected = _parse_iso_date(ev.collection_date)
+            if collected is None:
+                issues.append(f"{label}收集日期格式错误：{ev.collection_date!r}。")
+                continue
+            if collected > today:
+                issues.append(f"{label}收集日期 {ev.collection_date} 在未来。")
+            if filed is not None and collected > filed:
+                issues.append(f"{label}收集日期 {ev.collection_date} 晚于立案日期 {filing_date}。")
+        return issues
+
+    # ------------------------------------------------------------------
+    # Independence checks
+    # ------------------------------------------------------------------
+
+    def audit_independence(self, evidence_list: list[Evidence]) -> list[str]:
+        """Flag corroboration between items sharing one source document.
+
+        Two evidences citing the same ``source_document_id`` do not
+        independently corroborate each other; such relations inflate the
+        apparent strength of the chain.
+        """
+        by_id = {e.id: e for e in evidence_list}
+        warnings: list[str] = []
+        seen: set[tuple[str, str]] = set()
+        for rel in self._chain.list_relations():
+            a, b = by_id.get(rel.evidence_a_id), by_id.get(rel.evidence_b_id)
+            if a is None or b is None:
+                continue
+            if rel.relation_type not in (
+                EvidenceRelationType.SUPPORTS,
+                EvidenceRelationType.CORROBORATES,
+            ):
+                continue
+            same_source = a.source_document_id and a.source_document_id == b.source_document_id
+            if same_source:
+                pair = (a.id, b.id) if a.id <= b.id else (b.id, a.id)
+                if pair in seen:
+                    continue
+                seen.add(pair)
+                warnings.append(
+                    f"证据「{a.name}」与「{b.name}」同源于文档 "
+                    f"{a.source_document_id}，其{rel.relation_type.value}关系不构成独立佐证。"
+                )
+        return warnings
+
+    # ------------------------------------------------------------------
+    # Claim coverage
+    # ------------------------------------------------------------------
+
+    def audit_claims(
+        self, claims: list[Claim], evidence_list: list[Evidence]
+    ) -> list[ClaimCoverage]:
+        """Map each claim to admissible evidence via proving-object overlap.
+
+        A claim is *covered* when some admissible evidence's proving object
+        shares at least one **discriminative** term with it. Discriminative
+        means the term does not appear in more than ``max(2, N/2)`` of the
+        compared proving objects — this filters generic words like
+        「合同」「被告」that otherwise produce false positives.
+        """
+        admissible = [e for e in evidence_list if e.is_admissible]
+        obj_tokens = [(ev, _tokenize(ev.proving_object)) for ev in admissible]
+        n_objects = max(1, len(admissible))
+        generic_limit = max(2, n_objects // 2)
+        df: dict[str, int] = {}
+        for _, terms in obj_tokens:
+            for term in terms:
+                df[term] = df.get(term, 0) + 1
+
+        def _discriminative_overlap(
+            claim_terms: set[str], obj_terms: set[str]
+        ) -> bool:
+            return any(
+                df.get(term, 0) <= generic_limit for term in claim_terms & obj_terms
+            )
+
+        coverage: list[ClaimCoverage] = []
+        for claim in claims:
+            claim_terms = _tokenize(claim.description)
+            supporting: list[str] = []
+            if claim_terms:
+                for ev, obj_terms in obj_tokens:
+                    if obj_terms and _discriminative_overlap(claim_terms, obj_terms):
+                        supporting.append(ev.id)
+            covered = bool(supporting)
+            note = "" if covered else "无可采信证据的证明对象与该请求匹配，需补证。"
+            coverage.append(
+                ClaimCoverage(
+                    claim_id=claim.id,
+                    claim_description=claim.description,
+                    supporting_evidence_ids=supporting,
+                    covered=covered,
+                    note=note,
+                )
+            )
+        return coverage
+
+
 __all__ = [
     "Admissibility",
     "ChainAnalysisResult",
+    "ChainAuditResult",
+    "ClaimCoverage",
+    "CustodyEvent",
     "Evidence",
     "EvidenceChain",
     "EvidenceError",
