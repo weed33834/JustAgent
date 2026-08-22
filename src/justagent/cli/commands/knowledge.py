@@ -922,11 +922,11 @@ def graph_query(
                 {
                     "id": r.id,
                     "source_entity_id": r.source_entity_id,
-                    "source_name": (graph.get_entity(r.source_entity_id).name
-                                    if graph.get_entity(r.source_entity_id) else "-"),
+                    "source_name": (src.name
+                                    if (src := graph.get_entity(r.source_entity_id)) else "-"),
                     "target_entity_id": r.target_entity_id,
-                    "target_name": (graph.get_entity(r.target_entity_id).name
-                                    if graph.get_entity(r.target_entity_id) else "-"),
+                    "target_name": (dst.name
+                                    if (dst := graph.get_entity(r.target_entity_id)) else "-"),
                     "relation_type": r.relation_type,
                     "weight": r.weight,
                     "source_documents": r.source_documents,

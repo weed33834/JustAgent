@@ -18,10 +18,7 @@ def _register_vertical_commands(parent: typer.Typer) -> None:
     ``[project.entry-points."justagent.cli"]`` 声明模块路径，
     模块需暴露 ``register(parent)`` 函数。单个入口失败只告警。
     """
-    try:
-        eps = entry_points(group="justagent.cli")
-    except TypeError:  # pragma: no cover - Python 3.9 fallback signature
-        eps = entry_points().get("justagent.cli", [])
+    eps = entry_points(group="justagent.cli")
     for ep in eps:
         try:
             mod = ep.load()

@@ -9,7 +9,7 @@ judicial state the CLI uses (``.justagent/judicial_state.json``).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -50,7 +50,7 @@ judicial features (same persisted state as the CLI).
 """
 
 
-def _load_state(state_path: Path):
+def _load_state(state_path: Path) -> Any:
     from justagent.verticals.legal.cli import _JudicialState
 
     return _JudicialState.load(state_path)
@@ -128,7 +128,10 @@ def _run(action: str, args: JudicialInput, state_path: Path) -> str:
         )
 
     if action == "generate_doc":
-        from justagent.verticals.legal.document_generator import LegalDocumentGenerator
+        from justagent.verticals.legal.document_generator import (
+            LegalDocumentGenerator,
+            LegalDocumentType,
+        )
 
         case = _find_case(state, case_id)
         if case is None:
@@ -139,13 +142,13 @@ def _run(action: str, args: JudicialInput, state_path: Path) -> str:
             evidence_chain=state.evidence_chain,
             knowledge_base=state.knowledge_base,
         )
-        doc = generator.generate(case.id, doc_type, verify=True)
+        doc = generator.generate(case.id, LegalDocumentType(doc_type), verify=True)
         return f"Generated {doc_type} for {case.case_number or case.id[:8]}:\n{doc.content[:2000]}"
 
     return f"Unknown action: {action}"
 
 
-def _find_case(state, case_id: str):
+def _find_case(state: Any, case_id: str) -> Any:
     if not case_id:
         return None
     case = state.case_manager.get_case(case_id)
@@ -157,7 +160,7 @@ def _find_case(state, case_id: str):
     return None
 
 
-def _parse_domain(value: str | None):
+def _parse_domain(value: str | None) -> str | None:
     if value is None:
         return None
     try:

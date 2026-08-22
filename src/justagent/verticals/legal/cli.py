@@ -1445,7 +1445,7 @@ def evidence_export(
             "analysis": (
                 {
                     "completeness_score": analysis.completeness_score,
-                    "contradiction_count": analysis.contradiction_count,
+                    "contradiction_count": len(analysis.contradictions),
                     "summary": analysis.summary,
                 }
                 if analysis
@@ -1517,7 +1517,7 @@ def judicial_research(
             )
             resp = router.chat([ChatMessage(role="user", content=prompt)], "research")
             analysis = resp
-            lines.append("", "## 分析（LLM 撰写）", "", analysis)
+            lines.extend(["", "## 分析（LLM 撰写）", "", str(analysis)])
         except Exception as exc:  # noqa: BLE001 - 无模型时退化为引用式
             lines.append(
                 "\n## 分析（无 LLM，给出检索提示）\n\n请人工结合上述法条进行论证。"

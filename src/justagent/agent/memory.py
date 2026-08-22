@@ -642,7 +642,8 @@ class MemoryStore:
             cosine = _resolve_cosine_similarity()
             if cosine is not None:
                 vec = cosine(query_vec, entry.embedding)
-                return 0.7 * vec + 0.3 * keyword
+                blended: float = 0.7 * vec + 0.3 * keyword
+                return blended
         return keyword
 
     def _keyword_score(self, query_tokens: list[str], entry: MemoryEntry) -> float:
@@ -955,6 +956,7 @@ class MemoryManager:
         transcript = self._render_transcript(messages)
         if not transcript.strip():
             return []
+        assert self._llm_client is not None  # guarded by caller
 
         request = LLMRequest(
             messages=[

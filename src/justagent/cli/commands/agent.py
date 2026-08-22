@@ -807,7 +807,7 @@ def agent(
             )
 
             evaluator = EvaluationPipeline()
-            evaluator.register_evaluator(RuleBasedEvaluator(), weight=1.0)
+            evaluator.register_evaluator("rule_based", RuleBasedEvaluator(), weight=1.0)
         except Exception:  # noqa: BLE001 - evaluation is best-effort
             pass
 

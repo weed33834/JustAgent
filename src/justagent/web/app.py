@@ -15,8 +15,9 @@ import json
 import os
 import platform
 import time
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
@@ -173,14 +174,14 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     if not no_auth:
         no_auth = os.environ.get("JUSTAGENT_WEB_NO_AUTH", "") not in ("", "0")
 
-    def _resolve_user(request) -> dict | None:
+    def _resolve_user(request: Request) -> dict | None:
         """Resolve a session user from the Authorization header (if any)."""
         header = request.headers.get("authorization", "")
         if header.startswith("Bearer "):
             return tokens.resolve(header[7:])
         return None
 
-    def _require_write(request) -> None:
+    def _require_write(request: Request) -> None:
         """403 for session users without write role.
 
         Anonymous requests never reach endpoints (middleware default-deny);
@@ -216,7 +217,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         return {"ok": ok}
 
     @app.middleware("http")
-    async def _auth(request, call_next):
+    async def _auth(request: Request, call_next: Any) -> Any:
         path = request.url.path
         if no_auth or path in ("/", "/api/health", "/api/auth/login"):
             return await call_next(request)
@@ -238,7 +239,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
     # -- notifications ------------------------------------------------------
     _notifications: list[dict] = []
     _webhook = os.environ.get("JUSTAGENT_WEBHOOK_URL", "")
-    _smtp = {
+    _smtp: dict[str, Any] = {
         "host": os.environ.get("JUSTAGENT_SMTP_HOST", ""),
         "port": int(os.environ.get("JUSTAGENT_SMTP_PORT", "465") or 465),
         "user": os.environ.get("JUSTAGENT_SMTP_USER", ""),
@@ -406,8 +407,8 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         return {
             "items": [
                 {
-                    "id": m.session_id,
-                    "title": m.title,
+                    "id": m.id,
+                    "title": (m.prompt_preview or "")[:40],
                     "created_at": m.created_at,
                     "updated_at": m.updated_at,
                     "status": m.status.value,
@@ -612,7 +613,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         )
         task = asyncio.create_task(runtime.run(message))
 
-        async def _stream():
+        async def _stream() -> AsyncIterator[str]:
             try:
                 while True:
                     event = await queue.get()
@@ -725,7 +726,7 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
         try:
             resp = client.chat.completions.create(
                 model=llm._model,
-                messages=[{"role": "user", "content": content}],
+                messages=cast(Any, [{"role": "user", "content": content}]),
                 max_tokens=512,
             )
         except Exception as exc:  # noqa: BLE001
@@ -891,13 +892,15 @@ def create_app(config: AppConfig, *, no_auth: bool = False) -> FastAPI:
             evidence_chain=state.evidence_chain,
             knowledge_base=state.knowledge_base,
         )
-        doc = generator.generate(case.id, doc_type, verify=True)
+        from justagent.verticals.legal.document_generator import LegalDocumentType
+
+        doc = generator.generate(case.id, LegalDocumentType(doc_type), verify=True)
         return {"ok": True, "content": doc.content, "doc_type": doc_type}
 
     return app
 
 
-def _find_case(state, case_id: str):
+def _find_case(state: Any, case_id: str) -> Any:
     case = state.case_manager.get_case(case_id)
     if case is not None:
         return case

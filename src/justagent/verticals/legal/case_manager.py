@@ -430,9 +430,10 @@ def _render_prompt(template: str, variables: dict[str, Any]) -> str:
     """
 
     try:
-        from langchain_core.prompts import PromptTemplate  # type: ignore[import-untyped]
+        from langchain_core.prompts import PromptTemplate
 
-        return PromptTemplate.from_template(template).format(**variables)
+        rendered: str = PromptTemplate.from_template(template).format(**variables)
+        return rendered
     except ImportError:
         return template.format(**variables)
 

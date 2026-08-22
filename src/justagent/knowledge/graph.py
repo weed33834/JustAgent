@@ -927,23 +927,23 @@ class KnowledgeGraph:
             added_entities.append(entity)
 
         # Extract relations using the resolved entities.
-        raw_relations = extract_relations(
+        raw_rels = extract_relations(
             text,
             entities=added_entities,
             document_id=document_id,
         )
         added_relations: list[Relation] = []
-        for raw in raw_relations:
-            if not raw.source_entity_id or not raw.target_entity_id:
+        for rel_raw in raw_rels:
+            if not rel_raw.source_entity_id or not rel_raw.target_entity_id:
                 continue
             try:
                 relation = self.add_relation(
-                    raw.source_entity_id,
-                    raw.target_entity_id,
-                    raw.relation_type,
-                    weight=raw.weight,
-                    metadata=raw.metadata,
-                    source_documents=raw.source_documents,
+                    rel_raw.source_entity_id,
+                    rel_raw.target_entity_id,
+                    rel_raw.relation_type,
+                    weight=rel_raw.weight,
+                    metadata=rel_raw.metadata,
+                    source_documents=rel_raw.source_documents,
                 )
                 added_relations.append(relation)
             except KeyError as exc:

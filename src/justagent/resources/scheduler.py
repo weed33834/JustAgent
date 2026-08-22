@@ -934,11 +934,18 @@ def _wait_for_proc(
 def _kill_group(proc: subprocess.Popen[Any]) -> None:
     """Kill the whole process group of ``proc`` (start_new_session=True)."""
 
-    try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-    except (ProcessLookupError, PermissionError, OSError):
-        with contextlib.suppress(Exception):
-            proc.kill()
+    killpg = getattr(os, "killpg", None)
+    getpgid = getattr(os, "getpgid", None)
+    if callable(killpg) and callable(getpgid):
+        try:
+            killpg(getpgid(proc.pid), signal.SIGTERM)
+        except (ProcessLookupError, PermissionError, OSError):
+            with contextlib.suppress(Exception):
+                proc.kill()
+        return
+    # POSIX-only APIs unavailable (e.g. Windows stubs).
+    with contextlib.suppress(Exception):
+        proc.kill()
 
 
 def _result_from_proc(
