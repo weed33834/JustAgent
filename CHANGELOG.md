@@ -42,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Repo map: tree-sitter AST extraction (replaces regex-only).** Symbol
+  extraction for Python/JS/TS/Rust/Go now parses real syntax trees via
+  `tree-sitter` + `tree-sitter-language-pack` — accurate names, kinds and
+  enclosing-class parents, error-tolerant on broken files. The regex
+  extractors remain as automatic fallback when the optional
+  `[treesitter]` extra is not installed. New deps: optional extra
+  `justagent[treesitter]` (also in `dev`).
+- **Patch engine: RapidFuzz for fuzzy context matching.** The hand-rolled
+  O(n·m) Levenshtein in `agent/patch.py` is replaced by C++ RapidFuzz
+  (`rapidfuzz`), 10-100x faster on large files; stdlib fallback kept.
 - **Legal vertical: full evidence-chain audit (M4).** New
   `EvidenceAuditor` performs four deterministic, LLM-free checks on top of
   the existing chain analysis:

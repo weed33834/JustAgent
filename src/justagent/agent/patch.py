@@ -171,40 +171,51 @@ def _canonicalize(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _levenshtein(a: str, b: str) -> int:
-    """Standard iterative Levenshtein distance."""
+try:  # C++ implementation — 10-100x faster on large files.
+    from rapidfuzz import fuzz as _rf_fuzz
 
-    if a == b:
-        return 0
-    if not a:
-        return len(b)
-    if not b:
-        return len(a)
+    def _similarity(a: str, b: str) -> float:
+        """Levenshtein-based similarity in ``[0, 1]`` (RapidFuzz)."""
 
-    previous = list(range(len(b) + 1))
-    current = [0] * (len(b) + 1)
-    for i, ca in enumerate(a, start=1):
-        current[0] = i
-        for j, cb in enumerate(b, start=1):
-            cost = 0 if ca == cb else 1
-            current[j] = min(
-                previous[j] + 1,  # deletion
-                current[j - 1] + 1,  # insertion
-                previous[j - 1] + cost,  # substitution
-            )
-        previous, current = current, previous
-    return previous[len(b)]
+        if not a and not b:
+            return 1.0
+        return _rf_fuzz.ratio(a, b) / 100.0
 
+except ImportError:  # pragma: no cover - stdlib fallback
 
-def _similarity(a: str, b: str) -> float:
-    """Levenshtein similarity in ``[0, 1]``."""
+    def _levenshtein(a: str, b: str) -> int:
+        """Standard iterative Levenshtein distance."""
 
-    if not a and not b:
-        return 1.0
-    longer, shorter = (a, b) if len(a) >= len(b) else (b, a)
-    if not longer:
-        return 1.0
-    return (len(longer) - _levenshtein(shorter, longer)) / len(longer)
+        if a == b:
+            return 0
+        if not a:
+            return len(b)
+        if not b:
+            return len(a)
+
+        previous = list(range(len(b) + 1))
+        current = [0] * (len(b) + 1)
+        for i, ca in enumerate(a, start=1):
+            current[0] = i
+            for j, cb in enumerate(b, start=1):
+                cost = 0 if ca == cb else 1
+                current[j] = min(
+                    previous[j] + 1,  # deletion
+                    current[j - 1] + 1,  # insertion
+                    previous[j - 1] + cost,  # substitution
+                )
+            previous, current = current, previous
+        return previous[len(b)]
+
+    def _similarity(a: str, b: str) -> float:
+        """Levenshtein similarity in ``[0, 1]``."""
+
+        if not a and not b:
+            return 1.0
+        longer, shorter = (a, b) if len(a) >= len(b) else (b, a)
+        if not longer:
+            return 1.0
+        return (len(longer) - _levenshtein(shorter, longer)) / len(longer)
 
 
 # ---------------------------------------------------------------------------

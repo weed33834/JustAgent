@@ -512,3 +512,102 @@ class TestHelpers:
         assert _line_of(content, 0) == 1
         assert _line_of(content, 2) == 2
         assert _line_of(content, 4) == 3
+
+
+# ---------------------------------------------------------------------------
+# tree-sitter extraction (AST-accurate path; regex fallback when absent)
+# ---------------------------------------------------------------------------
+
+
+def _ts_available() -> bool:
+    try:
+        import tree_sitter  # noqa: F401
+        from tree_sitter_language_pack import get_parser  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+requires_ts = pytest.mark.skipif(not _ts_available(), reason="tree-sitter pack not installed")
+
+
+@requires_ts
+class TestTreeSitterExtraction:
+    def test_python_class_method_function(self, tmp_path: Path) -> None:
+        f = tmp_path / "a.py"
+        f.write_text(
+            "class Bar:\n    def m(self):\n        pass\n\ndef top():\n    pass\n",
+            encoding="utf-8",
+        )
+        syms = RepoMapGenerator().extract_symbols(f).symbols
+        assert [(s.name, s.kind, s.parent) for s in syms] == [
+            ("Bar", SymbolKind.CLASS, ""),
+            ("m", SymbolKind.METHOD, "Bar"),
+            ("top", SymbolKind.FUNCTION, ""),
+        ]
+
+    def test_typescript_interface_type_class_abstract(self, tmp_path: Path) -> None:
+        f = tmp_path / "x.ts"
+        f.write_text(
+            "interface I { a: string }\n"
+            "type T = number\n"
+            "class K { m() {} }\n"
+            "abstract class AK {}\n",
+            encoding="utf-8",
+        )
+        syms = RepoMapGenerator().extract_symbols(f).symbols
+        by_name = {s.name: s for s in syms}
+        assert by_name["I"].kind is SymbolKind.INTERFACE
+        assert by_name["T"].kind is SymbolKind.TYPE
+        assert by_name["K"].kind is SymbolKind.CLASS
+        assert by_name["AK"].kind is SymbolKind.CLASS
+        assert by_name["m"].kind is SymbolKind.METHOD
+        assert by_name["m"].parent == "K"
+
+    def test_rust_struct_enum_trait_fn(self, tmp_path: Path) -> None:
+        f = tmp_path / "l.rs"
+        f.write_text(
+            "pub struct S;\nenum E { A }\ntrait Tr {}\nfn main() {}\n",
+            encoding="utf-8",
+        )
+        kinds = {s.name: s.kind for s in RepoMapGenerator().extract_symbols(f).symbols}
+        assert kinds == {
+            "S": SymbolKind.CLASS,
+            "E": SymbolKind.CLASS,
+            "Tr": SymbolKind.INTERFACE,
+            "main": SymbolKind.FUNCTION,
+        }
+
+    def test_go_func_type_method(self, tmp_path: Path) -> None:
+        f = tmp_path / "m.go"
+        f.write_text(
+            "package p\nfunc F() {}\ntype T struct{}\nfunc (t T) M() {}\n",
+            encoding="utf-8",
+        )
+        syms = RepoMapGenerator().extract_symbols(f).symbols
+        by_name = {s.name: s for s in syms}
+        assert by_name["F"].kind is SymbolKind.FUNCTION
+        assert by_name["T"].kind is SymbolKind.CLASS
+        assert by_name["M"].kind is SymbolKind.METHOD
+
+    def test_javascript_fn_class_const(self, tmp_path: Path) -> None:
+        f = tmp_path / "n.js"
+        f.write_text("function f() {}\nclass C {}\nconst v = 1\n", encoding="utf-8")
+        kinds = {s.name: s.kind for s in RepoMapGenerator().extract_symbols(f).symbols}
+        assert kinds == {
+            "f": SymbolKind.FUNCTION,
+            "C": SymbolKind.CLASS,
+            "v": SymbolKind.VARIABLE,
+        }
+
+    def test_syntax_error_file_still_yields_partial_symbols(self, tmp_path: Path) -> None:
+        """tree-sitter is error-tolerant; a broken file must not crash."""
+        f = tmp_path / "broken.py"
+        f.write_text("def ok():\nclass B[[[\n", encoding="utf-8")
+        syms = RepoMapGenerator().extract_symbols(f).symbols  # must not raise
+        assert any(s.name == "ok" for s in syms)
+
+    def test_unknown_language_ignores_tree_sitter(self) -> None:
+        g = RepoMapGenerator()
+        assert g._extract_tree_sitter("code", "cobol") is None

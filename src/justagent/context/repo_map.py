@@ -18,11 +18,15 @@ Example output::
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger("justagent.context.repo_map")
 
 
 class SymbolKind(str, Enum):  # noqa: UP042 - match existing codebase style
@@ -153,6 +157,80 @@ def _line_of(content: str, pos: int) -> int:
     return content.count("\n", 0, pos) + 1
 
 
+# -- tree-sitter (AST-accurate extraction; regex fallback when absent) -------
+
+#: Internal language id → tree-sitter grammar name.
+_TS_LANGUAGE_IDS: dict[str, str] = {
+    "python": "python",
+    "javascript": "javascript",
+    "typescript": "typescript",
+    "rust": "rust",
+    "go": "go",
+}
+
+#: Query capture name → :class:`SymbolKind`.
+_CAPTURE_KINDS: dict[str, SymbolKind] = {
+    "cls": SymbolKind.CLASS,
+    "fn": SymbolKind.FUNCTION,
+    "meth": SymbolKind.METHOD,
+    "var": SymbolKind.VARIABLE,
+    "iface": SymbolKind.INTERFACE,
+    "typ": SymbolKind.TYPE,
+}
+
+#: One query per grammar; capture names must exist in :data:`_CAPTURE_KINDS`.
+_TS_QUERIES: dict[str, str] = {
+    "python": (
+        "(class_definition name: (identifier) @cls)"
+        "(function_definition name: (identifier) @fn)"
+    ),
+    "javascript": (
+        "(function_declaration name: (identifier) @fn)"
+        "(class_declaration name: (identifier) @cls)"
+        "(method_definition name: (property_identifier) @meth)"
+        "(variable_declarator name: (identifier) @var)"
+    ),
+    "typescript": (
+        "(function_declaration name: (identifier) @fn)"
+        "(class_declaration name: (type_identifier) @cls)"
+        "(abstract_class_declaration name: (type_identifier) @cls)"
+        "(method_definition name: (property_identifier) @meth)"
+        "(interface_declaration name: (type_identifier) @iface)"
+        "(type_alias_declaration name: (type_identifier) @typ)"
+        "(variable_declarator name: (identifier) @var)"
+    ),
+    "rust": (
+        "(function_item name: (identifier) @fn)"
+        "(struct_item name: (type_identifier) @cls)"
+        "(enum_item name: (type_identifier) @cls)"
+        "(trait_item name: (type_identifier) @iface)"
+    ),
+    "go": (
+        "(function_declaration name: (identifier) @fn)"
+        "(method_declaration name: (field_identifier) @meth)"
+        "(type_spec name: (type_identifier) @cls)"
+    ),
+}
+
+
+def _enclosing_class(node: Any) -> str:
+    """Return the nearest enclosing class name for a definition node."""
+    parent = node.parent
+    while parent is not None:
+        if parent.type in (
+            "class_definition",
+            "class_declaration",
+            "abstract_class_declaration",
+        ):
+            name_node = parent.child_by_field_name("name")
+            if name_node is not None and name_node.text is not None:
+                name_text: str = name_node.text.decode("utf-8", errors="replace")
+                return name_text
+            return ""
+        parent = parent.parent
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Generator
 # ---------------------------------------------------------------------------
@@ -244,8 +322,11 @@ class RepoMapGenerator:
         except OSError:
             return FileSymbols(path=str(file_path), language=language, symbols=[])
 
-        # Tree-sitter path would go here when available; for now we
-        # always use the regex extractors.
+        # Preferred: tree-sitter (accurate, C-speed). Fallback: regex.
+        ts_symbols = self._extract_tree_sitter(content, language)
+        if ts_symbols is not None:
+            return FileSymbols(path=str(file_path), language=language, symbols=ts_symbols)
+
         if language == "python":
             symbols = self._extract_python_regex(content)
         elif language == "javascript":
@@ -459,6 +540,60 @@ class RepoMapGenerator:
     def _estimate_tokens(text: str) -> int:
         """Rough token estimate (~4 characters per token)."""
         return len(text) // 4
+
+    # -- tree-sitter extractor ------------------------------------------------
+
+    def _extract_tree_sitter(self, content: str, language: str) -> list[Symbol] | None:
+        """Extract symbols via tree-sitter grammars.
+
+        Returns ``None`` when the grammar pack is unavailable or parsing
+        fails, so the caller falls back to the regex extractors. Capture
+        names in the queries map 1:1 to :class:`SymbolKind` via
+        :data:`_CAPTURE_KINDS`.
+        """
+        lang_id = _TS_LANGUAGE_IDS.get(language)
+        if lang_id is None or not self._has_tree_sitter():
+            return None
+        try:
+            from tree_sitter import Query, QueryCursor
+            from tree_sitter_language_pack import get_parser
+
+            parser = get_parser(lang_id)
+            ts_language = parser.language
+            assert ts_language is not None  # pack guarantees a language
+            tree = parser.parse(content.encode("utf-8"))
+            cursor = QueryCursor(Query(ts_language, _TS_QUERIES[lang_id]))
+            captures: dict[str, list[Any]] = cursor.captures(tree.root_node)
+        except Exception:  # noqa: BLE001 - any grammar issue falls back to regex
+            logger.debug("tree-sitter extraction failed for %s; using regex", language)
+            return None
+
+        symbols: list[Symbol] = []
+        for cap_name, nodes in captures.items():
+            base_kind = _CAPTURE_KINDS.get(cap_name)
+            if base_kind is None:
+                continue
+            for node in nodes:
+                name = node.text.decode("utf-8", errors="replace")
+                kind = base_kind
+                parent = ""
+                if kind in (SymbolKind.FUNCTION, SymbolKind.METHOD):
+                    # A function nested in a class body is a method.
+                    cls = _enclosing_class(node)
+                    if cls:
+                        if kind is SymbolKind.FUNCTION:
+                            kind = SymbolKind.METHOD
+                        parent = cls
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind=kind,
+                        line=node.start_point[0] + 1,
+                        parent=parent,
+                    )
+                )
+        symbols.sort(key=lambda s: s.line)
+        return symbols
 
     @staticmethod
     def _has_tree_sitter() -> bool:
