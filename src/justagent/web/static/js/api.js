@@ -18,6 +18,7 @@ const API = (() => {
   async function request(method, url, body, opts) {
     const o = opts || {};
     const init = { method, headers: headers(o.headers) };
+    if (o.signal) init.signal = o.signal;
     if (body !== undefined) {
       init.body = o.raw ? body : JSON.stringify(body);
       if (!o.raw) init.headers['Content-Type'] = 'application/json';

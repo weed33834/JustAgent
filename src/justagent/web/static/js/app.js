@@ -1,12 +1,62 @@
 /* JustAgent Legal Console — business logic.
- * Every feature from the legacy single-file build is preserved 1:1,
- * now routed through the API/UI layers. */
+ * Chat-first layout following mainstream AI-console conventions:
+ * session sidebar, centered streaming column with stop control,
+ * markdown rendering (marked + DOMPurify), starter-card empty state. */
 'use strict';
 
 const State = { cases: [], evidence: [], laws: [] };
-const Chat = { history: [], attachedImage: null };
+const Chat = { history: [], attachedImage: null, controller: null, streaming: false };
 
-/* -- projects ----------------------------------------------------------- */
+/* -- sessions ------------------------------------------------------------- */
+
+function getSession() {
+  let s = localStorage.getItem('justagent_session');
+  if (!s) { s = newSessionId(); localStorage.setItem('justagent_session', s); }
+  return s;
+}
+function newSessionId() {
+  return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+async function loadSessions() {
+  const el = document.getElementById('sessions-list');
+  try {
+    const r = await API.get('/api/sessions');
+    const current = getSession();
+    el.innerHTML = r.items.length
+      ? r.items.map(s => `
+        <div class="session-item ${s.id === current ? 'active' : ''}" onclick="switchSession('${s.id}')">
+          <span>${esc((s.title || '').slice(0, 26) || s.id.slice(0, 10))}</span>
+          <button class="del" title="删除" onclick="event.stopPropagation();delSession('${s.id}')">✕</button>
+        </div>`).join('')
+      : '<div class="empty" style="padding:8px 4px">暂无历史</div>';
+  } catch (e) { /* sidebar history is non-critical */ }
+}
+
+async function switchSession(id) {
+  localStorage.setItem('justagent_session', id);
+  newChat(false);
+  loadSessions();
+}
+
+function newChat(clearList = true) {
+  localStorage.setItem('justagent_session', newSessionId());
+  Chat.history = [];
+  const stream = document.getElementById('stream');
+  stream.innerHTML = document.getElementById('empty-state-template')?.innerHTML
+    || stream.innerHTML; // keep original empty-state markup
+  if (clearList) loadSessions();
+}
+
+async function delSession(id) {
+  try {
+    await API.del('/api/sessions/' + id);
+    if (id === getSession()) newChat(false);
+    loadSessions();
+  } catch (e) { UI.toast('删除失败: ' + e.message); }
+}
+
+/* -- projects -------------------------------------------------------------- */
 
 async function loadProjects() {
   try {
@@ -22,26 +72,15 @@ function switchProject() {
   const p = document.getElementById('projectSel').value;
   API.setProject(p);
   loadState();
-  addMsg('assistant', p ? '已切换到项目 ' + p : '已切换到默认项目');
+  UI.toast(p ? '已切换到项目 ' + p : '已切换到默认项目');
 }
 
-/* -- state / rendering --------------------------------------------------- */
+/* -- state / rendering ------------------------------------------------------ */
 
 async function loadState() {
   try { Object.assign(State, await API.get('/api/state')); }
   catch (e) { Object.assign(State, { cases: [], evidence: [], laws: [] }); }
-  renderMini(); renderCases(); renderEvidence(); renderLaws();
-}
-
-function renderMini() {
-  const el = document.getElementById('mini-list');
-  if (!State.cases.length && !State.evidence.length && !State.laws.length) {
-    el.innerHTML = '<div class="empty">暂无数据</div>'; return;
-  }
-  el.innerHTML = ''
-    + (State.cases.length ? `<div class="item"><div class="t">案件 ${State.cases.length}</div></div>` : '')
-    + (State.evidence.length ? `<div class="item"><div class="t">证据 ${State.evidence.length}</div></div>` : '')
-    + (State.laws.length ? `<div class="item"><div class="t">法条 ${State.laws.length}</div></div>` : '');
+  renderCases(); renderEvidence(); renderLaws();
 }
 
 function renderCases() {
@@ -58,8 +97,8 @@ function renderCases() {
 
 function renderEvidence() {
   const el = document.getElementById('evidence-list');
-  const buttons = '<button class="btn" style="margin-top:8px" onclick="analyzeEvidence()">🔍 证据链分析</button>'
-    + '<button class="btn" style="margin-top:8px;margin-left:6px" onclick="auditEvidence()">⚖️ 证据链审计</button>';
+  const buttons = '<button class="btn" style="margin-top:8px" onclick="analyzeEvidence()">🔍 证据链分析</button> '
+    + '<button class="btn secondary" style="margin-top:8px" onclick="auditEvidence()">⚖️ 证据链审计</button>';
   el.innerHTML = (State.evidence.length
     ? State.evidence.map(e => `
       <div class="item">
@@ -85,41 +124,70 @@ async function loadDocTypes() {
     const r = await API.get('/api/judicial/doc/types');
     document.getElementById('docType').innerHTML =
       r.items.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
-  } catch (e) { /* doc types are optional decoration */ }
+  } catch (e) { /* optional decoration */ }
 }
 
-/* -- chat ---------------------------------------------------------------- */
+/* -- chat: send / stop / stream ---------------------------------------------- */
 
-function getSession() {
-  let s = localStorage.getItem('justagent_session');
-  if (!s) {
-    s = 's' + Date.now() + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('justagent_session', s);
-  }
-  return s;
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+}
+
+function useStarter(text) {
+  const input = document.getElementById('input');
+  input.value = text;
+  autoGrow(input);
+  send();
+}
+
+function setStreamingUI(on) {
+  document.getElementById('stop-row').style.display = on ? '' : 'none';
+  document.getElementById('send-btn').disabled = on;
+}
+
+function stopStreaming() {
+  if (Chat.controller) Chat.controller.abort();
 }
 
 async function send() {
+  if (Chat.streaming) return;
   const input = document.getElementById('input');
   const text = input.value.trim();
   if (!text) return;
-  input.value = '';
+  input.value = ''; autoGrow(input);
   addMsg('user', text);
   Chat.history.push({ role: 'user', content: text });
-  if (Chat.attachedImage) {
-    await sendVision(text);
-    Chat.attachedImage = null;
-    return;
-  }
-  const bubble = addMsg('assistant', '…');
+
+  if (Chat.attachedImage) { await sendVision(text); Chat.attachedImage = null; return; }
+
+  Chat.streaming = true;
+  setStreamingUI(true);
+  Chat.controller = new AbortController();
+
+  const bubble = UI.addMsg('assistant', '', { caret: true });
   let reply = '';
+  let toolBlocksHtml = '';
+  const toolsSeen = [];
+
   try {
-    const res = await API.rawResponse('/api/chat/stream', {
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, (() => {
+        const t = API.getToken();
+        const h = {};
+        if (t) h['Authorization'] = 'Bearer ' + t;
+        if (API.getProject()) h['X-JustAgent-Project'] = API.getProject();
+        return h;
+      })()),
+      body: JSON.stringify({ message: text, history: Chat.history, session_id: getSession() }),
+      signal: Chat.controller.signal,
     });
+    if (res.status === 401) { await doLogin(); bubble.remove(); setStreamingUI(false); Chat.streaming = false; return; }
     if (!res.ok || !res.body) {
       const d = await res.json().catch(() => ({}));
-      bubble.textContent = d.reply || ('请求失败: ' + res.status);
+      UI.updateMsg(bubble, UI.esc(d.reply || ('请求失败: ' + res.status)), true);
+      setStreamingUI(false); Chat.streaming = false;
       return;
     }
     const reader = res.body.getReader();
@@ -134,40 +202,48 @@ async function send() {
         const line = buf.slice(0, idx);
         buf = buf.slice(idx + 2);
         if (!line.startsWith('data: ')) continue;
-        try {
-          const ev = JSON.parse(line.slice(6));
-          if (ev.type === 'delta') {
-            reply += ev.content || '';
-            bubble.textContent = reply;
-            document.getElementById('chat').scrollTop = 1e9;
-          } else if (ev.type === 'tool_start') {
-            reply += '\n[🔧 调用工具: ' + ev.tool + ']\n';
-            bubble.textContent = reply;
-          } else if (ev.type === 'done') {
-            reply = ev.content || reply;
-            bubble.textContent = reply;
-            Chat.history.push({ role: 'assistant', content: reply });
-            await loadState();
-            return;
-          }
-        } catch (e) { /* partial frame */ }
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch (e) { continue; }
+        if (ev.type === 'delta') {
+          reply += ev.content || '';
+          UI.updateMsg(bubble, UI.md(reply) + toolBlocksHtml);
+        } else if (ev.type === 'tool_start' && !toolsSeen.includes(ev.tool)) {
+          toolsSeen.push(ev.tool);
+          toolBlocksHtml += `<details class="tool-block"><summary>🔧 调用工具：${esc(ev.tool)}</summary><div style="padding:6px 12px">执行中…</div></details>`;
+          UI.updateMsg(bubble, UI.md(reply) + toolBlocksHtml);
+        } else if (ev.type === 'done') {
+          reply = ev.content || reply;
+          break;
+        }
       }
+      if (reply && buf.indexOf('"type": "done"') !== -1) break;
     }
-  } catch (e) { bubble.textContent = '请求失败: ' + e.message; }
+    UI.updateMsg(bubble, UI.md(reply) + toolBlocksHtml, true);
+    Chat.history.push({ role: 'assistant', content: reply });
+    await loadState();
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      UI.updateMsg(bubble, UI.md(reply || '（已停止）'), true);
+    } else {
+      UI.updateMsg(bubble, UI.esc('请求失败: ' + e.message), true);
+    }
+  } finally {
+    setStreamingUI(false); Chat.streaming = false; Chat.controller = null;
+  }
 }
 
 async function sendVision(text) {
-  const bubble = addMsg('assistant', '识别中…');
+  const bubble = UI.addMsg('assistant', '', { caret: true });
   try {
     const d = await API.post('/api/vision', {
       prompt: text || '请描述这张图片并提取关键信息', image: Chat.attachedImage,
     });
-    bubble.textContent = d.reply || '(无输出)';
+    UI.updateMsg(bubble, UI.md(d.reply || '(无输出)'), true);
     Chat.history.push({ role: 'assistant', content: d.reply || '' });
-  } catch (e) { bubble.textContent = '识别失败: ' + e.message; }
+  } catch (e) { UI.updateMsg(bubble, UI.esc('识别失败: ' + e.message), true); }
 }
 
-/* -- auth ----------------------------------------------------------------- */
+/* -- auth ---------------------------------------------------------------------- */
 
 async function doLogin() {
   const cred = prompt('需要登录。输入 用户名:密码（或直接粘贴访问令牌）：');
@@ -181,21 +257,18 @@ async function doLogin() {
     if (r.ok) {
       const d = await r.json();
       API.setToken(d.token);
-      addMsg('assistant', '已登录为 ' + d.username + '（' + d.role + '）');
-    } else addMsg('assistant', '登录失败：' + r.status);
+      UI.toast('已登录为 ' + d.username + '（' + d.role + '）');
+    } else UI.toast('登录失败：' + r.status);
   } else {
     API.setToken(cred);
-    addMsg('assistant', '已设置访问令牌');
+    UI.toast('已设置访问令牌');
   }
 }
 window.doLogin = doLogin;
 
-function logout() {
-  API.setToken('');
-  addMsg('assistant', '已登出');
-}
+function logout() { API.setToken(''); UI.toast('已登出'); }
 
-/* -- system panel ---------------------------------------------------------- */
+/* -- system panel ---------------------------------------------------------------- */
 
 async function loadSystem() {
   const set = (id, html) => (document.getElementById(id).innerHTML = html);
@@ -207,22 +280,11 @@ async function loadSystem() {
   } catch (e) { set('sys-doctor', '<div class="empty">诊断不可用</div>'); }
 
   try {
-    const cfg = await API.get('/api/config');
     const models = await API.get('/api/models');
     set('sys-config',
-      '<div class="item"><div class="t">配置</div><div class="d">模型后端 ' + models.items.length + ' 个</div></div>'
+      '<div class="item"><div class="t">模型后端</div><div class="d">' + models.items.length + ' 个</div></div>'
       + models.items.map(m => `<div class="item"><div class="t">${esc(m.provider)} <span class="badge">${esc(m.model)}</span></div><div class="d">${esc(m.base_url)} · key ${esc(m.key)}</div></div>`).join(''));
   } catch (e) { UI.toast('配置加载失败: ' + e.message); }
-
-  try {
-    const sess = await API.get('/api/sessions');
-    set('sys-sessions', sess.items.length
-      ? sess.items.map(s => `
-        <div class="item"><div class="t">${esc((s.title || '').slice(0, 40) || s.id.slice(0, 8))} <span class="badge">${esc(s.status)}</span></div>
-        <div class="d">${esc(s.id.slice(0, 8))}</div>
-        <button class="btn" style="margin-top:6px" onclick="delSession('${s.id}')">删除</button></div>`).join('')
-      : '<div class="empty">暂无会话</div>');
-  } catch (e) { set('sys-sessions', '<div class="empty">会话不可用</div>'); }
 
   try {
     const pl = await API.get('/api/plugins');
@@ -246,10 +308,10 @@ async function loadSystem() {
         tooltip: { trigger: 'axis' },
         xAxis: { type: 'category', data: evs.map(e => e[0]), axisLabel: { rotate: 30, fontSize: 9 } },
         yAxis: { type: 'value' },
-        series: [{ type: 'bar', data: evs.map(e => e[1]), itemStyle: { color: '#6366f1' } }],
+        series: [{ type: 'bar', data: evs.map(e => e[1]), itemStyle: { color: '#4f46e5' } }],
       });
     }
-  } catch (e) { /* metrics chart is decorative */ }
+  } catch (e) { /* decorative */ }
 
   try {
     const n = await API.get('/api/notifications');
@@ -269,25 +331,20 @@ async function loadSystem() {
     const st = await API.get('/api/state');
     if (window.echarts) {
       const byStatus = {};
-      st.cases.forEach(c => (byStatus[c.status] = (byStatus[c.status] || 0) + 1));
-      if (Object.keys(byStatus).length) {
-        echarts.init(document.getElementById('cases-chart')).setOption({
-          series: [{ type: 'pie', radius: '60%', data: Object.entries(byStatus).map(([n, v]) => ({ name: n, value: v })) }],
-        });
-      }
+      st.cases.forEach(cc => (byStatus[cc.status] = (byStatus[cc.status] || 0) + 1));
+      const sd = Object.entries(byStatus);
+      if (sd.length) echarts.init(document.getElementById('cases-chart')).setOption({
+        series: [{ type: 'pie', radius: '60%', data: sd.map(([n2, v]) => ({ name: n2, value: v })) }],
+      });
       const byDomain = {};
       st.laws.forEach(l => (byDomain[l.domain] = (byDomain[l.domain] || 0) + 1));
       const dom = Object.entries(byDomain);
-      if (dom.length) {
-        echarts.init(document.getElementById('laws-chart')).setOption({
-          tooltip: {},
-          xAxis: { type: 'category', data: dom.map(d => d[0]) },
-          yAxis: { type: 'value' },
-          series: [{ type: 'bar', data: dom.map(d => d[1]), itemStyle: { color: '#8b5cf6' } }],
-        });
-      }
+      if (dom.length) echarts.init(document.getElementById('laws-chart')).setOption({
+        tooltip: {}, xAxis: { type: 'category', data: dom.map(d => d[0]) }, yAxis: { type: 'value' },
+        series: [{ type: 'bar', data: dom.map(d => d[1]), itemStyle: { color: '#7c3aed' } }],
+      });
     }
-  } catch (e) { /* charts are decorative */ }
+  } catch (e) { /* decorative */ }
 
   try {
     const pr = await API.get('/api/projects');
@@ -296,23 +353,7 @@ async function loadSystem() {
   } catch (e) { set('sys-projects', '<div class="empty">项目不可用</div>'); }
 }
 
-async function delSession(id) {
-  try {
-    await API.del('/api/sessions/' + id);
-    UI.toast('已删除会话');
-  } catch (e) { UI.toast('删除失败: ' + e.message); }
-  loadSystem();
-}
-
-async function addTask() {
-  try {
-    const d = await API.post('/api/schedule', { name: val('t-name'), schedule: val('t-cron'), command: val('t-cmd') });
-    UI.toast(d.ok ? '已新建定时任务 ' + d.name : '失败: ' + (d.detail || d.error || ''));
-  } catch (e) { UI.toast('新建任务失败: ' + e.message); }
-  loadSystem();
-}
-
-/* -- legal features --------------------------------------------------------- */
+/* -- legal features --------------------------------------------------------------- */
 
 async function searchLaw() {
   const q = val('ks-q');
@@ -328,7 +369,9 @@ async function searchLaw() {
 async function analyzeEvidence(caseId) {
   try {
     const d = await API.post('/api/judicial/evidence/analyze', { case_id: caseId || '' });
-    addMsg('assistant', '证据链分析：完整度 ' + d.completeness_score + '，矛盾 ' + d.contradiction_count + ' 处\n' + (d.summary || ''));
+    UI.toast('完整度 ' + d.completeness_score + '，矛盾 ' + d.contradiction_count + ' 处');
+    switchView('chat');
+    UI.addMsg('assistant', '证据链分析：完整度 ' + d.completeness_score + '，矛盾 ' + d.contradiction_count + ' 处\n' + (d.summary || ''), { markdown: false });
   } catch (e) { UI.toast('分析失败: ' + e.message); }
 }
 
@@ -338,17 +381,18 @@ async function auditEvidence(caseId) {
     const icon = { '通过': '✅', '有瑕疵': '⚠️' }[d.verdict] || '❌';
     const cov = (d.claim_coverage || []).map(c => (c.covered ? '✅ ' : '❌ ') + c.claim_description).join('\n');
     const lines = [
-      icon + ' 证据链审计结论：' + d.verdict + '（完整度 ' + (d.chain ? d.chain.completeness_score : '-') + '）',
-      '保管链条问题 ' + (d.custody_issues || []).length + ' 项',
-      ...(d.custody_issues || []).map(i => '  • ' + i),
-      '时间线问题 ' + (d.timeline_issues || []).length + ' 项',
-      ...(d.timeline_issues || []).map(i => '  • ' + i),
-      '同源佐证警告 ' + (d.independence_warnings || []).length + ' 项',
-      ...(d.independence_warnings || []).map(i => '  • ' + i),
+      icon + ' **证据链审计结论：' + d.verdict + '**（完整度 ' + (d.chain ? d.chain.completeness_score : '-') + '）',
+      '- 保管链条问题：' + (d.custody_issues || []).length,
+      ...(d.custody_issues || []).map(i => '  - ' + i),
+      '- 时间线问题：' + (d.timeline_issues || []).length,
+      ...(d.timeline_issues || []).map(i => '  - ' + i),
+      '- 同源佐证警告：' + (d.independence_warnings || []).length,
+      ...(d.independence_warnings || []).map(i => '  - ' + i),
     ];
-    if (cov) lines.push('诉请覆盖：\n' + cov);
-    if (d.summary) lines.push(d.summary);
-    addMsg('assistant', lines.join('\n'));
+    if (cov) lines.push('\n**诉请覆盖**\n' + cov);
+    if (d.summary) lines.push('\n' + d.summary);
+    switchView('chat');
+    UI.addMsg('assistant', lines.join('\n'), { markdown: true });
   } catch (e) { UI.toast('审计失败: ' + e.message); }
 }
 
@@ -356,7 +400,11 @@ async function generateDoc(caseId) {
   const dt = document.getElementById('docType').value || 'evidence_list';
   try {
     const d = await API.post('/api/judicial/doc', { case_id: caseId, doc_type: dt });
-    addMsg('assistant', d.ok ? ('已生成《' + dt + '》：\n' + (d.content || '').slice(0, 1500)) : ('生成失败: ' + (d.error || '')));
+    UI.toast(d.ok ? '文书已生成' : '生成失败: ' + (d.error || ''));
+    if (d.ok) {
+      switchView('chat');
+      UI.addMsg('assistant', '《' + dt + '》已生成：\n\n```\n' + (d.content || '').slice(0, 2000) + '\n```', { markdown: true });
+    }
   } catch (e) { UI.toast('文书生成失败: ' + e.message); }
 }
 
@@ -367,7 +415,6 @@ async function exportState() {
   a.download = 'justagent-state.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  addMsg('assistant', '已导出司法状态（JSON）');
 }
 
 async function createCase() {
@@ -391,7 +438,7 @@ async function addLaw() {
   await loadState();
 }
 
-/* -- attachments / voice ------------------------------------------------------ */
+/* -- attachments / voice ------------------------------------------------------------ */
 
 let recognizing = false;
 let recognition = null;
@@ -405,7 +452,7 @@ function pickImage() {
     const r = new FileReader();
     r.onload = () => (Chat.attachedImage = r.result);
     r.readAsDataURL(file);
-    addMsg('user', '[已附图片，发送后识别]');
+    UI.toast('图片已附上，发送后开始识别');
   };
   f.click();
 }
@@ -420,6 +467,7 @@ function pickFile() {
     r.onload = () => {
       const inp = document.getElementById('input');
       inp.value = (inp.value + ' [附件 ' + file.name + ']').trim();
+      autoGrow(inp);
     };
     r.readAsText(file);
   };
@@ -442,6 +490,7 @@ function toggleVoice() {
     const t = e.results[0][0].transcript;
     const inp = document.getElementById('input');
     inp.value = (inp.value + ' ' + t).trim();
+    autoGrow(inp);
   };
   recognition.onend = () => { recognizing = false; micBtn.textContent = '🎤'; };
   recognition.onerror = () => { recognizing = false; micBtn.textContent = '🎤'; };
@@ -458,18 +507,23 @@ function speak(text) {
 }
 
 function speakLast() {
-  const ms = document.querySelectorAll('.msg.assistant .b');
+  const ms = document.querySelectorAll('.msg.assistant .body');
   if (ms.length) speak(ms[ms.length - 1].textContent);
 }
 
-/* expose handlers used by inline onclick attributes */
 Object.assign(window, {
   switchProject, loadState, logout, delSession, addTask, searchLaw,
   analyzeEvidence, auditEvidence, generateDoc, exportState, createCase,
   addLaw, pickImage, pickFile, toggleVoice, speakLast, send, doLogin,
+  newChat, useStarter, stopStreaming,
 });
 
-window.onload = () => {
-  loadState(); loadProjects(); loadDocTypes();
-  addMsg('assistant', '你好，我是 JustAgent。我可以帮你管理案件、证据、法条，生成法律文书。直接说需求即可。');
-};
+window.addEventListener('DOMContentLoaded', () => {
+  // preserve the empty-state markup so newChat can restore it
+  const tpl = document.createElement('template');
+  tpl.id = 'empty-state-template';
+  tpl.innerHTML = document.getElementById('empty-state').outerHTML;
+  document.body.appendChild(tpl);
+
+  loadState(); loadProjects(); loadDocTypes(); loadSessions();
+});

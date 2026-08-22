@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JustAgent Legal Console</title>
 <script src="/static/vendor/echarts.min.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/vendor/purify.min.js"></script>
 <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body>
@@ -12,112 +14,164 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">J</div>
-      <div><h1>JustAgent Legal</h1><small>可审计多智能体 · 法务控制台</small></div>
+      <div class="t"><h1>JustAgent Legal</h1><small>可审计多智能体 · 法务控制台</small></div>
     </div>
-    <div style="padding:8px 12px">
-      <select id="projectSel" onchange="switchProject()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px">
+    <button class="new-chat" onclick="newChat()">＋ 新对话</button>
+    <nav class="nav" id="main-nav">
+      <button data-view="chat" class="active" onclick="switchView('chat')">💬 对话</button>
+      <button data-view="cases" onclick="switchView('cases')">📁 案件</button>
+      <button data-view="evidence" onclick="switchView('evidence')">⚖️ 证据</button>
+      <button data-view="laws" onclick="switchView('laws')">📚 法条</button>
+      <button data-view="system" onclick="switchView('system')">🛠 系统</button>
+    </nav>
+    <div class="sessions-label">会话</div>
+    <div class="sessions" id="sessions-list"></div>
+    <div class="side-foot">
+      <select id="projectSel" onchange="switchProject()" class="proj-sel">
         <option value="">默认项目</option>
       </select>
-    </div>
-    <div class="tabs">
-      <button class="tab active" data-panel="chat" onclick="switchTab('chat')">对话</button>
-      <button class="tab" data-panel="cases" onclick="switchTab('cases')">案件</button>
-      <button class="tab" data-panel="evidence" onclick="switchTab('evidence')">证据</button>
-      <button class="tab" data-panel="laws" onclick="switchTab('laws')">法条</button>
-      <button class="tab" data-panel="system" onclick="switchTab('system')">系统</button>
-    </div>
-    <div class="panel" id="panel-chat">
-      <p class="hint" style="padding:6px 2px">在右侧对话，或直接管理案件/证据/法条。法务功能无需模型也可用；对话需配置模型后端，且保持多轮记忆。</p>
-      <h3>案件 / 证据 / 法条</h3>
-      <div id="mini-list"></div>
-    </div>
-    <div class="panel" id="panel-cases" style="display:none">
-      <h3>新建案件</h3>
-      <div class="form">
-        <input id="c-no" placeholder="案号，如（2026）京01民初1号" />
-        <input id="c-cause" placeholder="案由" />
-        <input id="c-court" placeholder="法院" />
-        <button class="btn" onclick="createCase()">创建案件</button>
-      </div>
-      <h3>案件列表</h3>
-      <button class="btn" style="margin-bottom:8px" onclick="exportState()">⬇ 导出司法状态</button>
-      <button class="btn" style="margin-bottom:8px" onclick="window.open('/api/report','_blank')">📄 导出报表(HTML)</button>
-      <div style="margin-bottom:8px"><select id="docType" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px"></select></div>
-      <div id="case-list"></div>
-    </div>
-    <div class="panel" id="panel-evidence" style="display:none">
-      <h3>证据列表</h3>
-      <div id="evidence-list"></div>
-    </div>
-    <div class="panel" id="panel-laws" style="display:none">
-      <h3>添加法条</h3>
-      <div class="form">
-        <input id="l-name" placeholder="法律名称" />
-        <input id="l-article" placeholder="条号，如 第一百四十三条" />
-        <textarea id="l-content" placeholder="法条正文" rows="2"></textarea>
-        <select id="l-domain"><option value="civil">民事</option><option value="criminal">刑事</option><option value="administrative">行政</option></select>
-        <button class="btn" onclick="addLaw()">添加法条</button>
-      </div>
-      <h3>法律库</h3>
-      <div class="form">
-        <input id="ks-q" placeholder="检索法条，如 民事法律行为" />
-        <button class="btn" onclick="searchLaw()">检索</button>
-      </div>
-      <div id="law-search"></div>
-      <div id="law-list"></div>
-    </div>
-    <div class="panel" id="panel-system" style="display:none">
-      <h3>诊断</h3>
-      <div id="sys-doctor"></div>
-      <h3>配置 / 模型</h3>
-      <div id="sys-config"></div>
-      <h3>会话</h3>
-      <div id="sys-sessions"></div>
-      <h3>插件</h3>
-      <div id="sys-plugins"></div>
-      <h3>定时任务</h3>
-      <div class="form">
-        <input id="t-name" placeholder="任务名" />
-        <input id="t-cron" placeholder="Cron，如 0 9 * * *" value="0 9 * * *" />
-        <input id="t-cmd" placeholder="命令，如 justagent judicial case list" />
-        <button class="btn" onclick="addTask()">新建任务</button>
-      </div>
-      <div id="sys-tasks"></div>
-      <h3>指标</h3>
-      <div id="metrics-chart" style="height:220px"></div>
-      <h3>案件分布</h3>
-      <div id="cases-chart" style="height:200px"></div>
-      <h3>法条分布</h3>
-      <div id="laws-chart" style="height:200px"></div>
-      <h3>项目</h3>
-      <div id="sys-projects"></div>
-      <h3>通知</h3>
-      <div id="sys-notify"></div>
-      <h3>审计</h3>
-      <div id="sys-audit"></div>
     </div>
   </aside>
 
   <main class="main">
-    <div class="chat-head">JustAgent 对话
-      <span style="float:right">
-        <button class="send" style="width:auto;padding:2px 10px;font-size:12px" onclick="loadState();addMsg('assistant','已刷新')">🔄 刷新</button>
-        <button class="send" style="width:auto;padding:2px 10px;font-size:12px" onclick="logout()">🚪 登出</button>
-      </span>
-    </div>
-    <div class="chat" id="chat"></div>
-    <div class="inputbar">
-      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="pickFile()" title="上传附件">📎</button>
-      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="pickImage()" title="图像识别">🖼️</button>
-      <button class="send" style="width:auto;padding:0 12px;font-size:13px" id="micBtn" onclick="toggleVoice()" title="语音输入">🎤</button>
-      <button class="send" style="width:auto;padding:0 12px;font-size:13px" onclick="speakLast()" title="朗读回复">🔊</button>
-      <textarea id="input" rows="1" placeholder="问任何事，如：列出所有案件 / 为案件生成证据清单 / 检索法条…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
-      <button class="send" onclick="send()">➤</button>
-    </div>
+    <!-- CHAT -->
+    <section class="view active" id="view-chat">
+      <div class="topbar">
+        <span class="crumb">对话</span>
+        <span style="flex:1"></span>
+        <button class="btn secondary" style="padding:5px 12px;font-size:12.5px" onclick="logout()">登出</button>
+      </div>
+      <div class="stream-scroll" id="stream-scroll">
+        <div class="stream" id="stream">
+          <div class="empty-state" id="empty-state">
+            <div class="logo-lg">J</div>
+            <h2>有什么可以帮你？</h2>
+            <p>管理案件、审查证据、检索法条、生成文书——或直接提问。</p>
+            <div class="starter-grid">
+              <button class="starter" onclick="useStarter('列出所有案件并给出各自状态摘要')">📋 列出所有案件并摘要状态</button>
+              <button class="starter" onclick="useStarter('为最新案件生成一份证据清单文书')">📄 为最新案件生成证据清单</button>
+              <button class="starter" onclick="useStarter('检索与买卖合同违约相关的法条')">🔍 检索合同违约相关法条</button>
+              <button class="starter" onclick="useStarter('对案件做一次完整证据链审计')">⚖️ 运行完整证据链审计</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="stop-row" id="stop-row" style="display:none">
+            <button class="stop-btn" onclick="stopStreaming()">■ 停止生成</button>
+          </div>
+          <div class="composer-box">
+            <textarea id="input" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"
+              oninput="autoGrow(this)"></textarea>
+            <div class="composer-row">
+              <button class="icon-btn" onclick="pickFile()" title="上传附件">📎</button>
+              <button class="icon-btn" onclick="pickImage()" title="图像识别">🖼️</button>
+              <button class="icon-btn" id="micBtn" onclick="toggleVoice()" title="语音输入">🎤</button>
+              <button class="icon-btn" onclick="speakLast()" title="朗读回复">🔊</button>
+              <span style="flex:1"></span>
+              <button class="send-btn" id="send-btn" onclick="send()">➤</button>
+            </div>
+          </div>
+          <div class="hint-row">Enter 发送 · Shift+Enter 换行 · 内容仅供参考，重要决策请人工复核</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASES -->
+    <section class="view" id="view-cases">
+      <div class="topbar"><span class="crumb">案件</span><span style="flex:1"></span>
+        <button class="btn secondary" onclick="exportState()">⬇ 导出 JSON</button>
+        <button class="btn secondary" onclick="window.open('/api/report','_blank')">📄 报表</button>
+      </div>
+      <div class="panel-body">
+        <h3>新建案件</h3>
+        <div class="form">
+          <input id="c-no" placeholder="案号，如（2026）京01民初1号" />
+          <input id="c-cause" placeholder="案由" />
+          <input id="c-court" placeholder="法院" />
+          <button class="btn" onclick="createCase()">创建案件</button>
+        </div>
+        <h3>案件列表</h3>
+        <div id="case-list"></div>
+      </div>
+    </section>
+
+    <!-- EVIDENCE -->
+    <section class="view" id="view-evidence">
+      <div class="topbar"><span class="crumb">证据</span><span style="flex:1"></span></div>
+      <div class="panel-body">
+        <h3>证据列表</h3>
+        <div id="evidence-list"></div>
+      </div>
+    </section>
+
+    <!-- LAWS -->
+    <section class="view" id="view-laws">
+      <div class="topbar"><span class="crumb">法条库</span><span style="flex:1"></span></div>
+      <div class="panel-body">
+        <h3>添加法条</h3>
+        <div class="form">
+          <input id="l-name" placeholder="法律名称" />
+          <input id="l-article" placeholder="条号，如 第一百四十三条" />
+          <textarea id="l-content" placeholder="法条正文" rows="3"></textarea>
+          <select id="l-domain"><option value="civil">民事</option><option value="criminal">刑事</option><option value="administrative">行政</option></select>
+          <button class="btn" onclick="addLaw()">添加法条</button>
+        </div>
+        <h3>检索</h3>
+        <div class="form">
+          <input id="ks-q" placeholder="检索法条，如 民事法律行为" onkeydown="if(event.key==='Enter')searchLaw()" />
+          <button class="btn" onclick="searchLaw()">检索</button>
+        </div>
+        <div id="law-search"></div>
+        <h3>已收录法条</h3>
+        <div id="law-list"></div>
+      </div>
+    </section>
+
+    <!-- SYSTEM -->
+    <section class="view" id="view-system">
+      <div class="topbar"><span class="crumb">系统</span><span style="flex:1"></span>
+        <button class="btn secondary" onclick="loadSystem()">🔄 刷新</button>
+      </div>
+      <div class="panel-body">
+        <h3>诊断</h3><div id="sys-doctor"></div>
+        <h3>配置 / 模型</h3><div id="sys-config"></div>
+        <h3>插件</h3><div id="sys-plugins"></div>
+        <h3>定时任务</h3>
+        <div class="form">
+          <input id="t-name" placeholder="任务名" />
+          <input id="t-cron" placeholder="Cron，如 0 9 * * *" value="0 9 * * *" />
+          <input id="t-cmd" placeholder="命令，如 justagent judicial case list" />
+          <button class="btn" onclick="addTask()">新建任务</button>
+        </div>
+        <div id="sys-tasks"></div>
+        <h3>指标</h3><div id="metrics-chart" style="height:220px"></div>
+        <h3>案件分布</h3><div id="cases-chart" style="height:200px"></div>
+        <h3>法条分布</h3><div id="laws-chart" style="height:200px"></div>
+        <h3>项目</h3><div id="sys-projects"></div>
+        <h3>通知</h3><div id="sys-notify"></div>
+        <h3>审计</h3><div id="sys-audit"></div>
+      </div>
+    </section>
   </main>
 </div>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/ui.js"></script>
 <script src="/static/js/app.js"></script>
+<template id="empty-state-template">
+  <div class="empty-state" id="empty-state">
+    <div class="logo-lg">J</div>
+    <h2>有什么可以帮你？</h2>
+    <p>管理案件、审查证据、检索法条、生成文书——或直接提问。</p>
+    <div class="starter-grid">
+      <button class="starter" onclick="useStarter('列出所有案件并给出各自状态摘要')">📋 列出所有案件并摘要状态</button>
+      <button class="starter" onclick="useStarter('为最新案件生成一份证据清单文书')">📄 为最新案件生成证据清单</button>
+      <button class="starter" onclick="useStarter('检索与买卖合同违约相关的法条')">🔍 检索合同违约相关法条</button>
+      <button class="starter" onclick="useStarter('对案件做一次完整证据链审计')">⚖️ 运行完整证据链审计</button>
+    </div>
+  </div>
+</template>
 </body>
 </html>
