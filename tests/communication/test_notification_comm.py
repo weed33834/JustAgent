@@ -146,7 +146,8 @@ class TestChannels:
 
         class FakeAsync(httpx.AsyncClient):
             async def post(self, url, json=None, **kw):  # type: ignore[override]
-                sent["url"] = url; sent["json"] = json
+                sent["url"] = url
+                sent["json"] = json
                 return FakeResp()
 
         ch._client = FakeAsync()
