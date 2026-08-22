@@ -245,7 +245,7 @@ Agent mode is built on an iterative tool-calling loop with safety controls:
 | **Compaction** | Auto-compact long conversations at 90% context budget. Basic (truncate) or agentic (LLM summary) modes. |
 | **Loop detection** | Detect repeated tool calls (soft=3, hard=5) and break out of repetitive loops. |
 | **Mistake tracker** | Count consecutive errors, stop or continue based on config. |
-| **Repo map** | Regex-based symbol extraction (Python/JS/TS/Rust/Go) formatted as a compact tree. |
+| **Repo map** | AST-accurate symbol extraction via tree-sitter (Python/JS/TS/Rust/Go; regex fallback) formatted as a compact tree. |
 | **Skills** | Load `SKILL.md` files from `.justagent/skills/` with progressive disclosure. |
 | **Subagents** | Spawn read-only parallel research subagents with isolated context. |
 | **MCP** | Connect Model Context Protocol servers (stdio / SSE / HTTP) with OAuth support. |
